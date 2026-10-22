@@ -1,15 +1,19 @@
 # ۰۶ — مدل داده، API و رویدادها
 
+> **به‌روزرسانی مالک:** [اصلاحیهٔ کیا](14-owner-addendum.md) و اسناد ۱۵ تا ۱۸ مقدم‌اند: برند KIYA، بنفش/طلایی، عمده در هسته و هدف نهایی FULL. نام‌ها/فازهای قبلی در این فایل تاریخی‌اند.
+
+> **اصلاحیهٔ اجرایی 2026-10-22:** [قرارداد مرجع](00-execution-contract.md) و اسناد ۰۹ تا ۱۳ بر جزئیات متعارض این سند مقدم‌اند. این فایل مشخصات است، نه اثبات پیاده‌سازی.
+
 ## ۱. نمای کلی
 
 - **DB:** PostgreSQL 15+ (Neon/Supabase) · ORM: Prisma · جداول با `id` (cuid)، `createdAt`، `updatedAt`، و در صورت نیاز `deletedAt` (soft delete).
 - **پول:** `Decimal(14,0)` برای تومان (بدون اعشار) — یا `BigInt` تومان. **هرگز float.**
 - **زمان:** `timestamptz` ذخیره، نمایش با `Asia/Tehran` و تقویم جلالی.
-- **چندفروشندگی (فاز ۳):** همهٔ موجودیت‌ها `storeId` دارند از روز اول تا مهاجرت دردناک نشود.
+- **چندفروشندگی (فاز ۳):** در V1 تک‌فروشنده هستیم؛ schema زیر storeId سراسری ندارد و آمادهٔ چندمستأجری نیست. چندفروشندگی در V3 با طرح و تست مستقل است.
 
 ---
 
-## ۲. اسکیمای Prisma (نسخهٔ کامل MVP+)
+## ۲. طرح اولیهٔ Prisma (غیرقابل استفادهٔ مستقیم؛ تکمیل طبق سند ۱۱)
 
 ```prisma
 // ─────────────── هویت و دسترسی ───────────────
@@ -74,7 +78,7 @@ model UserRole {
 model ScopeGrant {              // محدودهٔ دادهٔ کاربر
   id           String  @id @default(cuid())
   userId       String  @unique
-  allData      Boolean @default(true)
+  allData      Boolean @default(false)
   assignedOnly Boolean @default(false)   // فقط رکوردهای تخصیص‌یافته
   categories   String[] @default([])     // شناسهٔ دسته‌های مجاز
   cities       String[] @default([])
@@ -318,12 +322,14 @@ model Collection {                    // کالکشن / دراپ / هایلای�
 }
 
 model CollectionItem {
+  id           String @id @default(cuid())
   collectionId String
   postId       String?
   productId    String?
   order        Int @default(0)
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  @@id([collectionId, postId, productId])
+  // XOR target + partial unique indexes must be added via SQL migration (docs/11).
+  @@index([collectionId, order])
 }
 
 model Comment {
@@ -586,7 +592,7 @@ model Settings {
 - **REST + Server Actions** برای پنل، **tRPC یا Route Handlers** برای فروشگاه.
 - پاسخ استاندارد: `{ ok: true, data }` یا `{ ok: false, error: { code, message, fields? } }`.
 - کدهای خطا: `AUTH_REQUIRED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION`, `RATE_LIMITED`, `OUT_OF_STOCK`, `PAYMENT_FAILED`, `CONFLICT`.
-- همهٔ مسیرهای نوشتاری: idempotency-key اختیاری + rate limit.
+- همهٔ مسیرهای نوشتاری: rate limit؛ Idempotency-Key برای سفارش/پرداخت/بازپرداخت اجباری و clientMutationId برای کامنت.
 
 ### ۳.۲ مسیرهای عمومی
 

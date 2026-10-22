@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "services": [
+    {
+      "id": "telegram",
+      "publicUsername": "kiyaco24bot",
+      "status": "REQUIRES_NEW_SECRET",
+      "secretEnv": "TELEGRAM_BOT_TOKEN"
+    },
+    {
+      "id": "telegram-channel",
+      "publicUsername": "kiyaco24",
+      "status": "UNVERIFIED",
+      "requires": [
+        "bot-admin-rights",
+        "channel-test"
+      ]
+    },
+    {
+      "id": "instagram",
+      "publicUsername": "kiyaco24",
+      "status": "MANUAL_PACK_UNTIL_API_AUTHORIZED"
+    },
+    {
+      "id": "domain",
+      "hostname": "kiyaco24.ir",
+      "status": "UNVERIFIED"
+    },
+    {
+      "id": "payment",
+      "provider": "zarinpal",
+      "status": "UNCONFIGURED"
+    },
+    {
+      "id": "sms",
+      "status": "UNCONFIGURED"
+    },
+    {
+      "id": "storage",
+      "status": "UNCONFIGURED"
+    },
+    {
+      "id": "database",
+      "status": "UNCONFIGURED"
+    }
+  ]
+}
