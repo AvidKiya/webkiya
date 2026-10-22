@@ -115,3 +115,10 @@
 - تصمیم: تغییر metadata/رنگ فقط DRAFT با version؛ تغییر وضعیت جداگانه و audited. نسخهٔ کالا از نسخهٔ SKU جداست؛ stock correction نسخهٔ SKU را تغییر می‌دهد، نه metadata. packSize صرفاً مشخصه است؛ BOM/quote/reservation/order نیست.
 - تصمیم: Stock ledger append-only + Product→Variant lock order + UUID advisory lock برای retry، بررسی session/permission داخل transaction و قواعد stock/reserved. عکس معتبر decode/re-encode و EXIF حذف، با hash محلی و gate تصویر draft؛ volume/backup/quota/object-storage پیش‌نیاز تولید است.
 - پیامد: مسیر ثبت تا انتشار واقعی و تست‌شده است؛ multiwarehouse، BOM واقعی، قیمت خصوصی عمده، سفارش/پرداخت، نگهداری رسانه و باقی FULL باز هستند. گزارش۲۵ مرجع شواهد و حدود است.
+
+### ADR-016 — نقشهٔ قابل مشاهده و BOM واقعی، بدون فعال‌سازی فروش ناتمام
+- تاریخ: 2026-10-22
+- وضعیت: اجراشده در0.6.0؛ FULL باز است
+- تصمیم: `/progress` snapshot دستی و نسخه‌دارِ وضعیت/مرز/وابستگی است، بدون اطلاعات عملیاتی خصوصی و درصد حدسی. گزارش۲۶ همهٔ F01..F16 را پوشش می‌دهد، نه فقط هستهٔ خرید.
+- تصمیم: PackDefinition/PackComponent با FK مرکبِ یک‌محصول، مجموع محاسبه‌شده از اجزا، نوع هم‌رنگ/ترکیب ثابت، status/version و مجوزهای manage/publish جدا. تغییر فعال/بایگانی ممنوع، جایگزین جدید؛ variant عضو ACTIVE تا بایگانی جین تغییر نمی‌کند. تغییرات از Product lock مشترک می‌گذرند و audit اتمیک دارند.
+- پیامد: تعریف بسته با stock و packSize و قیمت خصوصی یکی نیست؛ نه stock جعل/رزرو می‌شود و نه سبد محلی سفارش می‌سازد. quote/place و snapshot مالی باید بعداً نسخه/اجزا/قیمت/اعتبار همکار را دوباره کنترل کنند. دادهٔ واقعی، سیاست‌ها و provider پیش از فروش لازم‌اند.

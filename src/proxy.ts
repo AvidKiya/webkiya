@@ -18,6 +18,7 @@ export async function proxy(request: NextRequest) {
   } else if (
     parts.length === 1 &&
     parts[0] !== "admin" &&
+    parts[0] !== "progress" &&
     !STORE_SECTIONS.some((s) => s === parts[0])
   )
     return missing();

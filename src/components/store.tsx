@@ -533,6 +533,9 @@ export default function Store({
             >
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
+            <Link href="/progress" className="delivery-header-link">
+              نقشهٔ تکمیل
+            </Link>
             <Link href="/admin" className="admin-login-link">
               ورود مدیر کل
             </Link>
@@ -1212,7 +1215,14 @@ export default function Store({
                     <div className="pack-info">
                       <Package size={19} />
                       <span>
-                        هر جین نمونه: {faNumber(p.packSize)} عدد · حداقل یک جین
+                        {p.isDemo ? (
+                          <>
+                            هر جین نمونه: {faNumber(p.packSize)} عدد · حداقل یک
+                            جین
+                          </>
+                        ) : (
+                          "ارائهٔ ترکیب و قیمت اختصاصی جین در ویترین هنوز فعال نیست؛ فعلاً استعلام."
+                        )}
                       </span>
                       <div className="pack-preview">
                         <span>تعداد جین برای استعلام</span>
@@ -1244,9 +1254,15 @@ export default function Store({
                           </button>
                         </div>
                         <small>
-                          مجموع نمونه:{" "}
-                          {faNumber((packCounts[p.id] || 1) * p.packSize)} عدد ·
-                          بدون ثبت سفارش
+                          {p.isDemo ? (
+                            <>
+                              مجموع نمونه:{" "}
+                              {faNumber((packCounts[p.id] || 1) * p.packSize)}{" "}
+                              عدد · بدون ثبت سفارش
+                            </>
+                          ) : (
+                            "تعداد واحد واقعی فقط از ترکیب تأییدشدهٔ جین محاسبه می‌شود؛ بدون ثبت سفارش."
+                          )}
                         </small>
                       </div>
                     </div>

@@ -25,6 +25,8 @@ const owner = [
   "product:publish",
   "inventory:read",
   "inventory:manage",
+  "wholesale:pack:manage",
+  "wholesale:pack:publish",
   "staff:read",
   "staff:manage",
   "role:manage",

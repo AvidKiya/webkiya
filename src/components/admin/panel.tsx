@@ -494,6 +494,7 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
           ))}
         </nav>
         <div className="admin-sidebar-bottom">
+          <Link href="/progress">نقشهٔ تکمیل پروژه</Link>
           <Link href="/">
             مشاهدهٔ فروشگاه <ArrowUpLeft size={16} />
           </Link>

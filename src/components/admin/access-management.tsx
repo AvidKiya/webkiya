@@ -33,6 +33,8 @@ const labels: Record<string, string> = {
   "product:publish": "انتشار و بایگانی کالا",
   "inventory:read": "خواندن موجودی",
   "inventory:manage": "اصلاح موجودی",
+  "wholesale:pack:manage": "تنظیم ترکیب جین",
+  "wholesale:pack:publish": "فعال‌سازی جین",
   "staff:read": "خواندن فهرست پرسنل",
   "audit:read": "خواندن رویداد امنیتی",
 };

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { PackManager } from "./pack-manager";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -425,6 +426,13 @@ export function ProductWorkbench({
                   </form>
                 ) : null}
               </section>
+              <PackManager
+                productId={id}
+                productStatus={detail.status}
+                productVersion={detail.version}
+                variants={detail.variants}
+                permissions={permissions}
+              />
               {canStock ? (
                 <section className="workbench-section">
                   <h4>موجودی واقعی (واحد تکی)</h4>

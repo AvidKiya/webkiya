@@ -119,3 +119,33 @@ test("unknown route is 404 and dark mode toggles", async ({ page }) => {
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
+
+test("delivery map explains done, remaining and owner-dependent work without private APIs", async ({
+  page,
+}) => {
+  const privateCalls: string[] = [];
+  page.on("request", (r) => {
+    if (new URL(r.url()).pathname.startsWith("/api/admin/"))
+      privateCalls.push(r.url());
+  });
+  const response = await page.goto("/progress");
+  expect(response?.status()).toBe(200);
+  await expect(
+    page.getByRole("heading", {
+      name: "کیا؛ چه چیزهایی آماده است و چه چیزهایی مانده؟",
+    }),
+  ).toBeVisible();
+  await expect(page.locator(".delivery-grid article")).toHaveCount(16);
+  await expect(
+    page.getByText("قیمت خصوصی عمده", { exact: true }),
+  ).toBeVisible();
+  for (const width of [360, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  expect(privateCalls).toEqual([]);
+});

@@ -36,6 +36,12 @@ import { PATCH as variantEditApi } from "@/app/api/admin/products/[id]/variants/
 import { PATCH as statusApi } from "@/app/api/admin/products/[id]/status/route";
 import { POST as stockApi } from "@/app/api/admin/inventory/[variantId]/route";
 import { GET as stockReadApi } from "@/app/api/admin/products/[id]/inventory/route";
+import {
+  GET as packsRead,
+  POST as packsCreate,
+} from "@/app/api/admin/products/[id]/packs/route";
+import { PUT as packsEdit } from "@/app/api/admin/products/[id]/packs/[packId]/route";
+import { PATCH as packsStatus } from "@/app/api/admin/products/[id]/packs/[packId]/status/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -222,8 +228,54 @@ async function transition(
     context(id),
   );
 }
+
+function packContext(id: string, packId: string) {
+  return { params: Promise.resolve({ id, packId }) };
+}
+function packBody(variantId: string, units = 6) {
+  return {
+    label: "جین واقعی آزمون",
+    mode: "HOMOGENEOUS",
+    components: [{ variantId, units }],
+  };
+}
+async function addPack(
+  cookie: string,
+  id: string,
+  variantId: string,
+  units = 6,
+) {
+  return packsCreate(
+    request(
+      "/api/admin/products/" + id + "/packs",
+      "POST",
+      cookie,
+      packBody(variantId, units),
+    ),
+    context(id),
+  );
+}
+async function packState(
+  cookie: string,
+  id: string,
+  packId: string,
+  status: string,
+  version = 1,
+) {
+  return packsStatus(
+    request(
+      "/api/admin/products/" + id + "/packs/" + packId + "/status",
+      "PATCH",
+      cookie,
+      { status, version, reason: "تغییر وضعیت جین آزمون" },
+    ),
+    packContext(id, packId),
+  );
+}
 beforeEach(async () => {
-  await db().$executeRawUnsafe('TRUNCATE "InventoryMovement"');
+  await db().$executeRawUnsafe(
+    'TRUNCATE "InventoryMovement","PackComponent","PackDefinition"',
+  );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
   });
@@ -1572,5 +1624,301 @@ describe("real PostgreSQL backend", () => {
       (await db().productVariant.findUniqueOrThrow({ where: { id: v.id } }))
         .stock,
     ).toBe(3);
+  });
+  it("requires staff MFA for pack reads and separate permissions for BOM writes", async () => {
+    const owner = await staff(),
+      content = await staff("CONTENT");
+    const { p, v } = await newSku(owner);
+    expect(
+      (
+        await packsRead(
+          request("/api/admin/products/" + p.id + "/packs"),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(401);
+    expect((await addPack(content.cookie, p.id, v.id)).status).toBe(403);
+    expect(
+      (
+        await packsRead(
+          request(
+            "/api/admin/products/" + p.id + "/packs",
+            "GET",
+            content.cookie,
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(200);
+  });
+  it("stores a real non-twelve BOM without inventing stock or a wholesale price", async () => {
+    const owner = await staff();
+    const { p, v } = await newSku(owner);
+    const response = await addPack(owner.cookie, p.id, v.id, 7);
+    expect(response.status).toBe(201);
+    const data = (await payload(response)).data;
+    expect(data.unitsPerPack).toBe(7);
+    expect(data.components[0].units).toBe(7);
+    expect(data.status).toBe("DRAFT");
+    expect(JSON.stringify(data)).not.toMatch(
+      /"stock"|"reserved"|"wholesalePrice"/,
+    );
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: v.id } }))
+        .stock,
+    ).toBe(0);
+    expect(await db().inventoryMovement.count()).toBe(0);
+    expect(
+      await db().auditLog.count({ where: { action: "pack:create" } }),
+    ).toBe(1);
+  });
+  it("rejects duplicate colors, zero/fractional units, unsupported mode and excessive totals", async () => {
+    const owner = await staff();
+    const { p, v } = await newSku(owner);
+    for (const body of [
+      { ...packBody(v.id), components: [{ variantId: v.id, units: 0 }] },
+      { ...packBody(v.id), components: [{ variantId: v.id, units: 1.5 }] },
+      { ...packBody(v.id), components: [{ variantId: v.id, units: 10001 }] },
+      { ...packBody(v.id), mode: "MIX_AND_MATCH" },
+      {
+        ...packBody(v.id),
+        mode: "FIXED_ASSORTMENT",
+        components: [
+          { variantId: v.id, units: 1 },
+          { variantId: v.id.toUpperCase(), units: 2 },
+        ],
+      },
+    ])
+      expect(
+        (
+          await packsCreate(
+            request(
+              "/api/admin/products/" + p.id + "/packs",
+              "POST",
+              owner.cookie,
+              body,
+            ),
+            context(p.id),
+          )
+        ).status,
+      ).toBe(422);
+    expect(await db().packDefinition.count()).toBe(0);
+  });
+  it("rejects foreign-product and inactive components in both service and FK constraints", async () => {
+    const owner = await staff();
+    const { p, v } = await newSku(owner);
+    const other = await newSku(owner);
+    expect((await addPack(owner.cookie, p.id, other.v.id)).status).toBe(422);
+    await db().productVariant.update({
+      where: { id: v.id },
+      data: { isActive: false },
+    });
+    expect((await addPack(owner.cookie, p.id, v.id)).status).toBe(422);
+    const pack = await db().packDefinition.create({
+      data: {
+        productId: p.id,
+        label: "پیش نویس تست",
+        mode: "HOMOGENEOUS",
+        unitsPerPack: 1,
+      },
+    });
+    await expect(
+      db().packComponent.create({
+        data: {
+          packId: pack.id,
+          productId: p.id,
+          variantId: other.v.id,
+          units: 1,
+        },
+      }),
+    ).rejects.toThrow();
+  });
+  it("edits only current draft versions and serializes competing BOM writes", async () => {
+    const owner = await staff();
+    const { p, v } = await newSku(owner);
+    const pack = (await payload(await addPack(owner.cookie, p.id, v.id))).data;
+    const edit = () =>
+      packsEdit(
+        request(
+          "/api/admin/products/" + p.id + "/packs/" + pack.id,
+          "PUT",
+          owner.cookie,
+          { ...packBody(v.id, 5), version: 1 },
+        ),
+        packContext(p.id, pack.id),
+      );
+    const results = await Promise.all([edit(), edit()]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    const updated = await db().packDefinition.findUniqueOrThrow({
+      where: { id: pack.id },
+      include: { components: true },
+    });
+    expect(updated.unitsPerPack).toBe(5);
+    expect(updated.version).toBe(2);
+    expect(updated.components).toHaveLength(1);
+  });
+  it("requires published product and pack-publish permission before activation", async () => {
+    const owner = await staff(),
+      content = await staff("CONTENT");
+    const { p, v } = await newSku(owner);
+    const pack = (await payload(await addPack(owner.cookie, p.id, v.id))).data;
+    expect(
+      (await packState(owner.cookie, p.id, pack.id, "ACTIVE")).status,
+    ).toBe(409);
+    expect(
+      (await packState(content.cookie, p.id, pack.id, "ACTIVE")).status,
+    ).toBe(403);
+    expect(
+      (await db().packDefinition.findUniqueOrThrow({ where: { id: pack.id } }))
+        .status,
+    ).toBe("DRAFT");
+  });
+  it("activates valid BOMs and prevents active definition/component mutation at DB level", async () => {
+    const owner = await staff();
+    const { p, v } = await prepared(owner);
+    const pack = (await payload(await addPack(owner.cookie, p.id, v.id, 4)))
+      .data;
+    expect((await transition(owner.cookie, p.id, "PUBLISHED")).status).toBe(
+      200,
+    );
+    expect(
+      (await packState(owner.cookie, p.id, pack.id, "ACTIVE")).status,
+    ).toBe(200);
+    expect(
+      (
+        await packsEdit(
+          request(
+            "/api/admin/products/" + p.id + "/packs/" + pack.id,
+            "PUT",
+            owner.cookie,
+            { ...packBody(v.id), version: 2 },
+          ),
+          packContext(p.id, pack.id),
+        )
+      ).status,
+    ).toBe(409);
+    await expect(
+      db().packDefinition.update({
+        where: { id: pack.id },
+        data: { label: "دستکاری" },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().packComponent.update({
+        where: { packId_variantId: { packId: pack.id, variantId: v.id } },
+        data: { units: 9 },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().productVariant.update({
+        where: { id: v.id },
+        data: { isActive: false },
+      }),
+    ).rejects.toThrow();
+  });
+  it("requires archiving referenced packs before changing a SKU and never reactivates archived BOMs", async () => {
+    const owner = await staff();
+    const { p, v } = await prepared(owner);
+    const pack = (await payload(await addPack(owner.cookie, p.id, v.id))).data;
+    await transition(owner.cookie, p.id, "PUBLISHED");
+    await packState(owner.cookie, p.id, pack.id, "ACTIVE");
+    await transition(owner.cookie, p.id, "ARCHIVED");
+    await transition(owner.cookie, p.id, "DRAFT");
+    const edit = () =>
+      variantEditApi(
+        request(
+          "/api/admin/products/" + p.id + "/variants/" + v.id,
+          "PATCH",
+          owner.cookie,
+          { name: "رنگ جدید", hex: "#112233", isActive: true, version: 1 },
+        ),
+        { params: Promise.resolve({ id: p.id, variantId: v.id }) },
+      );
+    expect((await edit()).status).toBe(409);
+    expect(
+      (await packState(owner.cookie, p.id, pack.id, "ARCHIVED", 1)).status,
+    ).toBe(409);
+    expect(
+      (await packState(owner.cookie, p.id, pack.id, "ARCHIVED", 2)).status,
+    ).toBe(200);
+    expect((await edit()).status).toBe(200);
+    expect(
+      (await packState(owner.cookie, p.id, pack.id, "ACTIVE", 3)).status,
+    ).toBe(409);
+  });
+  it("rejects incomplete active BOMs at transaction commit in PostgreSQL", async () => {
+    const owner = await staff();
+    const { p } = await newSku(owner);
+    await expect(
+      db().packDefinition.create({
+        data: {
+          productId: p.id,
+          label: "ترکیب ناقص",
+          mode: "FIXED_ASSORTMENT",
+          unitsPerPack: 6,
+          status: "ACTIVE",
+        },
+      }),
+    ).rejects.toThrow();
+    expect(await db().packDefinition.count()).toBe(0);
+  });
+  it("supports a fixed mixed-color BOM and rejects multi-SKU homogeneous packs", async () => {
+    const owner = await staff();
+    const { p, v } = await prepared(owner);
+    const second = (
+      await payload(
+        await variantApi(
+          request(
+            "/api/admin/products/" + p.id + "/variants",
+            "POST",
+            owner.cookie,
+            {
+              name: "مشکی",
+              hex: "#111111",
+              sku: "PACK-" + randomUUID().slice(0, 8),
+            },
+          ),
+          context(p.id),
+        ),
+      )
+    ).data;
+    const body = {
+      label: "ترکیب پنج تایی",
+      mode: "FIXED_ASSORTMENT",
+      components: [
+        { variantId: v.id, units: 3 },
+        { variantId: second.id, units: 2 },
+      ],
+    };
+    expect(
+      (
+        await packsCreate(
+          request(
+            "/api/admin/products/" + p.id + "/packs",
+            "POST",
+            owner.cookie,
+            { ...body, mode: "HOMOGENEOUS" },
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(422);
+    const result = await packsCreate(
+      request(
+        "/api/admin/products/" + p.id + "/packs",
+        "POST",
+        owner.cookie,
+        body,
+      ),
+      context(p.id),
+    );
+    expect(result.status).toBe(201);
+    const pack = (await payload(result)).data;
+    expect(pack.unitsPerPack).toBe(5);
+    expect(pack.components).toHaveLength(2);
+    await transition(owner.cookie, p.id, "PUBLISHED");
+    expect(
+      (await packState(owner.cookie, p.id, pack.id, "ACTIVE")).status,
+    ).toBe(200);
   });
 });

@@ -265,6 +265,16 @@ export async function editVariant(
         "RESERVED_STOCK",
         "رنگ دارای رزرو را نمی‌توان غیرفعال کرد.",
       );
+    if (
+      await tx.packComponent.count({
+        where: { variantId, pack: { status: "ACTIVE" } },
+      })
+    )
+      throw new ApiError(
+        409,
+        "ACTIVE_PACK_REFERENCE",
+        "ابتدا جین‌های فعالِ شامل این رنگ را بایگانی کنید.",
+      );
     const updated = await tx.productVariant.update({
       where: { id: variantId },
       data: {

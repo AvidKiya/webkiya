@@ -73,6 +73,7 @@ model Product {
   isDemo Boolean @default(false)
   sortOrder Int @default(100)
   variants ProductVariant[]
+  packs PackDefinition[]
 }
 model Comment {
   id               String @id @default(uuid()) @db.Uuid
@@ -150,6 +151,8 @@ model ProductVariant {
  createdAt DateTime @default(now()) @db.Timestamptz(3)
  product Product @relation(fields:[productId],references:[id],onDelete:Restrict)
  movements InventoryMovement[]
+ packComponents PackComponent[]
+ @@unique([id,productId])
  @@unique([productId,name])
  @@index([productId,isActive])
 }
@@ -166,4 +169,29 @@ model InventoryMovement {
  createdAt DateTime @default(now()) @db.Timestamptz(3)
  variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
  @@index([variantId,createdAt])
+}
+
+model PackDefinition {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.VarChar(80)
+ label String @db.VarChar(80)
+ mode String @db.VarChar(24)
+ unitsPerPack Int
+ status String @default("DRAFT") @db.VarChar(12)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ product Product @relation(fields:[productId],references:[id],onDelete:Restrict)
+ components PackComponent[]
+ @@unique([id,productId])
+ @@index([productId,status])
+}
+model PackComponent {
+ packId String @db.Uuid
+ productId String @db.VarChar(80)
+ variantId String @db.Uuid
+ units Int
+ pack PackDefinition @relation(fields:[packId,productId],references:[id,productId],onDelete:Restrict,onUpdate:NoAction)
+ variant ProductVariant @relation(fields:[variantId,productId],references:[id,productId],onDelete:Restrict,onUpdate:NoAction)
+ @@id([packId,variantId])
+ @@index([variantId])
 }

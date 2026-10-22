@@ -487,6 +487,19 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
       .fill("ورود موجودی آزمون مرورگر");
     await stock.getByRole("button", { name: "ثبت اصلاح موجودی" }).click();
     await expect(stock.getByText(/کل: ۸/)).toBeVisible();
+    const packs = editor.locator(".pack-manager");
+    await packs.locator("details.pack-create>summary").click();
+    await packs.getByLabel("نام تعریف جین").fill("جین شش‌تایی آزمون");
+    await packs.getByLabel("نوع ترکیب").selectOption("HOMOGENEOUS");
+    await packs.getByLabel("تعداد در جین: بنفش آزمون").fill("6");
+    await packs
+      .getByRole("button", { name: "ذخیره تعریف جین", exact: true })
+      .click();
+    await expect(packs.locator(".pack-record")).toHaveCount(1);
+    await expect(
+      packs.locator(".pack-record").getByText(/۶ واحد در هر جین/),
+    ).toBeVisible();
+
     for (const width of [360, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       expect(
@@ -498,12 +511,21 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
     }
 
     await editor
-      .getByLabel("دلیل تغییر وضعیت")
+      .getByLabel("دلیل تغییر وضعیت", { exact: true })
       .fill("تکمیل پرونده برای انتشار آزمون");
     await editor.getByRole("button", { name: "انتشار در ویترین" }).click();
     await expect(
       editor.getByRole("button", { name: "بایگانی کالا", exact: true }),
     ).toBeVisible();
+    const packRecord = editor.locator(".pack-record");
+    await packRecord.getByLabel("عملیات جین").selectOption("ACTIVE");
+    await packRecord
+      .getByLabel("دلیل تغییر وضعیت جین")
+      .fill("ترکیب جین آزمون تأیید شد");
+    await packRecord
+      .getByRole("button", { name: "ثبت وضعیت جین", exact: true })
+      .click();
+    await expect(packRecord.getByRole("heading")).toContainText("فعال");
     await page.goto("/p/" + productId);
     await expect(
       page
@@ -523,7 +545,9 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
       .getByRole("button", { name: "کاتالوگ", exact: true })
       .click();
     await editor.locator("summary").first().click();
-    await editor.getByLabel("دلیل تغییر وضعیت").fill("پایان آزمون و بایگانی");
+    await editor
+      .getByLabel("دلیل تغییر وضعیت", { exact: true })
+      .fill("پایان آزمون و بایگانی");
     await editor
       .getByRole("button", { name: "بایگانی کالا", exact: true })
       .click();
@@ -540,6 +564,14 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
         await client.query("SET LOCAL session_replication_role = 'replica'");
         await client.query(
           'DELETE FROM "InventoryMovement" m USING "ProductVariant" v,"Product" p WHERE m."variantId"=v.id AND v."productId"=p.id AND p.id=$1 AND EXISTS(SELECT 1 FROM "AuditLog" a WHERE a."resourceId"=p.id AND a."actorId"=$2 AND a.action=\'product:draft_create\')',
+          [productId, ownerId],
+        );
+        await client.query(
+          'DELETE FROM "PackComponent" c USING "PackDefinition" b,"AuditLog" a WHERE c."packId"=b.id AND b."productId"=$1 AND a."resourceId"=$1 AND a."actorId"=$2 AND a.action=\'product:draft_create\'',
+          [productId, ownerId],
+        );
+        await client.query(
+          'DELETE FROM "PackDefinition" b USING "AuditLog" a WHERE b."productId"=$1 AND a."resourceId"=$1 AND a."actorId"=$2 AND a.action=\'product:draft_create\'',
           [productId, ownerId],
         );
         await client.query(
