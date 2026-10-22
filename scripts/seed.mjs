@@ -17,6 +17,7 @@ const owner = [
   "partner:approve",
   "partner:suspend",
   "product:read",
+  "product:write",
   "staff:read",
   "audit:read",
 ];

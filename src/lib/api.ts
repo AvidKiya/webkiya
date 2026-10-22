@@ -36,18 +36,20 @@ export async function api<T>(
 export function authChanged() {
   window.dispatchEvent(new Event("kiya-auth-changed"));
 }
-export function useAccount() {
+export function useAccount(enabled = true) {
   const [account, setAccount] = useState<Account | null>(null),
     [error, setError] = useState("");
   const refresh = useCallback(() => {
+    if (!enabled) return;
     api<Account>("/api/auth/me")
       .then((value) => {
         setAccount(value);
         setError("");
       })
       .catch((e) => setError(e.message));
-  }, []);
+  }, [enabled]);
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
     api<Account>("/api/auth/me")
       .then((a) => {
@@ -61,6 +63,6 @@ export function useAccount() {
       active = false;
       window.removeEventListener("kiya-auth-changed", refresh);
     };
-  }, [refresh]);
+  }, [refresh, enabled]);
   return { account, error, refresh };
 }

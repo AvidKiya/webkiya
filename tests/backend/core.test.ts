@@ -17,6 +17,8 @@ import { GET as admin } from "@/app/api/admin/[module]/route";
 import { PATCH as moderate } from "@/app/api/admin/comments/[id]/route";
 import { POST as apply, GET as partnerMe } from "@/app/api/partner/route";
 import { PATCH as review } from "@/app/api/admin/partners/[id]/route";
+import { POST as createProduct } from "@/app/api/admin/products/route";
+import { PATCH as editProduct } from "@/app/api/admin/products/[id]/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -86,6 +88,7 @@ async function add(
   );
 }
 beforeEach(async () => {
+  await db().product.deleteMany({ where: { id: { startsWith: "draft-" } } });
   await db().$executeRawUnsafe(
     'TRUNCATE "UserRole","Session","RecoveryCode","Comment","PartnerAccount","AuditLog","RateBucket","User" CASCADE',
   );
@@ -664,5 +667,136 @@ describe("real PostgreSQL backend", () => {
     expect(owner.mfaEnabled).toBe(false);
     expect(passwordMatches(password, owner.passwordHash!)).toBe(true);
     expect(spawnSync(process.execPath, args, options).status).toBe(1);
+  });
+  it("creates private drafts only for MFA-verified writers with transactional audit", async () => {
+    const content = await staff("CONTENT"),
+      owner = await staff("OWNER"),
+      pending = await staff("OWNER", false);
+    const input = { name: "کالای پیش‌نویس آزمون", price: "1450000" };
+    for (const [cookie, status] of [
+      ["", 401],
+      [content.cookie, 403],
+      [pending.cookie, 403],
+    ] as const)
+      expect(
+        (
+          await createProduct(
+            request("/api/admin/products", "POST", cookie, input),
+          )
+        ).status,
+      ).toBe(status);
+    const response = await createProduct(
+      request("/api/admin/products", "POST", owner.cookie, input),
+    );
+    expect(response.status).toBe(201);
+    const result = (await payload(response)).data;
+    expect(result.status).toBe("DRAFT");
+    expect(result.price).toBe("1450000");
+    expect(result.version).toBe(1);
+    expect(
+      (
+        await list(
+          request("/api/posts/" + result.id + "/comments"),
+          context(result.id),
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      await db().auditLog.count({
+        where: { action: "product:draft_create", resourceId: result.id },
+      }),
+    ).toBe(1);
+  });
+  it("validates exact decimal strings and rejects attempts to publish through draft APIs", async () => {
+    const owner = await staff("OWNER");
+    for (const price of [1.5, "-1", "1.5", "100000000000000", "01"])
+      expect(
+        (
+          await createProduct(
+            request("/api/admin/products", "POST", owner.cookie, {
+              name: "آزمون نام کالا",
+              price,
+            }),
+          )
+        ).status,
+      ).toBe(422);
+    expect(
+      (
+        await createProduct(
+          request("/api/admin/products", "POST", owner.cookie, {
+            name: "آزمون نام کالا",
+            price: "100",
+            status: "PUBLISHED",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await createProduct(
+          request(
+            "/api/admin/products",
+            "POST",
+            owner.cookie,
+            { name: "آزمون نام کالا", price: "100" },
+            { Origin: "https://evil.example" },
+          ),
+        )
+      ).status,
+    ).toBe(403);
+  });
+  it("serializes concurrent draft edits and refuses stale updates", async () => {
+    const owner = await staff("OWNER");
+    const p = (
+      await payload(
+        await createProduct(
+          request("/api/admin/products", "POST", owner.cookie, {
+            name: "پیش‌نویس اولیه",
+            price: "100",
+          }),
+        ),
+      )
+    ).data;
+    const results = await Promise.all(
+      ["200", "300"].map((price) =>
+        editProduct(
+          request("/api/admin/products/" + p.id, "PATCH", owner.cookie, {
+            name: "نام ویرایش شده",
+            price,
+            version: 1,
+          }),
+          context(p.id),
+        ),
+      ),
+    );
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(
+      (await db().product.findUniqueOrThrow({ where: { id: p.id } })).version,
+    ).toBe(2);
+    expect(
+      await db().auditLog.count({
+        where: { resourceId: p.id, action: "product:draft_update" },
+      }),
+    ).toBe(1);
+  });
+  it("does not change published storefront prices from the draft editor", async () => {
+    const owner = await staff("OWNER");
+    const p = await db().product.findUniqueOrThrow({
+      where: { id: "everyday-bag" },
+    });
+    const response = await editProduct(
+      request("/api/admin/products/" + p.id, "PATCH", owner.cookie, {
+        name: "تغییر غیرمجاز نمونه",
+        price: "1",
+        version: p.version,
+      }),
+      context(p.id),
+    );
+    expect(response.status).toBe(409);
+    expect(
+      (
+        await db().product.findUniqueOrThrow({ where: { id: p.id } })
+      ).price.toString(),
+    ).toBe(p.price.toString());
   });
 });

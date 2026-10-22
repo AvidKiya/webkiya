@@ -515,9 +515,13 @@ export default function Store({
             >
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
-            <span className="demo-badge">
-              <span /> محیط آزمایشی
-            </span>
+            <Link
+              href="/admin/preview"
+              className="demo-badge"
+              aria-label="نمایش مدیریت (فقط خواندنی)"
+            >
+              <span /> دیدن مدیریت
+            </Link>
             <Link
               href="/cart"
               className="icon-button top-cart"
@@ -1121,7 +1125,7 @@ export default function Store({
             <footer className="utility-footer">
               <span>دربارهٔ این نسخه</span>
               <p>
-                نسخهٔ ۰.۲ · پایگاه داده و نشست سروری
+                نسخهٔ ۰.۳ · مدیریت و پیش‌نویس کالا
                 <br />
                 فروش و پرداخت واقعی فعال نیست.
               </p>

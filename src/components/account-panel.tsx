@@ -83,6 +83,9 @@ export function AccountPanel({ compact = false }: { compact?: boolean }) {
           <Link className="text-link" href="/admin">
             ورود پرسنل به مدیریت
           </Link>
+          <Link href="/admin/preview" className="text-link">
+            نمایش مدیریت بدون ورود (فقط خواندنی)
+          </Link>
           <p className="micro">
             پسندها، ذخیره‌ها و سبد هنوز محلی‌اند. سفارش و پرداخت فعال نیست.
           </p>

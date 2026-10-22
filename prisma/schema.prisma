@@ -57,6 +57,8 @@ model Product {
   name      String @db.VarChar(160)
   status    String @default("DRAFT")
   price     Decimal @db.Decimal(14,0)
+  version   Int @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   comments  Comment[]
 }

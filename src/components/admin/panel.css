@@ -790,3 +790,30 @@
 .admin-shell {
   color-scheme: light;
 }
+.admin-preview-notice {
+  border: 2px solid #c6954a;
+  background: #fff9ec;
+  color: #715126;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 22px;
+  font-size: 12px;
+  line-height: 2;
+}
+.admin-preview-notice strong {
+  font-size: 16px;
+}
+.admin-preview-notice a {
+  text-decoration: underline;
+  font-weight: 700;
+}
+.admin-card + .admin-records {
+  margin-top: 20px;
+}
+.admin-product-form {
+  max-width: 650px;
+  margin-block: 18px;
+}
+.admin-product-form .primary {
+  justify-self: start;
+}

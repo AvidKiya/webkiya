@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   LayoutDashboard,
@@ -20,6 +21,8 @@ import {
 import { api, useAccount, authChanged } from "@/lib/api";
 import { faNumber, money } from "@/lib/catalog";
 import "./panel.css";
+import { products } from "@/lib/catalog";
+import { DraftProductForm } from "./product-form";
 const tabs = [
   {
     id: "dashboard",
@@ -87,10 +90,28 @@ type Row = {
   user?: { displayName: string; isDemo: boolean };
   roles?: { role: { name: string; key: string } }[];
 };
-export function AdminPanel() {
-  const { account, error: accountError, refresh } = useAccount();
+export function AdminPanel({ preview = false }: { preview?: boolean }) {
+  const router = useRouter();
+  const {
+    account: liveAccount,
+    error: accountError,
+    refresh,
+  } = useAccount(!preview);
+  const account = preview
+    ? {
+        user: {
+          id: "visual-preview",
+          name: "بازدیدکنندهٔ نمایش مدیریت",
+          kind: "STAFF",
+          isDemo: true,
+          mfaEnabled: true,
+          mfaVerified: true,
+          permissions: tabs.map((t) => t.permission),
+        },
+      }
+    : liveAccount;
   const [tab, setTab] = useState("dashboard"),
-    [data, setData] = useState<Dashboard | Row[] | null>(null),
+    [liveData, setData] = useState<Dashboard | Row[] | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [nonce, setNonce] = useState(0);
@@ -106,8 +127,55 @@ export function AdminPanel() {
   const visibleTab = permitted.some((t) => t.id === tab)
     ? tab
     : permitted[0]?.id;
+  const previewData: Record<string, Dashboard | Row[]> = {
+    dashboard: {
+      customers: 0,
+      comments: 0,
+      pending: 0,
+      products: products.length,
+      mode: "preview",
+      paymentReady: false,
+    },
+    products: products.map((p) => ({
+      id: p.id,
+      name: p.subtitle,
+      price: p.price,
+      status: "PUBLISHED",
+    })),
+    comments: [
+      {
+        id: "sample-comment",
+        body: "این فقط یک نمونهٔ نمایشی دیدگاه است؛ از دیتابیس خوانده نشده.",
+        status: "VISIBLE",
+        author: { displayName: "مشتری نمونه", isDemo: true },
+      },
+    ],
+    partners: [
+      {
+        id: "sample-partner",
+        businessName: "فروشگاه نمونه",
+        city: "شهر نمونه",
+        note: "پروندهٔ نمایشی؛ هیچ درخواست واقعی یا اطلاعات شخصی در این صفحه نیست.",
+        status: "PENDING",
+        user: { displayName: "همکار نمونه", isDemo: true },
+      },
+    ],
+    staff: [
+      {
+        id: "sample-staff",
+        displayName: "نقش نمونهٔ مالک",
+        isActive: true,
+        mfaEnabled: true,
+        roles: [{ role: { key: "OWNER", name: "مالک (نمایشی)" } }],
+      },
+    ],
+    audit: [
+      { id: "sample-event", action: "رویداد نمونه؛ نه گزارش واقعی امنیت" },
+    ],
+  };
+  const data = preview ? previewData[visibleTab || "dashboard"] : liveData;
   useEffect(() => {
-    if (!ready || !visibleTab) return;
+    if (preview || !ready || !visibleTab) return;
     let active = true;
     api<Dashboard | Row[]>("/api/admin/" + visibleTab)
       .then((value) => {
@@ -122,7 +190,7 @@ export function AdminPanel() {
     return () => {
       active = false;
     };
-  }, [ready, visibleTab, nonce]);
+  }, [ready, visibleTab, nonce, preview]);
   async function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -176,6 +244,10 @@ export function AdminPanel() {
     }
   }
   async function logout() {
+    if (preview) {
+      router.push("/");
+      return;
+    }
     setBusy(true);
     try {
       await api("/api/auth/logout", { method: "POST", body: "{}" });
@@ -335,6 +407,9 @@ export function AdminPanel() {
             </>
           ) : (
             <>
+              <Link className="secondary" href="/admin/preview">
+                دیدن نمایش مدیریت (فقط خواندنی)
+              </Link>
               <div className="admin-auth-symbol">
                 <LockKeyhole size={24} />
               </div>
@@ -393,7 +468,9 @@ export function AdminPanel() {
           <span className="admin-online" />
           <div>
             <strong>فروشگاه کیا</strong>
-            <small>نشست دومرحله‌ای تأیید شده</small>
+            <small>
+              {preview ? "نمایش رابط، بدون ورود" : "نشست دومرحله‌ای تأیید شده"}
+            </small>
           </div>
         </div>
         <small className="admin-nav-label">میز کار</small>
@@ -434,7 +511,11 @@ export function AdminPanel() {
             <ShieldCheck size={21} />
             <div>
               <b>{user?.name}</b>
-              <small>دسترسی از سمت سرور بررسی می‌شود</small>
+              <small>
+                {preview
+                  ? "نمونهٔ رابط، بدون مجوز سروری"
+                  : "دسترسی از سمت سرور بررسی می‌شود"}
+              </small>
             </div>
           </div>
         </header>
@@ -445,7 +526,11 @@ export function AdminPanel() {
               <h1>
                 {tabs.find((t) => t.id === visibleTab)?.label || "بدون دسترسی"}
               </h1>
-              <p>آنچه اکنون در پایگاه دادهٔ کیا می‌گذرد.</p>
+              <p>
+                {preview
+                  ? "ساختار مدیریت با داده‌های نمونه، نه اطلاعات واقعی."
+                  : "آنچه اکنون در پایگاه دادهٔ کیا می‌گذرد."}
+              </p>
             </div>
             <button
               className="secondary"
@@ -455,6 +540,21 @@ export function AdminPanel() {
               تازه‌سازی
             </button>
           </div>
+          {preview ? (
+            <section
+              className="admin-preview-notice"
+              aria-label="نمایش فقط خواندنی"
+            >
+              <strong>نمایش مدیریت · فقط خواندنی</strong>
+              <p>
+                این صفحه نمونهٔ رابط است؛ حساب مدیر، ورود واقعی یا دسترسی به
+                دیتابیس ایجاد نمی‌کند. داده‌ها نمونه‌اند و دکمه‌های تغییر
+                اطلاعات در دسترس نیستند.
+              </p>
+              <Link href="/admin">ورود واقعی پرسنل</Link> ·{" "}
+              <Link href="/">بازگشت به فروشگاه</Link>
+            </section>
+          ) : null}
           <div className="admin-banner">
             <ShieldCheck size={20} />
             <p>
@@ -464,7 +564,12 @@ export function AdminPanel() {
             </p>
           </div>
           {notice}
-          {!data && !error ? (
+          {!visibleTab ? (
+            <p className="admin-note">
+              برای این حساب هیچ بخش مدیریتی مجاز نشده است.
+            </p>
+          ) : null}
+          {!data && !error && visibleTab ? (
             <p role="status">در حال دریافت دادهٔ سرور…</p>
           ) : null}
           {data && !Array.isArray(data) ? (
@@ -475,7 +580,9 @@ export function AdminPanel() {
                     label: "مشتریان ثبت‌شده",
                     value: data.customers,
                     icon: UsersRound,
-                    note: "شامل حساب‌های آزمایشی",
+                    note: preview
+                      ? "آمار واقعی در این نما خوانده نمی‌شود"
+                      : "شامل حساب‌های آزمایشی",
                   },
                   {
                     label: "دیدگاه‌های نمایان",
@@ -566,11 +673,27 @@ export function AdminPanel() {
               </div>
             </>
           ) : null}
+          {!preview &&
+          visibleTab === "products" &&
+          user?.permissions.includes("product:write") ? (
+            <section className="admin-card">
+              <h2>ساخت پیش‌نویس کالا</h2>
+              <p className="admin-note">
+                فقط نام و قیمت پایهٔ پیش‌نویس؛ انتشار، واریانت، پک و موجودی هنوز
+                فعال نیست.
+              </p>
+              <DraftProductForm onSaved={() => setNonce((n) => n + 1)} />
+            </section>
+          ) : null}
           {Array.isArray(data) ? (
             <section className="admin-card admin-records">
               <div className="admin-card-title">
                 <h2>آخرین رکوردها</h2>
-                <span>حداکثر ۵۰ رکورد · دادهٔ سرور</span>
+                <span>
+                  {preview
+                    ? "فقط دادهٔ نمونه، بدون اتصال به حساب"
+                    : "حداکثر ۵۰ رکورد · دادهٔ سرور"}
+                </span>
               </div>
               {!data.length ? (
                 <div className="admin-empty">
@@ -604,6 +727,7 @@ export function AdminPanel() {
                               HIDDEN: "پنهان",
                               DELETED: "حذف شده",
                               PUBLISHED: "منتشرشده",
+                              DRAFT: "پیش‌نویس",
                             } as Record<string, string>
                           )[row.status] || row.status}
                         </span>
@@ -621,7 +745,12 @@ export function AdminPanel() {
                       </p>
                     ) : null}
                     {row.price ? (
-                      <p>{money(row.price)} تومان · قیمت خردهٔ نمونه</p>
+                      <p>
+                        {money(row.price)} تومان ·{" "}
+                        {row.status === "DRAFT"
+                          ? "قیمت پایهٔ پیش‌نویس"
+                          : "قیمت خردهٔ نمونه"}
+                      </p>
                     ) : null}
                     {row.roles ? (
                       <p>
@@ -629,6 +758,20 @@ export function AdminPanel() {
                         {row.mfaEnabled ? "فعال" : "در انتظار تنظیم"} · حساب{" "}
                         {row.isActive ? "فعال" : "غیرفعال"}
                       </p>
+                    ) : null}
+                    {!preview &&
+                    visibleTab === "products" &&
+                    row.status === "DRAFT" &&
+                    user?.permissions.includes("product:write") ? (
+                      <DraftProductForm
+                        product={{
+                          id: row.id,
+                          name: row.name!,
+                          price: row.price!,
+                          version: row.version!,
+                        }}
+                        onSaved={() => setNonce((n) => n + 1)}
+                      />
                     ) : null}
                     <div className="admin-record-meta">
                       {row.postId ? <code dir="ltr">{row.postId}</code> : null}
@@ -641,7 +784,8 @@ export function AdminPanel() {
                         <code dir="ltr">{row.resourceId}</code>
                       ) : null}
                     </div>
-                    {visibleTab === "comments" &&
+                    {!preview &&
+                    visibleTab === "comments" &&
                     row.status !== "DELETED" &&
                     user?.permissions.includes("comment:moderate") ? (
                       <DecisionForm
@@ -661,7 +805,7 @@ export function AdminPanel() {
                         }
                       />
                     ) : null}
-                    {visibleTab === "partners" ? (
+                    {!preview && visibleTab === "partners" ? (
                       <DecisionForm
                         busy={busy}
                         options={[

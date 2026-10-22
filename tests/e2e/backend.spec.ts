@@ -80,6 +80,14 @@ test("staff password, TOTP setup, recovery, scoped navigation and logout", async
       'INSERT INTO "UserRole"("userId","roleId") SELECT $1,id FROM "Role" WHERE key=\'CONTENT\'',
       [userId],
     );
+    await client.query(
+      `INSERT INTO "Role"(key,name,permissions) VALUES($1,'نقش موقت آزمون کالا',ARRAY['product:write'])`,
+      [handle],
+    );
+    await client.query(
+      'INSERT INTO "UserRole"("userId","roleId") SELECT $1,id FROM "Role" WHERE key=$2',
+      [userId, handle],
+    );
     await page.goto("/admin");
     await page.getByLabel("شناسهٔ پرسنلی").fill(handle);
     await page.getByLabel("رمز عبور", { exact: true }).fill(password);
@@ -108,6 +116,33 @@ test("staff password, TOTP setup, recovery, scoped navigation and logout", async
     expect((await page.request.get("/api/admin/staff")).status()).toBe(403);
     await nav.getByRole("button", { name: "کاتالوگ", exact: true }).click();
     await expect(page.locator(".admin-record")).toHaveCount(5);
+    const draftName = "کالای آزمون " + handle;
+    const createForm = page.locator(".admin-product-form").first();
+    await createForm.getByLabel("نام کالا", { exact: true }).fill(draftName);
+    await createForm
+      .getByLabel("قیمت پایهٔ پیش‌نویس (تومان، فقط رقم انگلیسی)")
+      .fill("123000");
+    await createForm
+      .getByRole("button", { name: "ثبت پیش‌نویس", exact: true })
+      .click();
+    const record = page.locator(".admin-record").filter({
+      has: page.getByRole("heading", { name: draftName, exact: true }),
+    });
+    await expect(record).toBeVisible();
+    await record
+      .getByLabel("قیمت پایهٔ پیش‌نویس (تومان، فقط رقم انگلیسی)")
+      .fill("234000");
+    await record
+      .getByRole("button", { name: "ذخیره تغییرات پیش‌نویس", exact: true })
+      .click();
+    await expect(
+      record.getByText("۲۳۴٬۰۰۰ تومان · قیمت پایهٔ پیش‌نویس", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await nav.getByRole("button", { name: "کاتالوگ", exact: true }).click();
+    await expect(
+      record.getByText("۲۳۴٬۰۰۰ تومان · قیمت پایهٔ پیش‌نویس", { exact: true }),
+    ).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     expect(
       await page.evaluate(
@@ -118,7 +153,58 @@ test("staff password, TOTP setup, recovery, scoped navigation and logout", async
     await expect(page.getByLabel("شناسهٔ پرسنلی")).toBeVisible();
     expect((await page.request.get("/api/admin/dashboard")).status()).toBe(401);
   } finally {
+    await client.query(
+      `DELETE FROM "Product" WHERE status='DRAFT' AND name=$1`,
+      ["کالای آزمون " + handle],
+    );
     if (userId) await client.query('DELETE FROM "User" WHERE id=$1', [userId]);
+    await client.query('DELETE FROM "Role" WHERE key=$1', [handle]);
     await client.end();
   }
+});
+
+test("read-only admin preview is browsable without authenticating or calling private APIs", async ({
+  page,
+}) => {
+  const calls: string[] = [];
+  page.on("request", (r) => {
+    if (new URL(r.url()).pathname.startsWith("/api/")) calls.push(r.url());
+  });
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "نمایش مدیریت (فقط خواندنی)", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "نمایش فقط خواندنی" }),
+  ).toBeVisible();
+  const nav = page.getByRole("navigation", { name: "ناوبری مدیریت" });
+  await expect(nav.getByRole("button")).toHaveCount(6);
+  for (const name of [
+    "گفت‌وگوها",
+    "پروندهٔ همکاران",
+    "کاتالوگ",
+    "تیم و دسترسی‌ها",
+    "رویدادهای امنیتی",
+  ]) {
+    await nav.getByRole("button", { name, exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "ثبت تصمیم", exact: true }),
+    ).toHaveCount(0);
+  }
+  await expect(
+    page.getByRole("button", { name: "ثبت پیش‌نویس", exact: true }),
+  ).toHaveCount(0);
+  expect(calls).toEqual([]);
+  expect((await page.request.get("/api/admin/dashboard")).status()).toBe(401);
+  const me = await (await page.request.get("/api/auth/me")).json();
+  expect(me.data.user).toBeNull();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

@@ -70,7 +70,14 @@ export async function GET(
       return ok(
         await db().product.findMany({
           take: 50,
-          select: { id: true, name: true, status: true, price: true },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            price: true,
+            version: true,
+          },
         }),
       );
     if (module === "staff")
