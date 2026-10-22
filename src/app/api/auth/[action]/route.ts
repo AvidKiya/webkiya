@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { staffIdentifier } from "@/server/identity";
 import { randomBytes } from "node:crypto";
 import { db } from "@/server/db";
 import { endpoint, ok, ApiError, readBody, sameOrigin } from "@/server/http";
 import {
   session,
   requireUser,
+  requireMfaStaff,
   createSession,
   attachCookie,
   safeUser,
@@ -99,19 +101,18 @@ export async function POST(request: Request, context: Context) {
         request,
         z
           .object({
-            handle: z
-              .string()
-              .trim()
-              .toLowerCase()
-              .regex(/^[a-z0-9_-]{3,60}$/),
+            handle: z.string().trim().toLowerCase().min(3).max(60),
             password: z.string().min(1).max(200),
           })
           .strict(),
       );
       await limit("staff-global:" + clientKey(request), 20, 900);
-      await limit("staff:" + input.handle, 5, 900);
+      const identifier = staffIdentifier(input.handle);
+      await limit("staff:" + identifier.value, 5, 900);
       const user = await db().user.findUnique({
-        where: { handle: input.handle },
+        where: identifier.phone
+          ? { phone: identifier.phone }
+          : { handle: identifier.handle },
       });
       const matched = passwordMatches(
         input.password,
@@ -300,6 +301,71 @@ export async function POST(request: Request, context: Context) {
         return backups;
       });
       return ok({ verified: true, recoveryCodes });
+    }
+    if (action === "password") {
+      const input = await readBody(
+        request,
+        z
+          .object({
+            oldPassword: z.string().min(1).max(200),
+            newPassword: z.string().min(14).max(200),
+          })
+          .strict(),
+      );
+      const current = await requireMfaStaff(request);
+      await limit("password:" + current.user.id, 5, 900);
+      if (input.oldPassword === input.newPassword)
+        throw new ApiError(422, "SAME_PASSWORD", "رمز جدید باید متفاوت باشد.");
+      await db().$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id"=${current.user.id}::uuid FOR UPDATE`;
+        const user = await tx.user.findUniqueOrThrow({
+          where: { id: current.user.id },
+        });
+        const active = await tx.session.findUnique({
+          where: { id: current.id },
+        });
+        if (
+          !user.isActive ||
+          !user.mfaEnabled ||
+          user.permissionVersion !== current.permissionVersion ||
+          !active ||
+          active.revokedAt ||
+          active.expiresAt < new Date()
+        )
+          throw new ApiError(401, "SESSION_REVOKED", "نشست معتبر نیست.");
+        if (
+          !user.passwordHash ||
+          !passwordMatches(input.oldPassword, user.passwordHash)
+        )
+          throw new ApiError(401, "INVALID_PASSWORD", "رمز فعلی معتبر نیست.");
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash: passwordHash(input.newPassword),
+            permissionVersion: { increment: 1 },
+          },
+        });
+        await tx.session.updateMany({
+          where: { userId: user.id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId: user.id,
+            action: "auth:password_changed",
+            resourceId: user.id,
+            data: { allSessionsRevoked: true },
+          },
+        });
+      });
+      const response = ok({ changed: true, loginRequired: true });
+      response.cookies.set(COOKIE, "", {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
+      return response;
     }
     if (action === "otp-request")
       throw new ApiError(

@@ -100,3 +100,10 @@
 - تصمیم: PostgreSQL واقعی + Prisma7/adapter-pg؛ migrations SQL تراکنشی با ledger/checksum و advisory lock، چون native engine میزبان خارجی در sandbox مسدود است. Client/validate از WASM موجود npm تولید می‌شود؛ prisma migrate deploy تا baseline رسمی مجاز نیست.
 - تصمیم: cookie opaque/hash در DB، MFA اجباری برای مدیریت، مجوزهای DB؛ login آزمایشی synthetic فقط در demo و هیچ phone-verified جعلی. owner بدون رمز پیش‌فرض و فقط bootstrap محلی یک‌بار؛ اطلاعات مشتری واقعی و provider هنوز فعال نیست.
 - پیامد: CM عمومی و پروندهٔ WH به DB وصل‌اند؛ پسند/سبد هنوز محلی و WH pricing/order ساخته‌نشده است. پنل، RBAC پایه و TOTP به معنی تکمیل FULL/admin scope یا ممیزی امنیت نیستند. شواهد و حدود در گزارش۲۲ است.
+
+### ADR-014 — مدیر کل سروری و تفکیک نمایش از اختیار
+- تاریخ: 2026-10-22
+- وضعیت: اجراشده در نسخه0.4.0؛ نه تأیید تولید
+- تصمیم: حساب درخواست‌شده فقط در DB محلی، با hash رمز و phone ثبت‌شده ولی تأییدنشده؛ هیچ credential شخصی در seed/Git نیست. OWNER + MFA برای IAM، نقش پایه تغییرناپذیر، custom-role فقط مجوز عملیاتی، ارتقای مالک با تأیید صریح.
+- تصمیم: serialize عملیات IAM با advisory lock، reauthorization/session/actor row-lock داخل transaction؛ version، last-owner/self guard و audit؛ تغییر نقش/وضعیت/رمز، نشست‌های مربوط را باطل می‌کند.
+- پیامد: مدیریت تیم و نقش‌ها اجرایی‌اند؛ scope کالا/انبار، دعوت/بازیابی، reset MFA، تولید و فروش واقعی تکمیل نشده‌اند. گزارش۲۴ مرجع حدود و شواهد است.

@@ -34,3 +34,5 @@
 بررسی بسته: `python3 file/scripts/validate_package.py` از ریشهٔ مخزن، یا `python3 scripts/validate_package.py` از داخل همین پوشه.
 
 - [ادامهٔ اجرایی مدیریت، نمای فقط‌خواندنی و پیش‌نویس کالا](docs/23-admin-preview-and-drafts.md)
+
+- [مدیر کل واقعی، نقش سفارشی و راهنمای ورود](docs/24-real-owner-and-access.md)

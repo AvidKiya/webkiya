@@ -2701,3 +2701,22 @@ button:hover:not(:disabled) {
 .backend-partner {
   width: 100%;
 }
+
+.admin-login-link {
+  font-size: 10px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .top-actions .demo-badge {
+    display: none;
+  }
+  .admin-login-link {
+    font-size: 9px;
+    padding: 4px 7px;
+  }
+}

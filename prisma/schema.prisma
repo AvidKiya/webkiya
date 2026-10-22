@@ -30,6 +30,7 @@ model Role {
   id          String @id @default(uuid()) @db.Uuid
   key         String @unique @db.VarChar(40)
   name        String @db.VarChar(80)
+  version     Int @default(1)
   permissions String[]
   users       UserRole[]
 }

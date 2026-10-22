@@ -208,3 +208,153 @@ test("read-only admin preview is browsable without authenticating or calling pri
     ),
   ).toBe(true);
 });
+
+test("real owner console creates staff and roles, revokes access, and rotates own password", async ({
+  page,
+  browser,
+}) => {
+  if (process.env.APP_MODE !== "demo" || !process.env.DATABASE_URL)
+    throw new Error("Local demo fixture only");
+  const url = new URL(process.env.DATABASE_URL);
+  if (
+    !["/kiya_dev", "/kiya_test"].includes(url.pathname) ||
+    !["127.0.0.1", "localhost"].includes(url.hostname)
+  )
+    throw new Error("Remote DB refused");
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  const suffix = randomBytes(6).toString("hex"),
+    handle = "iam_" + suffix,
+    staffHandle = "member_" + suffix,
+    roleName = "نقش آزمون " + suffix,
+    staffName = "پرسنل آزمون " + suffix;
+  const password = randomBytes(24).toString("hex"),
+    newPassword = randomBytes(24).toString("hex"),
+    staffPassword = randomBytes(24).toString("hex"),
+    salt = randomBytes(16).toString("hex");
+  let ownerId: string | undefined;
+  const base = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000";
+  const member = await browser.newContext({ baseURL: base });
+  try {
+    const u = await client.query(
+      'INSERT INTO "User"(kind,"displayName",handle,"passwordHash","isDemo") VALUES(\'STAFF\',\'مدیر کل موقت آزمون\',$1,$2,true) RETURNING id',
+      [
+        handle,
+        salt +
+          ":" +
+          scryptSync(password, salt, 64, {
+            N: 32768,
+            maxmem: 64 * 1024 * 1024,
+          }).toString("hex"),
+      ],
+    );
+    ownerId = u.rows[0].id;
+    await client.query(
+      'INSERT INTO "UserRole"("userId","roleId") SELECT $1,id FROM "Role" WHERE key=\'OWNER\'',
+      [ownerId],
+    );
+    await page.goto("/admin");
+    await page.getByLabel("شناسهٔ پرسنلی").fill(handle);
+    await page.getByLabel("رمز عبور", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "ادامهٔ ورود امن" }).click();
+    await page.getByRole("button", { name: "تنظیم تأیید دومرحله‌ای" }).click();
+    const secret = await page.locator(".admin-secret").textContent();
+    await page.getByLabel("کد تأیید یا بازیابی").fill(totp(secret!));
+    await page.getByRole("button", { name: "تأیید و ورود به مدیریت" }).click();
+    await page.getByRole("button", { name: "کدها را امن ذخیره کردم" }).click();
+    await page
+      .getByRole("navigation", { name: "ناوبری مدیریت" })
+      .getByRole("button", { name: "تیم و دسترسی‌ها", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "مدیر کل · پرسنل و نقش‌های واقعی" }),
+    ).toBeVisible();
+    const roleCreate = page.getByTestId("role-create");
+    await roleCreate.locator("summary").click();
+    await roleCreate.getByLabel("نام نقش", { exact: true }).fill(roleName);
+    await roleCreate.getByLabel("نمای کلی", { exact: true }).check();
+    await roleCreate.getByLabel("خواندن کالا", { exact: true }).check();
+    await roleCreate
+      .getByRole("button", { name: "ساخت نقش سفارشی", exact: true })
+      .click();
+    const staffCreate = page.getByTestId("staff-create");
+    await staffCreate.locator("summary").click();
+    await staffCreate.getByLabel("نام نمایشی پرسنل").fill(staffName);
+    await staffCreate
+      .getByLabel("شناسهٔ ورود (انگلیسی، شروع با حرف)")
+      .fill(staffHandle);
+    await staffCreate
+      .getByLabel("رمز اولیهٔ پرسنل (حداقل ۱۴ نویسه)")
+      .fill(staffPassword);
+    await staffCreate.getByLabel(roleName, { exact: true }).check();
+    await staffCreate
+      .getByRole("button", { name: "ساخت حساب واقعی پرسنل" })
+      .click();
+    const record = page
+      .locator(".access-record")
+      .filter({
+        has: page.getByRole("heading", { name: staffName, exact: true }),
+      });
+    await expect(record).toBeVisible();
+    const login = await member.request.post("/api/auth/staff", {
+      headers: { Origin: base },
+      data: { handle: staffHandle, password: staffPassword },
+    });
+    expect(login.status()).toBe(200);
+    expect((await member.request.get("/api/admin/access")).status()).toBe(403);
+    const roleEdit = page
+      .locator("details.access-section")
+      .filter({ has: page.locator("summary").filter({ hasText: roleName }) });
+    await roleEdit.locator("summary").click();
+    await roleEdit.getByLabel("خواندن کالا", { exact: true }).uncheck();
+    await roleEdit
+      .getByRole("button", { name: "ذخیره نقش و ابطال نشست‌های مربوط" })
+      .click();
+    await expect
+      .poll(
+        async () =>
+          (await (await member.request.get("/api/auth/me")).json()).data.user,
+      )
+      .toBeNull();
+    await record.locator("summary").click();
+    await record.getByLabel("حساب فعال باشد").uncheck();
+    await record
+      .getByLabel("دلیل تغییر", { exact: true })
+      .fill("پایان دسترسی حساب آزمون");
+    await record.getByRole("button", { name: "ثبت وضعیت و نقش‌ها" }).click();
+    await expect(record.getByText(/غیرفعال/)).toBeVisible();
+    const security = page
+      .locator("details")
+      .filter({
+        has: page
+          .locator("summary")
+          .getByText("امنیت حساب من · تغییر رمز", { exact: true }),
+      });
+    await security.locator("summary").click();
+    await security.getByLabel("رمز فعلی", { exact: true }).fill(password);
+    await security.getByLabel("رمز جدید", { exact: true }).fill(newPassword);
+    await security
+      .getByLabel("تکرار رمز جدید", { exact: true })
+      .fill(newPassword);
+    await security
+      .getByRole("button", { name: "تغییر رمز و خروج از همهٔ نشست‌ها" })
+      .click();
+    await expect(page.getByLabel("شناسهٔ پرسنلی")).toBeVisible();
+    const response = await page.request.post("/api/auth/staff", {
+      headers: { Origin: base },
+      data: { handle, password: newPassword },
+    });
+    expect(response.status()).toBe(200);
+    expect((await response.json()).data.mfaRequired).toBe(true);
+  } finally {
+    await member.close();
+    await client.query('DELETE FROM "User" WHERE handle=$1', [staffHandle]);
+    if (ownerId)
+      await client.query('DELETE FROM "User" WHERE id=$1', [ownerId]);
+    await client.query(
+      "DELETE FROM \"Role\" WHERE name=$1 AND key LIKE 'CUSTOM_%'",
+      [roleName],
+    );
+    await client.end();
+  }
+});

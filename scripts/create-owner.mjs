@@ -5,6 +5,17 @@ config({ path: ".env.local", quiet: true });
 const args = process.argv.slice(2),
   handle = args[args.indexOf("--handle") + 1],
   name = args[args.indexOf("--name") + 1];
+const phoneInput = args.includes("--phone")
+  ? args[args.indexOf("--phone") + 1]
+  : undefined;
+const phone = phoneInput
+  ? /^09[0-9]{9}$/.test(phoneInput)
+    ? "+98" + phoneInput.slice(1)
+    : /^\+989[0-9]{9}$/.test(phoneInput)
+      ? phoneInput
+      : null
+  : null;
+if (phoneInput && !phone) throw new Error("Invalid Iranian mobile format");
 const password = process.env.KIYA_OWNER_PASSWORD;
 delete process.env.KIYA_OWNER_PASSWORD;
 if (
@@ -49,8 +60,8 @@ try {
   const role = await client.query("SELECT id FROM \"Role\" WHERE key='OWNER'");
   if (!role.rowCount) throw new Error("Run db:seed first.");
   const user = await client.query(
-    'INSERT INTO "User" (kind,"displayName",handle,"passwordHash") VALUES(\'STAFF\',$1,$2,$3) RETURNING id',
-    [name, handle, encoded],
+    'INSERT INTO "User" (kind,"displayName",handle,"passwordHash",phone) VALUES(\'STAFF\',$1,$2,$3,$4) RETURNING id',
+    [name, handle, encoded, phone],
   );
   await client.query(
     'INSERT INTO "UserRole"("userId","roleId") VALUES($1,$2)',

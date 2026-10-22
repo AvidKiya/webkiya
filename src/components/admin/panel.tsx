@@ -23,6 +23,7 @@ import { faNumber, money } from "@/lib/catalog";
 import "./panel.css";
 import { products } from "@/lib/catalog";
 import { DraftProductForm } from "./product-form";
+import { AccessManagement, PasswordChange } from "./access-management";
 const tabs = [
   {
     id: "dashboard",
@@ -415,12 +416,12 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
               </div>
               <form className="backend-form" onSubmit={login}>
                 <label>
-                  شناسهٔ پرسنلی
+                  شناسهٔ پرسنلی یا شمارهٔ موبایل
                   <input
                     name="handle"
                     dir="ltr"
                     autoComplete="username"
-                    pattern="[a-z0-9_-]{3,60}"
+                    maxLength={60}
                     required
                   />
                 </label>
@@ -666,8 +667,8 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                     نشست ۸ ساعته · کوکی HttpOnly
                   </div>
                   <small>
-                    ساخت نقش سفارشی و مدیریت کامل تیم هنوز در این مرحله ارائه
-                    نشده است.
+                    مدیر کل می‌تواند در بخش تیم، حساب پرسنلی و نقش سفارشی بسازد.
+                    محدودسازی مجوز به کالا یا انبار مشخص هنوز فعال نیست.
                   </small>
                 </section>
               </div>
@@ -685,7 +686,17 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
               <DraftProductForm onSaved={() => setNonce((n) => n + 1)} />
             </section>
           ) : null}
-          {Array.isArray(data) ? (
+          {!preview &&
+          visibleTab === "staff" &&
+          user?.permissions.includes("staff:manage") ? (
+            <AccessManagement selfId={user.id} />
+          ) : null}
+          {Array.isArray(data) &&
+          !(
+            visibleTab === "staff" &&
+            !preview &&
+            user?.permissions.includes("staff:manage")
+          ) ? (
             <section className="admin-card admin-records">
               <div className="admin-card-title">
                 <h2>آخرین رکوردها</h2>
@@ -832,12 +843,14 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
               )}
             </section>
           ) : null}
-          {visibleTab === "staff" ? (
+          {visibleTab === "staff" &&
+          (preview || !user?.permissions.includes("staff:manage")) ? (
             <p className="admin-note">
-              در این مرحله نقش‌های پایه خواندنی‌اند. ساخت نقش سفارشی، تغییر
-              دسترسی و مدیریت چرخهٔ عمر پرسنل هنوز رابط اجرایی ندارند.
+              این نما فهرست خواندنی تیم است. ساخت حساب، تغییر وضعیت و نقش سفارشی
+              فقط در نشست واقعی مدیر کل در دسترس است.
             </p>
           ) : null}
+          {!preview ? <PasswordChange /> : null}
         </main>
         <footer className="admin-bottom">
           KIYA / CONTROL ROOM <span>بدون آمار ساختگی. بدون تأیید خودکار.</span>

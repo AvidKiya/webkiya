@@ -19,6 +19,11 @@ import { POST as apply, GET as partnerMe } from "@/app/api/partner/route";
 import { PATCH as review } from "@/app/api/admin/partners/[id]/route";
 import { POST as createProduct } from "@/app/api/admin/products/route";
 import { PATCH as editProduct } from "@/app/api/admin/products/[id]/route";
+import { GET as access } from "@/app/api/admin/access/route";
+import { POST as createRole } from "@/app/api/admin/roles/route";
+import { PATCH as editRole } from "@/app/api/admin/roles/[id]/route";
+import { POST as createStaff } from "@/app/api/admin/staff/route";
+import { PATCH as editStaff } from "@/app/api/admin/staff/[id]/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -92,6 +97,7 @@ beforeEach(async () => {
   await db().$executeRawUnsafe(
     'TRUNCATE "UserRole","Session","RecoveryCode","Comment","PartnerAccount","AuditLog","RateBucket","User" CASCADE',
   );
+  await db().role.deleteMany({ where: { key: { startsWith: "CUSTOM_" } } });
 });
 afterAll(async () => {
   await db().$disconnect();
@@ -798,5 +804,339 @@ describe("real PostgreSQL backend", () => {
         await db().product.findUniqueOrThrow({ where: { id: p.id } })
       ).price.toString(),
     ).toBe(p.price.toString());
+  });
+  it("protects access management with real-owner membership plus MFA, not client role flags", async () => {
+    expect((await access(request("/api/admin/access"))).status).toBe(401);
+    for (const who of [
+      await customer(),
+      await staff("SUPPORT"),
+      await staff("OWNER", false),
+    ])
+      expect(
+        (await access(request("/api/admin/access", "GET", who.cookie))).status,
+      ).toBe(403);
+    await db().role.create({
+      data: {
+        key: "CUSTOM_FORGED",
+        name: "آزمون مجوز",
+        permissions: ["staff:manage", "role:manage"],
+      },
+    });
+    const forged = await staff("CUSTOM_FORGED");
+    expect(
+      (await access(request("/api/admin/access", "GET", forged.cookie))).status,
+    ).toBe(403);
+    const owner = await staff();
+    const p = await payload(
+      await access(request("/api/admin/access", "GET", owner.cookie)),
+    );
+    expect(p.ok).toBe(true);
+    expect(JSON.stringify(p)).not.toMatch(/passwordHash|mfaSecret|tokenHash/);
+  });
+  it("creates a custom action role but does not delegate owner-only IAM permissions", async () => {
+    const owner = await staff();
+    const response = await createRole(
+      request("/api/admin/roles", "POST", owner.cookie, {
+        name: "پاسخ‌گوی دیدگاه",
+        permissions: ["dashboard:read", "comment:read", "comment:reply"],
+      }),
+    );
+    expect(response.status).toBe(201);
+    const role = (await payload(response)).data;
+    expect(role.key).toMatch(/^CUSTOM_/);
+    expect(
+      (
+        await createRole(
+          request("/api/admin/roles", "POST", owner.cookie, {
+            name: "اختیار نامعتبر",
+            permissions: ["staff:manage"],
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    const builtin = await db().role.findUniqueOrThrow({
+      where: { key: "OWNER" },
+    });
+    expect(
+      (
+        await editRole(
+          request("/api/admin/roles/" + builtin.id, "PATCH", owner.cookie, {
+            name: "ویرایش ممنوع",
+            permissions: ["dashboard:read"],
+            version: builtin.version,
+          }),
+          context(builtin.id),
+        )
+      ).status,
+    ).toBe(403);
+  });
+  it("creates unverified staff with a password hash and requires explicit owner-grant confirmation", async () => {
+    const owner = await staff();
+    const role = await db().role.findUniqueOrThrow({
+      where: { key: "SUPPORT" },
+    });
+    const input = {
+      name: "پرسنل تازه",
+      handle: "fresh_staff",
+      phone: "09120000001",
+      password: "isolated-test-password-123",
+      roleIds: [role.id],
+    };
+    const result = await createStaff(
+      request("/api/admin/staff", "POST", owner.cookie, input),
+    );
+    expect(result.status).toBe(201);
+    const data = (await payload(result)).data;
+    expect(data.mfaEnabled).toBe(false);
+    expect(JSON.stringify(data)).not.toMatch(/password|phone/);
+    const u = await db().user.findUniqueOrThrow({ where: { id: data.id } });
+    expect(u.kind).toBe("STAFF");
+    expect(u.phoneVerifiedAt).toBeNull();
+    expect(u.phone).toBe("+989120000001");
+    expect(passwordMatches(input.password, u.passwordHash!)).toBe(true);
+    expect(
+      (
+        await createStaff(
+          request("/api/admin/staff", "POST", owner.cookie, input),
+        )
+      ).status,
+    ).toBe(409);
+    const ownerRole = await db().role.findUniqueOrThrow({
+      where: { key: "OWNER" },
+    });
+    expect(
+      (
+        await createStaff(
+          request("/api/admin/staff", "POST", owner.cookie, {
+            ...input,
+            handle: "other_owner",
+            phone: "",
+            roleIds: [ownerRole.id],
+          }),
+        )
+      ).status,
+    ).toBe(422);
+  });
+  it("revokes sessions immediately when a staff account is suspended or reassigned", async () => {
+    const owner = await staff(),
+      support = await staff("SUPPORT");
+    const role = await db().role.findUniqueOrThrow({
+      where: { key: "CONTENT" },
+    });
+    const result = await editStaff(
+      request("/api/admin/staff/" + support.user.id, "PATCH", owner.cookie, {
+        isActive: false,
+        roleIds: [role.id],
+        version: 1,
+        reason: "تعلیق حساب آزمون",
+      }),
+      context(support.user.id),
+    );
+    expect(result.status).toBe(200);
+    expect(
+      await session(request("/api/auth/me", "GET", support.cookie)),
+    ).toBeNull();
+    expect(
+      (await db().user.findUniqueOrThrow({ where: { id: support.user.id } }))
+        .permissionVersion,
+    ).toBe(2);
+    expect(
+      (
+        await editStaff(
+          request(
+            "/api/admin/staff/" + support.user.id,
+            "PATCH",
+            owner.cookie,
+            {
+              isActive: true,
+              roleIds: [role.id],
+              version: 1,
+              reason: "ویرایش قدیمی",
+            },
+          ),
+          context(support.user.id),
+        )
+      ).status,
+    ).toBe(409);
+  });
+  it("revokes all assignee sessions after an optimistic custom-role update", async () => {
+    const owner = await staff();
+    const r = await db().role.create({
+      data: {
+        key: "CUSTOM_ASSIGNED",
+        name: "نقش قابل تغییر",
+        permissions: ["dashboard:read", "product:read"],
+      },
+    });
+    const user = await staff(r.key);
+    const body = {
+      name: "نقش کم‌دسترسی",
+      permissions: ["dashboard:read"],
+      version: 1,
+    };
+    expect(
+      (
+        await editRole(
+          request("/api/admin/roles/" + r.id, "PATCH", owner.cookie, body),
+          context(r.id),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await session(request("/api/auth/me", "GET", user.cookie)),
+    ).toBeNull();
+    expect(
+      (
+        await editRole(
+          request("/api/admin/roles/" + r.id, "PATCH", owner.cookie, body),
+          context(r.id),
+        )
+      ).status,
+    ).toBe(409);
+  });
+  it("keeps a last active owner and refuses self-management", async () => {
+    const owner = await staff(),
+      supportRole = await db().role.findUniqueOrThrow({
+        where: { key: "SUPPORT" },
+      }),
+      ownerRole = await db().role.findUniqueOrThrow({
+        where: { key: "OWNER" },
+      });
+    expect(
+      (
+        await editStaff(
+          request("/api/admin/staff/" + owner.user.id, "PATCH", owner.cookie, {
+            isActive: false,
+            roleIds: [supportRole.id],
+            version: 1,
+            reason: "آزمون آخرین مالک",
+          }),
+          context(owner.user.id),
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await editStaff(
+          request("/api/admin/staff/" + owner.user.id, "PATCH", owner.cookie, {
+            isActive: true,
+            roleIds: [ownerRole.id],
+            version: 1,
+            reason: "تغییر حساب خودم",
+            ownerConfirmed: true,
+          }),
+          context(owner.user.id),
+        )
+      ).status,
+    ).toBe(403);
+  });
+  it("serializes opposite-owner suspension requests so two owners cannot both disappear", async () => {
+    const a = await staff(),
+      b = await staff(),
+      role = await db().role.findUniqueOrThrow({ where: { key: "OWNER" } });
+    const body = {
+      isActive: false,
+      roleIds: [role.id],
+      version: 1,
+      reason: "تعلیق هم‌زمان آزمون",
+      ownerConfirmed: true,
+    };
+    const results = await Promise.all([
+      editStaff(
+        request("/api/admin/staff/" + b.user.id, "PATCH", a.cookie, body),
+        context(b.user.id),
+      ),
+      editStaff(
+        request("/api/admin/staff/" + a.user.id, "PATCH", b.cookie, body),
+        context(a.user.id),
+      ),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 401]);
+    expect(
+      await db().user.count({
+        where: {
+          kind: "STAFF",
+          isActive: true,
+          roles: { some: { role: { key: "OWNER" } } },
+        },
+      }),
+    ).toBe(1);
+  });
+  it("normalizes phone login formats without claiming SMS verification", async () => {
+    const s = await staff("OWNER", false);
+    await db().user.update({
+      where: { id: s.user.id },
+      data: { phone: "+989120000001" },
+    });
+    for (const handle of ["09120000001", "+989120000001", "۰۹۱۲۰۰۰۰۰۰۱"]) {
+      const response = await auth(
+        request("/api/auth/staff", "POST", "", {
+          handle,
+          password: s.password,
+        }),
+        acontext("staff"),
+      );
+      expect(response.status).toBe(200);
+      expect((await payload(response)).data.mfaRequired).toBe(true);
+    }
+    expect(
+      (await db().user.findUniqueOrThrow({ where: { id: s.user.id } }))
+        .phoneVerifiedAt,
+    ).toBeNull();
+  });
+  it("changes the current staff password only after MFA and revokes every session", async () => {
+    const s = await staff("SUPPORT"),
+      pending = await staff("OWNER", false);
+    const newPassword = "new-isolated-password-456";
+    expect(
+      (
+        await auth(
+          request("/api/auth/password", "POST", pending.cookie, {
+            oldPassword: pending.password,
+            newPassword,
+          }),
+          acontext("password"),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await auth(
+          request("/api/auth/password", "POST", s.cookie, {
+            oldPassword: "incorrect",
+            newPassword,
+          }),
+          acontext("password"),
+        )
+      ).status,
+    ).toBe(401);
+    const extra = await createSession(s.user.id, 1, true);
+    expect(
+      (
+        await auth(
+          request("/api/auth/password", "POST", s.cookie, {
+            oldPassword: s.password,
+            newPassword,
+          }),
+          acontext("password"),
+        )
+      ).status,
+    ).toBe(200);
+    expect(await session(request("/api/auth/me", "GET", s.cookie))).toBeNull();
+    expect(
+      await session(request("/api/auth/me", "GET", COOKIE + "=" + extra.token)),
+    ).toBeNull();
+    const changed = await db().user.findUniqueOrThrow({
+      where: { id: s.user.id },
+    });
+    expect(passwordMatches(newPassword, changed.passwordHash!)).toBe(true);
+    expect(passwordMatches(s.password, changed.passwordHash!)).toBe(false);
+    expect(
+      JSON.stringify(
+        await db().auditLog.findMany({
+          where: { action: "auth:password_changed" },
+        }),
+      ),
+    ).not.toContain(newPassword);
   });
 });

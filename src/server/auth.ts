@@ -17,6 +17,8 @@ export const PERMISSIONS = [
   "product:read",
   "product:write",
   "staff:read",
+  "staff:manage",
+  "role:manage",
   "audit:read",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
@@ -78,7 +80,7 @@ export async function requireUser(request: Request) {
 export function permissions(current: AuthSession): string[] {
   return [...new Set(current.user.roles.flatMap((r) => r.role.permissions))];
 }
-export async function requireStaff(request: Request, permission: Permission) {
+export async function requireMfaStaff(request: Request) {
   const current = await requireUser(request);
   if (
     current.user.kind !== "STAFF" ||
@@ -90,6 +92,10 @@ export async function requireStaff(request: Request, permission: Permission) {
       "MFA_REQUIRED",
       "ورود پرسنل و تأیید دومرحله‌ای لازم است.",
     );
+  return current;
+}
+export async function requireStaff(request: Request, permission: Permission) {
+  const current = await requireMfaStaff(request);
   if (!permissions(current).includes(permission))
     throw new ApiError(403, "FORBIDDEN", "اجازهٔ انجام این کار را ندارید.");
   return current;

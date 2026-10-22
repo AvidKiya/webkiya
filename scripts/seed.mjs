@@ -19,6 +19,8 @@ const owner = [
   "product:read",
   "product:write",
   "staff:read",
+  "staff:manage",
+  "role:manage",
   "audit:read",
 ];
 const support = [

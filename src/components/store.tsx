@@ -515,6 +515,9 @@ export default function Store({
             >
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
+            <Link href="/admin" className="admin-login-link">
+              ورود مدیر کل
+            </Link>
             <Link
               href="/admin/preview"
               className="demo-badge"
@@ -1125,7 +1128,7 @@ export default function Store({
             <footer className="utility-footer">
               <span>دربارهٔ این نسخه</span>
               <p>
-                نسخهٔ ۰.۳ · مدیریت و پیش‌نویس کالا
+                نسخهٔ ۰.۴ · مدیریت واقعی تیم و دسترسی
                 <br />
                 فروش و پرداخت واقعی فعال نیست.
               </p>
