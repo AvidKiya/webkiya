@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  kind              String    @default("CUSTOMER")
+  displayName       String    @db.VarChar(80)
+  handle            String?   @unique @db.VarChar(60)
+  phone             String?   @unique @db.VarChar(20)
+  phoneVerifiedAt   DateTime? @db.Timestamptz(3)
+  isDemo            Boolean   @default(false)
+  passwordHash      String?
+  mfaSecret         String?
+  mfaEnabled        Boolean   @default(false)
+  mfaLastStep       BigInt?
+  recoveryCodes     RecoveryCode[]
+  isActive          Boolean   @default(true)
+  permissionVersion Int       @default(1)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  sessions          Session[]
+  roles             UserRole[]
+  comments          Comment[]
+  partner           PartnerAccount?
+}
+model Role {
+  id          String @id @default(uuid()) @db.Uuid
+  key         String @unique @db.VarChar(40)
+  name        String @db.VarChar(80)
+  permissions String[]
+  users       UserRole[]
+}
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  @@id([userId, roleId])
+}
+model Session {
+  id                String @id @default(uuid()) @db.Uuid
+  tokenHash         String @unique
+  userId            String @db.Uuid
+  permissionVersion Int
+  mfaVerified       Boolean @default(false)
+  expiresAt         DateTime @db.Timestamptz(3)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+model Product {
+  id        String @id @db.VarChar(80)
+  name      String @db.VarChar(160)
+  status    String @default("DRAFT")
+  price     Decimal @db.Decimal(14,0)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  comments  Comment[]
+}
+model Comment {
+  id               String @id @default(uuid()) @db.Uuid
+  postId           String @db.VarChar(80)
+  userId           String @db.Uuid
+  parentId         String? @db.Uuid
+  body             String @db.VarChar(1500)
+  status           String @default("VISIBLE")
+  clientMutationId String @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  post             Product @relation(fields:[postId], references:[id], onDelete:Restrict)
+  author           User @relation(fields:[userId], references:[id], onDelete:Restrict)
+  parent           Comment? @relation("CommentReplies",fields:[parentId],references:[id],onDelete:Restrict)
+  replies          Comment[] @relation("CommentReplies")
+  @@unique([userId, clientMutationId])
+  @@index([postId, status, createdAt, id])
+}
+model PartnerAccount {
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @unique @db.Uuid
+  businessName String @db.VarChar(100)
+  city         String @db.VarChar(80)
+  note         String @db.VarChar(500)
+  status       String @default("PENDING")
+  reason       String? @db.VarChar(500)
+  version      Int @default(1)
+  reviewerId   String? @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  user         User @relation(fields:[userId],references:[id],onDelete:Restrict)
+  @@index([status,createdAt])
+}
+model AuditLog {
+  id         String @id @default(uuid()) @db.Uuid
+  actorId    String? @db.Uuid
+  action     String @db.VarChar(100)
+  resourceId String? @db.VarChar(100)
+  data       Json
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  @@index([createdAt])
+}
+model RateBucket {
+  key       String @id
+  count     Int @default(1)
+  expiresAt DateTime @db.Timestamptz(3)
+}
+
+model RecoveryCode {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @db.Uuid
+  codeHash   String @unique
+  consumedAt DateTime? @db.Timestamptz(3)
+  user       User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  @@index([userId])
+}
