@@ -6,6 +6,8 @@ export default defineConfig([
   ...ts,
   globalIgnores([
     ".next/**",
+    ".open-next/**",
+    ".wrangler/**",
     "کیایی که دوسش داشتم/**",
     ".data/**",
     "src/generated/**",

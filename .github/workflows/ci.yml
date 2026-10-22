@@ -7,7 +7,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -49,6 +49,7 @@ jobs:
       - run: npm run test:backend
       - run: npm run build
       - run: npm run test:e2e
+      - run: npm run cf:build && npm run cf:dry-run && npm run cf:check-local
       - run: python3 file/scripts/validate_package.py
       - run: python3 -m unittest discover -s file/scripts -p 'test_*.py'
       - run: npm audit --omit=dev

@@ -1,12 +1,10 @@
 import "server-only";
-import sharp from "sharp";
 import { createHash } from "node:crypto";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { db } from "./db";
 import { requireStaff, session, permissions, limit } from "./auth";
 import { ApiError } from "./http";
-import { mediaDirectory as directory } from "./media-storage";
+import { storeMedia, loadMedia } from "./media-storage";
+import { normalizeImage } from "./image-processing";
 import { reauthorize } from "./product-workflow";
 export async function uploadMedia(request: Request) {
   const actor = await requireStaff(request, "product:write");
@@ -53,30 +51,10 @@ export async function uploadMedia(request: Request) {
     );
   let bytes: Buffer, width: number, height: number;
   try {
-    const image = sharp(Buffer.from(await file.arrayBuffer()), {
-      limitInputPixels: 25000000,
-      animated: false,
-    });
-    const meta = await image.metadata();
-    if (
-      !["jpeg", "png", "webp"].includes(meta.format || "") ||
-      (meta.pages || 1) > 1
-    )
-      throw new Error("format");
-    const result = await image
-      .rotate()
-      .resize({
-        width: 1600,
-        height: 1600,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .webp({ quality: 85 })
-      .toBuffer({ resolveWithObject: true });
-    bytes = result.data;
-    width = result.info.width;
-    height = result.info.height;
-    if (width < 200 || height < 200) throw new Error("dimensions");
+    const result = await normalizeImage(Buffer.from(await file.arrayBuffer()));
+    bytes = result.bytes;
+    width = result.width;
+    height = result.height;
   } catch {
     throw new ApiError(
       422,
@@ -85,16 +63,7 @@ export async function uploadMedia(request: Request) {
     );
   }
   const id = createHash("sha256").update(bytes).digest("hex");
-  await mkdir(directory(), { recursive: true, mode: 0o700 });
-  try {
-    await writeFile(join(directory(), id + ".webp"), bytes, {
-      flag: "wx",
-      mode: 0o600,
-    });
-  } catch (e) {
-    if (!(e && typeof e === "object" && "code" in e && e.code === "EEXIST"))
-      throw e;
-  }
+  await storeMedia(id, bytes);
   await db().$transaction(async (tx) => {
     await reauthorize(tx, actor, "product:write");
     await tx.mediaAsset.upsert({
@@ -149,7 +118,7 @@ export async function serveMedia(request: Request, id: string) {
   }
   let bytes: Buffer;
   try {
-    bytes = await readFile(join(directory(), id + ".webp"));
+    bytes = await loadMedia(id);
   } catch {
     throw new ApiError(404, "NOT_FOUND", "فایل تصویر در دسترس نیست.");
   }
