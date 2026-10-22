@@ -26,6 +26,7 @@ model User {
   comments          Comment[]
   partner           PartnerAccount?
   carts ServerCart[]
+ orders PurchaseOrder[]
 }
 model Role {
   id          String @id @default(uuid()) @db.Uuid
@@ -159,6 +160,8 @@ model ProductVariant {
  @@unique([id,productId])
  @@unique([productId,name])
  @@index([productId,isActive])
+ holds OrderHold[]
+ reservationMovements ReservationMovement[]
 }
 model InventoryMovement {
  id String @id @default(uuid()) @db.Uuid
@@ -237,6 +240,7 @@ model ServerCart {
  operations CartOperation[]
  @@unique([userId,mode])
  @@unique([id,mode])
+ orders PurchaseOrder[]
 }
 model ServerCartLine {
  id String @id @default(uuid()) @db.Uuid
@@ -259,4 +263,51 @@ model CartOperation {
  createdAt DateTime @default(now()) @db.Timestamptz(3)
  cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
  @@index([cartId])
+}
+
+model PurchaseOrder {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ cartId String @db.Uuid
+ cartVersion Int
+ mode String @db.VarChar(12)
+ requestId String @unique @db.Uuid
+ digest String @db.VarChar(64)
+ snapshot Json
+ subtotalToman Decimal @db.Decimal(14,0)
+ status String @default("RESERVED") @db.VarChar(12)
+ version Int @default(1)
+ reservedUntil DateTime @db.Timestamptz(3)
+ endedAt DateTime? @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
+ holds OrderHold[]
+ movements ReservationMovement[]
+ @@unique([cartId,cartVersion])
+ @@index([userId,createdAt])
+ @@index([status,reservedUntil])
+}
+model OrderHold {
+ orderId String @db.Uuid
+ variantId String @db.Uuid
+ units Int
+ order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ @@id([orderId,variantId])
+ @@index([variantId])
+}
+model ReservationMovement {
+ id String @id @default(uuid()) @db.Uuid
+ orderId String @db.Uuid
+ variantId String @db.Uuid
+ kind String @db.VarChar(12)
+ delta Int
+ reservedAfter Int
+ beforeVersion Int
+ versionAfter Int
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ @@unique([orderId,variantId,kind])
 }

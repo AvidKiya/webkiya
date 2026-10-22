@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { api, useAccount } from "@/lib/api";
 import { faNumber, money } from "@/lib/catalog";
+import { OrderHistory } from "./order-history";
 import { AccountPanel } from "./account-panel";
 type Mode = "RETAIL" | "WHOLESALE";
 type Cart = {
@@ -16,6 +17,7 @@ type Cart = {
   }[];
 };
 type Quote = {
+  fingerprint: string;
   mode: Mode;
   cartVersion: number;
   validUntil: string;
@@ -91,6 +93,7 @@ export function CartAddButton({
   );
 }
 export function ServerBasket() {
+  const reserveRetry = useRef<{ body: string; id: string } | null>(null);
   const { account } = useAccount(),
     user = account?.user;
   const [mode, setMode] = useState<Mode>("RETAIL"),
@@ -300,14 +303,60 @@ export function ServerBasket() {
                 اقدام بعدی باید دوباره بررسی شود.
               </p>
               <strong>
-                بدون رزرو و بدون سفارش؛ مبلغ قابل پرداخت هنوز تعیین نشده است.
+                این محاسبه رزرو نیست؛ مبلغ قابل پرداخت هنوز تعیین نشده است.
               </strong>
+              <form
+                key={visibleQuote.fingerprint}
+                className="reservation-confirm"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const payload = {
+                      mode,
+                      version: data!.cart!.version,
+                      fingerprint: visibleQuote.fingerprint,
+                    },
+                    body = JSON.stringify(payload);
+                  if (reserveRetry.current?.body !== body)
+                    reserveRetry.current = { body, id: crypto.randomUUID() };
+                  setBusy(true);
+                  setError("");
+                  try {
+                    await api("/api/orders", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        ...payload,
+                        requestId: reserveRetry.current.id,
+                      }),
+                    });
+                    reserveRetry.current = null;
+                    refresh();
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <label>
+                  <input type="checkbox" required /> جمع و اقلام بالا را برای
+                  سفارش اولیهٔ بدون پرداخت تأیید می‌کنم.
+                </label>
+                <p className="micro">
+                  رزرو حداکثر دو دقیقه و محدود به اعتبار قیمت و همکاری است؛
+                  ارسال، مالیات و پرداخت هنوز فعال نیستند. پس از ثبت، اقلام این
+                  سبد خالی می‌شوند.
+                </p>
+                <button className="primary" disabled={busy}>
+                  ثبت سفارش اولیه و رزرو موجودی
+                </button>
+              </form>
             </section>
           ) : quote ? (
             <p role="status">
               محاسبهٔ قبلی منقضی یا سبد تغییر کرده؛ دوباره بررسی کنید.
             </p>
           ) : null}
+          <OrderHistory key={user.id} nonce={nonce} />
         </>
       )}
     </main>

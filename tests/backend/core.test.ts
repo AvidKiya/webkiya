@@ -55,6 +55,12 @@ import {
   PATCH as cartSet,
 } from "@/app/api/cart/route";
 import { POST as cartQuote } from "@/app/api/cart/quote/route";
+import {
+  POST as reserveOrder,
+  GET as ordersRead,
+} from "@/app/api/orders/route";
+import { POST as orderCancel } from "@/app/api/orders/[id]/cancel/route";
+import { releaseExpiredOrders } from "@/server/orders";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -389,9 +395,56 @@ async function calculate(cookie: string, version: number, mode = "RETAIL") {
     request("/api/cart/quote", "POST", cookie, { mode, version }),
   );
 }
+
+async function orderFixture(quantity = 2) {
+  const f = await retailCartFixture();
+  await cartAddItem(f.buyer.cookie, f.v.id, quantity);
+  const basket = await readBasket(f.buyer.cookie);
+  const quote = (
+    await payload(await calculate(f.buyer.cookie, basket.cart.version))
+  ).data;
+  return {
+    ...f,
+    quote,
+    basket,
+    input: {
+      mode: "RETAIL",
+      version: basket.cart.version,
+      fingerprint: quote.fingerprint,
+      requestId: randomUUID(),
+    },
+  };
+}
+async function reserve(cookie: string, input: Record<string, unknown>) {
+  return reserveOrder(request("/api/orders", "POST", cookie, input));
+}
+async function cancel(cookie: string, id: string, version = 1) {
+  return orderCancel(
+    request("/api/orders/" + id + "/cancel", "POST", cookie, { version }),
+    { params: Promise.resolve({ id }) },
+  );
+}
+async function expireFixture(id: string) {
+  await db().$executeRawUnsafe(
+    'ALTER TABLE "PurchaseOrder" DISABLE TRIGGER order_guard',
+  );
+  try {
+    await db().purchaseOrder.update({
+      where: { id },
+      data: {
+        createdAt: new Date(Date.now() - 300000),
+        reservedUntil: new Date(Date.now() - 1000),
+      },
+    });
+  } finally {
+    await db().$executeRawUnsafe(
+      'ALTER TABLE "PurchaseOrder" ENABLE TRIGGER order_guard',
+    );
+  }
+}
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -2786,5 +2839,346 @@ describe("real PostgreSQL backend", () => {
       }),
     ).rejects.toThrow();
     expect((await cartAddItem(f.buyer.cookie, f.v.id, 1001)).status).toBe(422);
+  });
+  it("reserves current stock and persists immutable initial-order snapshots while consuming only its own cart", async () => {
+    const f = await orderFixture();
+    const response = await reserve(f.buyer.cookie, f.input);
+    expect(response.status).toBe(200);
+    const order = (await payload(response)).data;
+    expect(order.status).toBe("RESERVED");
+    expect(order.payableToman).toBeNull();
+    expect(order.paymentReady).toBe(false);
+    expect(order.subtotalToman).toBe("500000");
+    expect(order.snapshot.lines[0].quantity).toBe(2);
+    const variant = await db().productVariant.findUniqueOrThrow({
+      where: { id: f.v.id },
+    });
+    expect(variant.reserved).toBe(2);
+    expect(variant.stock).toBe(20);
+    expect((await readBasket(f.buyer.cookie)).lines).toHaveLength(0);
+    expect(await db().reservationMovement.count()).toBe(1);
+    expect(await db().orderHold.count()).toBe(1);
+    await expect(
+      db().purchaseOrder.update({
+        where: { id: order.id },
+        data: { subtotalToman: "1" },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().orderHold.updateMany({
+        where: { orderId: order.id },
+        data: { units: 1 },
+      }),
+    ).rejects.toThrow();
+  });
+  it("serializes parallel order retries and rejects reusing a key with different acceptance", async () => {
+    const f = await orderFixture();
+    const [a, b] = await Promise.all([
+      reserve(f.buyer.cookie, f.input),
+      reserve(f.buyer.cookie, f.input),
+    ]);
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    expect((await payload(a)).data.id).toBe((await payload(b)).data.id);
+    expect(await db().purchaseOrder.count()).toBe(1);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(2);
+    expect(
+      (
+        await reserve(f.buyer.cookie, {
+          ...f.input,
+          fingerprint: "0".repeat(64),
+        })
+      ).status,
+    ).toBe(409);
+  });
+  it("does not create two orders from one cart version under distinct request IDs", async () => {
+    const f = await orderFixture();
+    const results = await Promise.all([
+      reserve(f.buyer.cookie, f.input),
+      reserve(f.buyer.cookie, { ...f.input, requestId: randomUUID() }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await db().purchaseOrder.count()).toBe(1);
+  });
+  it("prevents overselling under competing customers and rolls back the losing cart transaction", async () => {
+    const f = await orderFixture(15),
+      other = await customer();
+    await cartAddItem(other.cookie, f.v.id, 15);
+    const b = await readBasket(other.cookie),
+      quote = (await payload(await calculate(other.cookie, b.cart.version)))
+        .data;
+    const responses = await Promise.all([
+      reserve(f.buyer.cookie, f.input),
+      reserve(other.cookie, {
+        mode: "RETAIL",
+        version: b.cart.version,
+        fingerprint: quote.fingerprint,
+        requestId: randomUUID(),
+      }),
+    ]);
+    expect(responses.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await db().purchaseOrder.count()).toBe(1);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(15);
+    expect(await db().serverCartLine.count()).toBe(1);
+  });
+  it("requires fresh customer auth, origin, exact schema and ownership for initial orders", async () => {
+    const f = await orderFixture();
+    expect((await reserve("", f.input)).status).toBe(401);
+    expect((await reserve(f.owner.cookie, f.input)).status).toBe(403);
+    expect(
+      (await reserve(f.buyer.cookie, { ...f.input, subtotalToman: "1" }))
+        .status,
+    ).toBe(422);
+    expect(
+      (
+        await reserveOrder(
+          request("/api/orders", "POST", f.buyer.cookie, f.input, {
+            Origin: "https://evil.invalid",
+          }),
+        )
+      ).status,
+    ).toBe(403);
+    const order = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    const other = await customer();
+    expect((await cancel(other.cookie, order.id)).status).toBe(404);
+    expect(
+      (
+        await payload(
+          await ordersRead(request("/api/orders", "GET", other.cookie)),
+        )
+      ).data.orders,
+    ).toHaveLength(0);
+  });
+  it("rejects stale price acceptance even if quantities and availability remain unchanged", async () => {
+    const f = await orderFixture();
+    await transition(f.owner.cookie, f.p.id, "ARCHIVED");
+    await transition(f.owner.cookie, f.p.id, "DRAFT");
+    const p = await db().product.findUniqueOrThrow({ where: { id: f.p.id } });
+    await editProduct(
+      request("/api/admin/products/" + p.id, "PATCH", f.owner.cookie, {
+        name: p.name,
+        price: "333333",
+        version: p.version,
+      }),
+      context(p.id),
+    );
+    await transition(f.owner.cookie, p.id, "PUBLISHED");
+    const response = await reserve(f.buyer.cookie, f.input);
+    expect(response.status).toBe(409);
+    expect((await payload(response)).error.code).toBe("PRICE_REVIEW_REQUIRED");
+    expect(await db().purchaseOrder.count()).toBe(0);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
+    expect((await readBasket(f.buyer.cookie)).lines).toHaveLength(1);
+  });
+  it("revalidates partner expiry and private price publication before placing a wholesale reservation", async () => {
+    const f = await wholesaleFixture();
+    const offer = await publishedOffer(f);
+    await move(f.owner.cookie, f.v.id, 20);
+    await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE");
+    const basket = await readBasket(f.buyer.cookie, "WHOLESALE"),
+      quote = (
+        await payload(
+          await calculate(f.buyer.cookie, basket.cart.version, "WHOLESALE"),
+        )
+      ).data,
+      input = {
+        mode: "WHOLESALE",
+        version: basket.cart.version,
+        fingerprint: quote.fingerprint,
+        requestId: randomUUID(),
+      };
+    await db().partnerAccount.update({
+      where: { id: f.partner.id },
+      data: { expiresAt: new Date(Date.now() - 1) },
+    });
+    expect((await reserve(f.buyer.cookie, input)).status).toBe(403);
+    await db().partnerAccount.update({
+      where: { id: f.partner.id },
+      data: { expiresAt: null },
+    });
+    await offerState(f, offer.id, "ARCHIVED", 2);
+    expect((await reserve(f.buyer.cookie, input)).status).toBe(409);
+    expect(await db().purchaseOrder.count()).toBe(0);
+  });
+  it("reserves exact wholesale BOM units for one pack and freezes its reviewed private price", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    await move(f.owner.cookie, f.v.id, 20);
+    await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE");
+    const basket = await readBasket(f.buyer.cookie, "WHOLESALE"),
+      quote = (
+        await payload(
+          await calculate(f.buyer.cookie, basket.cart.version, "WHOLESALE"),
+        )
+      ).data;
+    const response = await reserve(f.buyer.cookie, {
+      mode: "WHOLESALE",
+      version: basket.cart.version,
+      fingerprint: quote.fingerprint,
+      requestId: randomUUID(),
+    });
+    expect(response.status).toBe(200);
+    expect((await payload(response)).data.subtotalToman).toBe("7407402");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(6);
+  });
+  it("idempotently cancels once under parallel requests and releases only the held units", async () => {
+    const f = await orderFixture();
+    const order = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    const [a, b] = await Promise.all([
+      cancel(f.buyer.cookie, order.id),
+      cancel(f.buyer.cookie, order.id),
+    ]);
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    expect((await payload(a)).data.status).toBe("CANCELLED");
+    expect(await db().reservationMovement.count()).toBe(2);
+    const variant = await db().productVariant.findUniqueOrThrow({
+      where: { id: f.v.id },
+    });
+    expect(variant.stock).toBe(20);
+    expect(variant.reserved).toBe(0);
+    expect((await reserve(f.buyer.cookie, f.input)).status).toBe(200);
+    expect(await db().purchaseOrder.count()).toBe(1);
+  });
+  it("releases expired reservations once across workers without deleting financial snapshots", async () => {
+    const f = await orderFixture();
+    const order = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    await expireFixture(order.id);
+    await Promise.all([releaseExpiredOrders(), releaseExpiredOrders()]);
+    const row = await db().purchaseOrder.findUniqueOrThrow({
+      where: { id: order.id },
+    });
+    expect(row.status).toBe("EXPIRED");
+    expect(row.subtotalToman.toString()).toBe("500000");
+    expect(row.version).toBe(2);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
+    expect(await db().reservationMovement.count()).toBe(2);
+    await expect(db().reservationMovement.deleteMany()).rejects.toThrow();
+  });
+  it("enforces optimistic cancellation and never prematurely expires a live hold", async () => {
+    const f = await orderFixture(),
+      order = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    expect((await cancel(f.buyer.cookie, order.id, 2)).status).toBe(409);
+    await releaseExpiredOrders();
+    expect(
+      (await db().purchaseOrder.findUniqueOrThrow({ where: { id: order.id } }))
+        .status,
+    ).toBe("RESERVED");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(2);
+  });
+  it("protects reserved units against ordinary inventory adjustment", async () => {
+    const f = await orderFixture(15);
+    await reserve(f.buyer.cookie, f.input);
+    const version = (
+      await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } })
+    ).version;
+    expect((await move(f.owner.cookie, f.v.id, -6, version)).status).toBe(409);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(20);
+  });
+  it("rejects partial order transitions and reserved inventory below outstanding holds at commit", async () => {
+    const f = await orderFixture();
+    const o = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    await expect(
+      db().purchaseOrder.update({
+        where: { id: o.id },
+        data: { status: "CANCELLED", version: 2, endedAt: new Date() },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().productVariant.update({
+        where: { id: f.v.id },
+        data: { reserved: 0 },
+      }),
+    ).rejects.toThrow();
+    expect(
+      (await db().purchaseOrder.findUniqueOrThrow({ where: { id: o.id } }))
+        .status,
+    ).toBe("RESERVED");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(2);
+  });
+  it("handles cancellation racing expiration without duplicate release or a negative reserved counter", async () => {
+    const f = await orderFixture(),
+      o = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    await expireFixture(o.id);
+    const result = await Promise.all([
+      cancel(f.buyer.cookie, o.id),
+      releaseExpiredOrders(),
+    ]);
+    expect((result[0] as Response).status).toBe(200);
+    expect(
+      (await db().purchaseOrder.findUniqueOrThrow({ where: { id: o.id } }))
+        .status,
+    ).toBe("EXPIRED");
+    expect(await db().reservationMovement.count()).toBe(2);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
+  });
+  it("bounds active reservations per customer without consuming a rejected fourth cart", async () => {
+    const f = await retailCartFixture();
+    for (let i = 0; i < 4; i++) {
+      await cartAddItem(f.buyer.cookie, f.v.id);
+      const b = await readBasket(f.buyer.cookie),
+        q = (await payload(await calculate(f.buyer.cookie, b.cart.version)))
+          .data;
+      const r = await reserve(f.buyer.cookie, {
+        mode: "RETAIL",
+        version: b.cart.version,
+        fingerprint: q.fingerprint,
+        requestId: randomUUID(),
+      });
+      expect(r.status).toBe(i < 3 ? 200 : 409);
+    }
+    expect(await db().purchaseOrder.count()).toBe(3);
+    expect((await readBasket(f.buyer.cookie)).lines).toHaveLength(1);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(3);
+  });
+  it("runs the maintenance CLI on the isolated test DB and releases expiry without customer traffic", async () => {
+    const f = await orderFixture(),
+      o = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    await expireFixture(o.id);
+    const result = spawnSync(process.execPath, ["scripts/db-maintenance.mjs"], {
+      cwd: process.cwd(),
+      env: { ...process.env },
+      encoding: "utf8",
+      timeout: 15000,
+    });
+    expect(result.status).toBe(0);
+    expect(
+      (await db().purchaseOrder.findUniqueOrThrow({ where: { id: o.id } }))
+        .status,
+    ).toBe("EXPIRED");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
   });
 });

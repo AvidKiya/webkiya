@@ -137,3 +137,11 @@
 - تصمیم: ServerCart مستقل RETAIL/WHOLESALE، مالکیت سروری، mutation UUID/digest و تاریخچهٔ immutable، optimistic version برای SET؛ مبلغ ارسالی مشتری ممنوع.
 - quote با lock مرتب محصول و SKU و guard جاری همکار/قیمت/BOM، محاسبهٔ BigInt و موجودی تجمیعی اجرا می‌شود. اعتبار نمایش حداکثر۱۲۰ثانیه و محدود به انقضای همکار/قیمت است. shipping/tax/payable=null؛ reserved/orderReady/paymentReady=false.
 - پیامد: quote نه ذخیرهٔ مالی پایدار است نه authorization آینده؛ دو مشتری می‌توانند یک stock را هم‌زمان quote کنند. place/payment آینده باید دوباره همهٔ قیود را اتمیک کنترل و snapshot/رزرو بسازد. سبد نمونهٔ محلی به سفارش تبدیل نمی‌شود.
+
+
+### ADR-019 — سفارش اولیه با رزرو اتمیک، مستقل از پرداخت و انجام سفارش
+- وضعیت: اجراشده در0.9.0 با migration010/011.
+- calculateCart از HTTP جدا و در همان transaction ثبت سفارش اجرا می‌شود؛ fingerprint اقلام/نسخه/جمع فعلی برای بازتأیید تغییر قیمت است، نه امضا، مجوز آینده یا مبلغ ورودی قابل اعتماد.
+- PurchaseOrder دارای snapshot و subtotal تغییرناپذیر، کلید idempotency و cartVersion یکتا است؛ OrderHold تقاضای SKU تجمیعی و ReservationMovement دفتر append-only است. سفارش، رزرو، تخلیهٔ همان سبد و audit اتمیک‌اند.
+- RESERVED فقط به CANCELLED/EXPIRED می‌رود؛ release مشترک SQL با lock سفارش و SKU مرتب و deferred consistency، دوباره آزاد نمی‌کند. stock فیزیکی تغییر نمی‌کند. worker محدود هر۱۰ثانیه و CLI maintenance از همان primitive استفاده می‌کنند؛ scheduler تولید هنوز deploy نشده است.
+- سقف موقت دو دقیقه و سه رزرو فعال فنی است؛ با سیاست تجاری تأییدشده باید بازبینی شود. shipping/tax/payable هنوز محاسبه نشده، payment/fulfillment خاموش است؛ تمدید رزرو، تبدیل به پرداخت/ارسال و وضعیت‌های بعدی نیازمند طراحی و revalidation مستقل‌اند.

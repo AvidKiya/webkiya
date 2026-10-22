@@ -1,6 +1,6 @@
 {
   "name": "kiya-store",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
@@ -21,7 +21,8 @@
     "owner:create": "node scripts/create-owner.mjs",
     "test:backend": "vitest run --config vitest.backend.config.ts",
     "db:test:create": "node scripts/create-test-db.mjs",
-    "db:maintenance": "node scripts/db-maintenance.mjs"
+    "db:maintenance": "node scripts/db-maintenance.mjs",
+    "worker:reservations": "node scripts/reservation-worker.mjs"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.8",

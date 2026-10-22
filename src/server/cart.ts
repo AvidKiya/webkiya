@@ -29,7 +29,7 @@ export const changeCartInput = z
 export const quoteInput = z
   .object({ mode: cartMode, version: z.number().int().positive() })
   .strict();
-async function customer(request: Request) {
+export async function customer(request: Request) {
   const current = await requireUser(request);
   if (current.user.kind !== "CUSTOMER")
     throw new ApiError(
@@ -39,7 +39,7 @@ async function customer(request: Request) {
     );
   return current;
 }
-async function lockCart(
+export async function lockCart(
   tx: Transaction,
   current: AuthSession,
   mode: Mode,
@@ -303,154 +303,169 @@ export async function quoteCart(
 ) {
   const current = await customer(request);
   await limit("cart-quote:" + current.user.id, 60, 60);
-  return db().$transaction(async (tx) => {
-    const cart = await lockCart(tx, current, input.mode);
-    if (!cart) throw new ApiError(409, "EMPTY_CART", "سبد خالی است.");
-    if (cart.version !== input.version)
-      throw new ApiError(
-        409,
-        "STALE_VERSION",
-        "سبد تغییر کرده؛ تازه‌سازی کنید.",
-      );
-    let lines = await tx.serverCartLine.findMany({
-      where: { cartId: cart.id },
-      include: linesInclude,
-      orderBy: { id: "asc" },
-    });
-    if (!lines.length) throw new ApiError(409, "EMPTY_CART", "سبد خالی است.");
-    const productIds = [
-      ...new Set(lines.map((l) => (l.variant?.product || l.pack!.product).id)),
-    ].sort();
-    for (const id of productIds) await productLock(tx, id);
-    await freshCustomer(tx, current);
-    const partner =
-      input.mode === "WHOLESALE" ? await approved(tx, current) : null;
-    lines = await tx.serverCartLine.findMany({
-      where: { cartId: cart.id },
-      include: linesInclude,
-      orderBy: { id: "asc" },
-    });
-    const now = new Date();
-    let validUntil = new Date(now.getTime() + 120000);
-    if (partner?.expiresAt && partner.expiresAt < validUntil)
-      validUntil = partner.expiresAt;
-    const required = new Map<string, number>();
-    const snapshots = [];
-    let subtotal = 0n;
-    for (const line of lines) {
-      const product = line.variant?.product || line.pack!.product;
-      saleProduct(product);
-      let unitPrice: string,
-        unitsPerSelection: number,
-        selection: string,
-        packVersion: number | null = null,
-        offerId: string | null = null,
-        offerVersion: number | null = null;
-      const components: { variantId: string; units: number; name: string }[] =
-        [];
-      if (line.variant) {
-        if (!line.variant.isActive || product.price.lte(0))
-          throw new ApiError(
-            409,
-            "VARIANT_UNAVAILABLE",
-            "رنگ یا قیمت تکی معتبر نیست.",
-          );
-        unitPrice = product.price.toString();
-        unitsPerSelection = 1;
-        selection = line.variant.name;
-        components.push({
-          variantId: line.variant.id,
-          units: 1,
-          name: line.variant.name,
-        });
-      } else {
-        const offer = await pricedPack(tx, line.packId!, partner!.id);
-        unitPrice = offer.unitPriceToman!.toString();
-        unitsPerSelection = offer.pack.unitsPerPack;
-        selection = offer.pack.label;
-        packVersion = offer.pack.version;
-        offerId = offer.id;
-        offerVersion = offer.version;
-        components.push(
-          ...offer.pack.components.map((c) => ({
-            variantId: c.variantId,
-            units: c.units,
-            name: c.variant.name,
-          })),
-        );
-        if (offer.validUntil && offer.validUntil < validUntil)
-          validUntil = offer.validUntil;
-      }
-      for (const c of components)
-        required.set(
-          c.variantId,
-          (required.get(c.variantId) || 0) + c.units * line.quantity,
-        );
-      const pricePerSelection = BigInt(unitPrice) * BigInt(unitsPerSelection);
-      const total = pricePerSelection * BigInt(line.quantity);
-      subtotal += total;
-      if (subtotal > 99999999999999n)
-        throw new ApiError(
-          422,
-          "AMOUNT_LIMIT",
-          "جمع سبد از سقف پولی مجاز بیشتر است.",
-        );
-      snapshots.push({
-        lineId: line.id,
-        productId: product.id,
-        name: product.name,
-        selection,
-        quantity: line.quantity,
-        unitsPerSelection,
-        totalUnits: unitsPerSelection * line.quantity,
-        unitPriceToman: unitPrice,
-        pricePerSelectionToman: pricePerSelection.toString(),
-        lineTotalToman: total.toString(),
-        productVersion: product.version,
-        packVersion,
-        offerId,
-        offerVersion,
-        components: components.map((c) => ({
-          name: c.name,
-          unitsPerSelection: c.units,
-        })),
-      });
-    }
-    for (const id of [...required.keys()].sort()) {
-      await tx.$queryRaw`SELECT "id" FROM "ProductVariant" WHERE "id"=${id}::uuid FOR UPDATE`;
-      const variant = await tx.productVariant.findUnique({ where: { id } });
-      if (
-        !variant ||
-        !variant.isActive ||
-        variant.stock - variant.reserved < required.get(id)!
-      )
+  return db().$transaction(
+    async (tx) => (await calculateCart(tx, current, input)).quote,
+  );
+}
+// Only call inside a transaction: locks are held through reservation/snapshot commit.
+export async function calculateCart(
+  tx: Transaction,
+  current: AuthSession,
+  input: z.infer<typeof quoteInput>,
+) {
+  const cart = await lockCart(tx, current, input.mode);
+  if (!cart) throw new ApiError(409, "EMPTY_CART", "سبد خالی است.");
+  if (cart.version !== input.version)
+    throw new ApiError(409, "STALE_VERSION", "سبد تغییر کرده؛ تازه‌سازی کنید.");
+  let lines = await tx.serverCartLine.findMany({
+    where: { cartId: cart.id },
+    include: linesInclude,
+    orderBy: { id: "asc" },
+  });
+  if (!lines.length) throw new ApiError(409, "EMPTY_CART", "سبد خالی است.");
+  const productIds = [
+    ...new Set(lines.map((l) => (l.variant?.product || l.pack!.product).id)),
+  ].sort();
+  for (const id of productIds) await productLock(tx, id);
+  await freshCustomer(tx, current);
+  const partner =
+    input.mode === "WHOLESALE" ? await approved(tx, current) : null;
+  lines = await tx.serverCartLine.findMany({
+    where: { cartId: cart.id },
+    include: linesInclude,
+    orderBy: { id: "asc" },
+  });
+  const now = new Date();
+  let validUntil = new Date(now.getTime() + 120000);
+  if (partner?.expiresAt && partner.expiresAt < validUntil)
+    validUntil = partner.expiresAt;
+  const required = new Map<string, number>();
+  const snapshots = [];
+  let subtotal = 0n;
+  for (const line of lines) {
+    const product = line.variant?.product || line.pack!.product;
+    saleProduct(product);
+    let unitPrice: string,
+      unitsPerSelection: number,
+      selection: string,
+      packVersion: number | null = null,
+      offerId: string | null = null,
+      offerVersion: number | null = null;
+    const components: { variantId: string; units: number; name: string }[] = [];
+    if (line.variant) {
+      if (!line.variant.isActive || product.price.lte(0))
         throw new ApiError(
           409,
-          "INSUFFICIENT_STOCK",
-          "موجودی کل ترکیب سبد کافی نیست؛ تعداد یا ترکیب را اصلاح کنید.",
+          "VARIANT_UNAVAILABLE",
+          "رنگ یا قیمت تکی معتبر نیست.",
         );
+      unitPrice = product.price.toString();
+      unitsPerSelection = 1;
+      selection = line.variant.name;
+      components.push({
+        variantId: line.variant.id,
+        units: 1,
+        name: line.variant.name,
+      });
+    } else {
+      const offer = await pricedPack(tx, line.packId!, partner!.id);
+      unitPrice = offer.unitPriceToman!.toString();
+      unitsPerSelection = offer.pack.unitsPerPack;
+      selection = offer.pack.label;
+      packVersion = offer.pack.version;
+      offerId = offer.id;
+      offerVersion = offer.version;
+      components.push(
+        ...offer.pack.components.map((c) => ({
+          variantId: c.variantId,
+          units: c.units,
+          name: c.variant.name,
+        })),
+      );
+      if (offer.validUntil && offer.validUntil < validUntil)
+        validUntil = offer.validUntil;
     }
-    if (validUntil <= new Date())
+    for (const c of components)
+      required.set(
+        c.variantId,
+        (required.get(c.variantId) || 0) + c.units * line.quantity,
+      );
+    const pricePerSelection = BigInt(unitPrice) * BigInt(unitsPerSelection);
+    const total = pricePerSelection * BigInt(line.quantity);
+    subtotal += total;
+    if (subtotal > 99999999999999n)
+      throw new ApiError(
+        422,
+        "AMOUNT_LIMIT",
+        "جمع سبد از سقف پولی مجاز بیشتر است.",
+      );
+    snapshots.push({
+      lineId: line.id,
+      productId: product.id,
+      name: product.name,
+      selection,
+      quantity: line.quantity,
+      unitsPerSelection,
+      totalUnits: unitsPerSelection * line.quantity,
+      unitPriceToman: unitPrice,
+      pricePerSelectionToman: pricePerSelection.toString(),
+      lineTotalToman: total.toString(),
+      productVersion: product.version,
+      packVersion,
+      offerId,
+      offerVersion,
+      components: components.map((c) => ({
+        variantId: c.variantId,
+        name: c.name,
+        unitsPerSelection: c.units,
+      })),
+    });
+  }
+  for (const id of [...required.keys()].sort()) {
+    await tx.$queryRaw`SELECT "id" FROM "ProductVariant" WHERE "id"=${id}::uuid FOR UPDATE`;
+    const variant = await tx.productVariant.findUnique({ where: { id } });
+    if (
+      !variant ||
+      !variant.isActive ||
+      variant.stock - variant.reserved < required.get(id)!
+    )
       throw new ApiError(
         409,
-        "QUOTE_EXPIRED",
-        "اعتبار قیمت یا همکاری پایان یافته؛ دوباره بررسی کنید.",
+        "INSUFFICIENT_STOCK",
+        "موجودی کل ترکیب سبد کافی نیست؛ تعداد یا ترکیب را اصلاح کنید.",
       );
-    return {
-      mode: input.mode,
-      cartVersion: cart.version,
-      generatedAt: now,
-      validUntil,
-      lines: snapshots,
-      subtotalToman: subtotal.toString(),
-      shippingToman: null,
-      taxToman: null,
-      payableToman: null,
-      minSelections: 1,
-      reserved: false,
-      orderReady: false,
-      paymentReady: false,
-      requiresRevalidation: true,
-    };
-  });
+  }
+  if (validUntil <= new Date())
+    throw new ApiError(
+      409,
+      "QUOTE_EXPIRED",
+      "اعتبار قیمت یا همکاری پایان یافته؛ دوباره بررسی کنید.",
+    );
+  const quote = {
+    mode: input.mode,
+    cartVersion: cart.version,
+    generatedAt: now,
+    validUntil,
+    lines: snapshots,
+    subtotalToman: subtotal.toString(),
+    shippingToman: null,
+    taxToman: null,
+    payableToman: null,
+    minSelections: 1,
+    reserved: false,
+    orderReady: false,
+    paymentReady: false,
+    requiresRevalidation: true,
+  };
+  const fingerprint = createHash("sha256")
+    .update(
+      JSON.stringify({
+        mode: quote.mode,
+        cartVersion: quote.cartVersion,
+        lines: quote.lines,
+        subtotalToman: quote.subtotalToman,
+      }),
+    )
+    .digest("hex");
+  return { quote: { ...quote, fingerprint }, required, cart };
 }

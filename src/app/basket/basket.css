@@ -82,3 +82,22 @@
     padding: 16px;
   }
 }
+
+.reservation-confirm {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+.reservation-confirm label {
+  font-size: 13px;
+}
+.reservation-confirm input {
+  margin-inline-end: 8px;
+}
+.order-history {
+  margin-top: 40px;
+}
+.order-history h3 {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}

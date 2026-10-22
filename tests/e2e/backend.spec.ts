@@ -738,6 +738,47 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
         "basket overflow " + width,
       ).toBe(true);
     }
+    await buyerPage
+      .getByRole("checkbox", {
+        name: "جمع و اقلام بالا را برای سفارش اولیهٔ بدون پرداخت تأیید می‌کنم.",
+      })
+      .check();
+    await buyerPage
+      .getByRole("button", {
+        name: "ثبت سفارش اولیه و رزرو موجودی",
+        exact: true,
+      })
+      .click();
+    const history = buyerPage.getByRole("region", {
+      name: "سفارش‌های اولیه من",
+    });
+    await expect(history.locator("article")).toHaveCount(1);
+    await expect(history).toContainText("رزرو فعال");
+    for (const width of [360, 390, 768, 1440]) {
+      await buyerPage.setViewportSize({ width, height: 900 });
+      expect(
+        await buyerPage.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        "order history overflow " + width,
+      ).toBe(true);
+    }
+
+    await expect(buyerPage.locator("main > .server-cart-line")).toHaveCount(0);
+    await buyerPage.reload();
+    await expect(history.locator("article")).toHaveCount(1);
+    await history
+      .getByRole("button", { name: "لغو سفارش و آزادسازی رزرو" })
+      .click();
+    await expect(history).toContainText("لغوشده");
+    await expect(
+      history.getByRole("button", { name: "لغو سفارش و آزادسازی رزرو" }),
+    ).toHaveCount(0);
+    const reservations = await client.query(
+      'SELECT reserved FROM "ProductVariant" WHERE "productId"=$1',
+      [productId],
+    );
+    expect(reservations.rows.every((r) => r.reserved === 0)).toBe(true);
     await buyerPage.goto("/wholesale");
     for (const path of ["/", "/p/" + productId, "/api/catalog"]) {
       const publicText = await (
@@ -814,6 +855,18 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
       try {
         await client.query("SET LOCAL session_replication_role = 'replica'");
         if (buyerId) {
+          await client.query(
+            'DELETE FROM "ReservationMovement" m USING "PurchaseOrder" o,"User" u WHERE m."orderId"=o.id AND o."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
+            [buyerId],
+          );
+          await client.query(
+            'DELETE FROM "OrderHold" h USING "PurchaseOrder" o,"User" u WHERE h."orderId"=o.id AND o."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
+            [buyerId],
+          );
+          await client.query(
+            'DELETE FROM "PurchaseOrder" o USING "User" u WHERE o."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
+            [buyerId],
+          );
           await client.query(
             'DELETE FROM "CartOperation" o USING "ServerCart" c,"User" u WHERE o."cartId"=c.id AND c."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
             [buyerId],
