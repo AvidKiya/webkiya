@@ -1,6 +1,11 @@
+import { CustomerFrame } from "@/components/preferred-template/customer-frame";
 import { ServerBasket } from "@/components/server-basket";
 import "./basket.css";
 export const metadata = { title: "سبد سروری — کیا" };
 export default function Page() {
-  return <ServerBasket />;
+  return (
+    <CustomerFrame>
+      <ServerBasket />
+    </CustomerFrame>
+  );
 }

@@ -145,3 +145,10 @@
 - PurchaseOrder دارای snapshot و subtotal تغییرناپذیر، کلید idempotency و cartVersion یکتا است؛ OrderHold تقاضای SKU تجمیعی و ReservationMovement دفتر append-only است. سفارش، رزرو، تخلیهٔ همان سبد و audit اتمیک‌اند.
 - RESERVED فقط به CANCELLED/EXPIRED می‌رود؛ release مشترک SQL با lock سفارش و SKU مرتب و deferred consistency، دوباره آزاد نمی‌کند. stock فیزیکی تغییر نمی‌کند. worker محدود هر۱۰ثانیه و CLI maintenance از همان primitive استفاده می‌کنند؛ scheduler تولید هنوز deploy نشده است.
 - سقف موقت دو دقیقه و سه رزرو فعال فنی است؛ با سیاست تجاری تأییدشده باید بازبینی شود. shipping/tax/payable هنوز محاسبه نشده، payment/fulfillment خاموش است؛ تمدید رزرو، تبدیل به پرداخت/ارسال و وضعیت‌های بعدی نیازمند طراحی و revalidation مستقل‌اند.
+
+
+### ADR-020 — قالب انتخابی مالک، پوستهٔ واقعی روی هستهٔ موجود
+- وضعیت: اجراشده در0.10.0؛ مرجع بصری commit2970536 و پوشهٔ اصلیِ دست‌نخوردهٔ «کیایی که دوسش داشتم».
+- تصمیم: main جدید در همین شاخه ادغام و Header/NavRail/BottomNav، طرح PostCard/Stories/RightRail و StoreProfileView برای Next و مسیرهای موجود اقتباس شوند؛ تغییر auth/DB/تراکنش/مجوز برای تقلید demo ممنوع.
+- StoreContext قالب مرجع اعتماد نیست؛ persona-switch، قیمت خصوصی hardcoded، پرداخت موفق/فروش/فعالیت مصنوعی، کیف پول و پیام‌های ساختگی به runtime منتقل نمی‌شوند. بستهٔ مستقل Vite و importهای asset ناموجود آن جایگزین root package یا دارایی رسمی فعلی نمی‌شود.
+- پیامد: source مرجع از lint/typecheck/Tailwind فعال جداست؛ تست‌های برنامهٔ واقعی باقی‌اند. پروفایل برند و تاریخچهٔ واقعی مشتری اضافه شدند؛ ادامهٔ تطبیق FULL با ماژول‌های سروری، نه صرف نشان‌دادن دکمه‌های نمونه.

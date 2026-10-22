@@ -6,6 +6,7 @@ export default defineConfig([
   ...ts,
   globalIgnores([
     ".next/**",
+    "کیایی که دوسش داشتم/**",
     ".data/**",
     "src/generated/**",
     "file/preview*/**",

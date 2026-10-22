@@ -1071,3 +1071,37 @@
   line-height: 2;
   overflow-wrap: anywhere;
 }
+
+/* Navigation and card treatment adapted from the owner's preferred AdminPanel. */
+.admin-shell {
+  background: #faf8fc;
+  --border: #e7dfee;
+  --muted: #655c70;
+}
+.admin-sidebar {
+  background: #fff;
+  border-color: #e7dfee;
+}
+.admin-sidebar nav button {
+  border-radius: 12px;
+  min-height: 44px;
+  color: #655c70;
+}
+.admin-sidebar nav button.active {
+  background: #482780;
+  color: #fff;
+  box-shadow: 0 1px 2px #211a2b0f;
+}
+.admin-sidebar nav button.active > span {
+  background: #e8b855;
+}
+.admin-card {
+  border-radius: 16px;
+  border-color: #e7dfee;
+  box-shadow: 0 1px 2px #211a2b0f;
+}
+.admin-top {
+  background: #ffffffee;
+  backdrop-filter: blur(16px);
+  border-color: #e7dfee;
+}

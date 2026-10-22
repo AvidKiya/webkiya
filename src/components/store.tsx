@@ -1,6 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import {
+  TemplateHeader,
+  TemplateNavigation,
+  TemplateBottomNav,
+  TemplateServiceCard,
+  TemplateWholesaleInsert,
+} from "./preferred-template/shell";
+import { StoreProfile } from "./preferred-template/store-profile";
+import { CustomerOrders } from "./preferred-template/customer-orders";
 import { ServerComments } from "./server-comments";
 import { WholesaleCatalog } from "./wholesale-catalog";
 import { CartAddButton } from "./server-basket";
@@ -8,6 +17,7 @@ import { AccountPanel, PartnerPanel } from "./account-panel";
 import { usePreviewStore, usePreviewTheme } from "@/lib/preview-store";
 import Link from "next/link";
 import {
+  Fragment,
   useEffect,
   useEffectEvent,
   useRef,
@@ -22,15 +32,11 @@ import {
   Check,
   ChevronDown,
   ChevronLeft,
-  Compass,
   Heart,
-  Home,
   Instagram,
   LayoutGrid,
-  Leaf,
   MessageCircle,
   Minus,
-  Moon,
   MoreHorizontal,
   Package,
   Plus,
@@ -40,7 +46,6 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
-  Sun,
   Trash2,
   Truck,
   UserRound,
@@ -295,24 +300,6 @@ export default function Store({
           ? Number(b.price) - Number(a.price)
           : 0,
     );
-  const nav = [
-    { href: "/", label: "خانه", icon: Home, key: "home" },
-    { href: "/explore", label: "کشف و جست‌وجو", icon: Compass, key: "explore" },
-    { href: "/saved", label: "ذخیره‌شده‌ها", icon: Bookmark, key: "saved" },
-    {
-      href: "/wholesale",
-      label: "باشگاه همکاران",
-      icon: UsersRound,
-      key: "wholesale",
-    },
-    {
-      href: "/inbox",
-      label: "گفت‌وگو با کیا",
-      icon: MessageCircle,
-      key: "inbox",
-    },
-    { href: "/account", label: "حساب من", icon: UserRound, key: "account" },
-  ];
   const priceBlock = (p: Product) => (
     <div className="price-block">
       {mode === "retail" ? (
@@ -432,142 +419,23 @@ export default function Store({
   );
 
   return (
-    <div className="app" data-demo="true">
-      <aside className="sidebar" inert={!!modal}>
-        <Link href="/" className="brand">
-          <Image
-            src={`/brand/logo-${theme === "dark" ? "dark" : "light"}.webp`}
-            alt="کیا — KIYA"
-            width={105}
-            height={63}
-            priority
-          />
-          <span>جزئیات کوچک، استایل تو</span>
-        </Link>
-        <div className="sidebar-line" />
-        <p className="nav-label">دنیای کیا</p>
-        <nav aria-label="منوی اصلی">
-          {nav.map(({ href, label, icon: Icon, key }) => (
-            <Link
-              className={`nav-link ${section === key ? "active" : ""}`}
-              href={href}
-              key={key}
-            >
-              <Icon size={21} strokeWidth={1.6} />
-              <span>{label}</span>
-              {key === "inbox" && <span className="nav-dot" />}
-            </Link>
-          ))}
-        </nav>
-        <Link
-          href="/cart"
-          className={`nav-link cart-nav ${section === "cart" ? "active" : ""}`}
-        >
-          <ShoppingBag size={21} />
-          <span>سبد خرید</span>
-          {cartCount > 0 && (
-            <span className="count">{faNumber(cartCount)}</span>
-          )}
-        </Link>
-        <div className="sidebar-bottom">
-          <div className="mini-note">
-            <Leaf size={21} />
-            <p>
-              چیزهای خوب،
-              <br />
-              <strong>از جزئیات شروع می‌شن.</strong>
-            </p>
-          </div>
-          <button
-            className="theme-toggle"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-            <span>{theme === "light" ? "حالت تیره" : "حالت روشن"}</span>
-            <span className="toggle-track">
-              <span />
-            </span>
-          </button>
-          <div className="sidebar-footer">
-            <a
-              href="https://www.instagram.com/kiyaco24/"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="اینستاگرام کیا"
-            >
-              <Instagram size={17} />
-            </a>
-            <a
-              href="https://t.me/kiyaco24"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="کانال تلگرام کیا"
-            >
-              <Send size={16} />
-            </a>
-            <small>KIYA © ۲۰۲۶</small>
-          </div>
-        </div>
-      </aside>
+    <div className="app kiya-template" data-template="owner-2970536">
+      <TemplateHeader
+        theme={theme}
+        toggleTheme={() => setTheme(theme === "light" ? "dark" : "light")}
+        query={query}
+        setQuery={setQuery}
+        section={section}
+        cartCount={cartCount}
+        inert={!!modal}
+      />
+      <TemplateNavigation
+        section={section}
+        theme={theme}
+        toggleTheme={() => setTheme(theme === "light" ? "dark" : "light")}
+        inert={!!modal}
+      />
       <div className="workspace" inert={!!modal}>
-        <header className="topbar">
-          <div className="breadcrumbs">
-            <span>ویترین کیا</span>
-            <ChevronLeft size={13} />
-            <b>
-              {section === "home"
-                ? "برای تو"
-                : section === "explore"
-                  ? "کشف و جست‌وجو"
-                  : section === "saved"
-                    ? "ذخیره‌شده‌ها"
-                    : section === "cart"
-                      ? "سبد خرید"
-                      : section === "wholesale"
-                        ? "باشگاه همکاران"
-                        : section === "inbox"
-                          ? "گفت‌وگو با کیا"
-                          : "حساب من"}
-            </b>
-          </div>
-          <div className="top-actions">
-            <button
-              className="icon-button mobile-theme"
-              aria-label="تغییر حالت روشن و تیره"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            >
-              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-            <Link href="/progress" className="delivery-header-link">
-              نقشهٔ تکمیل
-            </Link>
-            <Link href="/admin" className="admin-login-link">
-              ورود مدیر کل
-            </Link>
-            <Link
-              href="/admin/preview"
-              className="demo-badge"
-              aria-label="نمایش مدیریت (فقط خواندنی)"
-            >
-              <span /> دیدن مدیریت
-            </Link>
-            <Link
-              href="/cart"
-              className="icon-button top-cart"
-              aria-label="سبد خرید"
-            >
-              <ShoppingBag size={20} />
-              {cartCount > 0 && <i>{faNumber(cartCount)}</i>}
-            </Link>
-            <Link
-              href="/account"
-              className="profile-button"
-              aria-label="حساب من"
-            >
-              <UserRound size={18} />
-            </Link>
-          </div>
-        </header>
         {(offline || storageWarning) && (
           <div className="warning" role="status">
             {offline
@@ -577,6 +445,7 @@ export default function Store({
         )}
         <div className="content-grid">
           <main id="main">
+            {section === "profile" ? <StoreProfile /> : null}
             {["home", "explore", "saved", "wholesale"].includes(section) ? (
               <>
                 <div className="page-heading">
@@ -631,6 +500,12 @@ export default function Store({
                 </div>
                 {section !== "saved" && (
                   <div className="stories">
+                    <Link href="/basket" className="story template-order-story">
+                      <span className="story-ring">
+                        <Package size={25} />
+                      </span>
+                      <span>سفارش‌های من</span>
+                    </Link>
                     {storyItems.map((s, index) => (
                       <button
                         className="story"
@@ -668,47 +543,6 @@ export default function Store({
                       <span>همهٔ مجموعه‌ها</span>
                     </button>
                   </div>
-                )}
-                {section === "home" && category === "همه" && !query && (
-                  <section className="editorial">
-                    <div className="editorial-copy">
-                      <span className="editorial-label">
-                        THE EVERYDAY EDIT <span>✦</span>
-                      </span>
-                      <h2>
-                        جزئیاتِ کوچک،
-                        <br />
-                        <em>تفاوت‌های بزرگ.</em>
-                      </h2>
-                      <p>برای خودت. به سبک خودت.</p>
-                      <button
-                        onClick={() => {
-                          setCategory("کیف و کیف پول");
-                          document
-                            .getElementById("feed-start")
-                            ?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
-                        }}
-                      >
-                        کشف کالکشن <ArrowUpLeft size={17} />
-                      </button>
-                    </div>
-                    <div className="editorial-image">
-                      <Image
-                        src="/images/bag.webp"
-                        alt="کالکشن کیف و اکسسوری کیا"
-                        fill
-                        sizes="280px"
-                      />
-                      <span className="editorial-stamp">
-                        KIYA
-                        <br />
-                        <small>CURATED</small>
-                      </span>
-                    </div>
-                  </section>
                 )}
                 {section === "wholesale" ? <WholesaleCatalog /> : null}
                 {section === "wholesale" && (
@@ -784,7 +618,7 @@ export default function Store({
                 <div
                   className={section === "explore" ? "explore-grid" : "feed"}
                 >
-                  {visible.map((p) =>
+                  {visible.map((p, index) =>
                     section === "explore" ? (
                       <button
                         className="explore-card"
@@ -811,203 +645,211 @@ export default function Store({
                         )}
                       </button>
                     ) : (
-                      <article className="post" key={p.id}>
-                        <header className="post-header">
-                          <Image
-                            src="/brand/profile.webp"
-                            alt=""
-                            width={38}
-                            height={38}
-                          />
-                          <div>
-                            <b>
-                              کیا <BadgeCheck size={15} />
-                              <span>KIYA</span>
-                            </b>
-                            <small>
-                              {p.collection} <span>·</span> محصول نمونه
-                            </small>
-                          </div>
-                          <button
-                            className="icon-button"
-                            aria-label={`جزئیات ${p.subtitle}`}
-                            onClick={() => openPost(p.id)}
-                          >
-                            <MoreHorizontal size={21} />
-                          </button>
-                        </header>
-                        <div className="post-media">
-                          <button
-                            onClick={() => openPost(p.id)}
-                            aria-label={`مشاهدهٔ ${p.subtitle}`}
-                          >
+                      <Fragment key={p.id}>
+                        <article className="post">
+                          <header className="post-header">
                             <Image
-                              src={p.image}
-                              alt={p.subtitle}
-                              width={800}
-                              height={800}
-                              priority={p.id === "everyday-bag"}
-                              sizes="(max-width:767px) 100vw, 620px"
+                              src="/brand/profile.webp"
+                              alt=""
+                              width={38}
+                              height={38}
                             />
-                          </button>
-                          <span className="media-tag">
-                            <Sparkles size={12} />
-                            {p.tag}
-                          </span>
-                          <span className="media-counter">۱ / ۱</span>
-                          <button
-                            className="media-open"
-                            onClick={() => openPost(p.id)}
-                          >
-                            <ShoppingBag size={15} />
-                            <span>از نزدیک ببین</span>
-                            <ArrowUpLeft size={15} />
-                          </button>
-                        </div>
-                        <div className="post-body">
-                          <div className="social-actions">
                             <div>
+                              <b>
+                                کیا <BadgeCheck size={15} />
+                                <span>KIYA</span>
+                              </b>
+                              <small>
+                                {p.collection} <span>·</span>{" "}
+                                {p.isDemo ? "محصول نمونه" : "کالای فروشگاه"}
+                              </small>
+                            </div>
+                            <button
+                              className="icon-button"
+                              aria-label={`جزئیات ${p.subtitle}`}
+                              onClick={() => openPost(p.id)}
+                            >
+                              <MoreHorizontal size={21} />
+                            </button>
+                          </header>
+                          <div className="post-media">
+                            <button
+                              onClick={() => openPost(p.id)}
+                              aria-label={`مشاهدهٔ ${p.subtitle}`}
+                            >
+                              <Image
+                                src={p.image}
+                                alt={p.subtitle}
+                                width={800}
+                                height={800}
+                                priority={p.id === "everyday-bag"}
+                                sizes="(max-width:767px) 100vw, 620px"
+                              />
+                            </button>
+                            <span className="media-tag">
+                              <Sparkles size={12} />
+                              {p.tag}
+                            </span>
+                            <span className="media-counter">۱ / ۱</span>
+                            <button
+                              className="media-open"
+                              onClick={() => openPost(p.id)}
+                            >
+                              <ShoppingBag size={15} />
+                              <span>از نزدیک ببین</span>
+                              <ArrowUpLeft size={15} />
+                            </button>
+                          </div>
+                          <div className="post-body">
+                            <div className="social-actions">
+                              <div>
+                                <button
+                                  aria-label="پسندیدن"
+                                  aria-pressed={data.liked.includes(p.id)}
+                                  className={
+                                    data.liked.includes(p.id) ? "liked" : ""
+                                  }
+                                  onClick={() => toggle("liked", p.id)}
+                                >
+                                  <Heart
+                                    size={23}
+                                    fill={
+                                      data.liked.includes(p.id)
+                                        ? "currentColor"
+                                        : "none"
+                                    }
+                                  />
+                                </button>
+                                <button
+                                  aria-label={`دیدگاه‌های ${p.subtitle}`}
+                                  onClick={() => openPost(p.id)}
+                                >
+                                  <MessageCircle size={22} />
+                                  <span>دیدگاه‌ها</span>
+                                </button>
+                                <button
+                                  aria-label="اشتراک‌گذاری"
+                                  onClick={async () => {
+                                    try {
+                                      await navigator.clipboard.writeText(
+                                        `${window.location.origin}/p/${p.id}`,
+                                      );
+                                      setToast("لینک پست کپی شد.");
+                                    } catch {
+                                      openPost(p.id);
+                                    }
+                                  }}
+                                >
+                                  <Send size={21} />
+                                </button>
+                              </div>
                               <button
-                                aria-label="پسندیدن"
-                                aria-pressed={data.liked.includes(p.id)}
                                 className={
-                                  data.liked.includes(p.id) ? "liked" : ""
+                                  data.saved.includes(p.id) ? "bookmarked" : ""
                                 }
-                                onClick={() => toggle("liked", p.id)}
+                                aria-label="ذخیره کردن"
+                                aria-pressed={data.saved.includes(p.id)}
+                                onClick={() => toggle("saved", p.id)}
                               >
-                                <Heart
+                                <Bookmark
                                   size={23}
                                   fill={
-                                    data.liked.includes(p.id)
+                                    data.saved.includes(p.id)
                                       ? "currentColor"
                                       : "none"
                                   }
                                 />
                               </button>
-                              <button
-                                aria-label={`دیدگاه‌های ${p.subtitle}`}
-                                onClick={() => openPost(p.id)}
-                              >
-                                <MessageCircle size={22} />
-                                <span>دیدگاه‌ها</span>
-                              </button>
-                              <button
-                                aria-label="اشتراک‌گذاری"
-                                onClick={async () => {
-                                  try {
-                                    await navigator.clipboard.writeText(
-                                      `${window.location.origin}/p/${p.id}`,
-                                    );
-                                    setToast("لینک پست کپی شد.");
-                                  } catch {
-                                    openPost(p.id);
-                                  }
-                                }}
-                              >
-                                <Send size={21} />
-                              </button>
                             </div>
-                            <button
-                              className={
-                                data.saved.includes(p.id) ? "bookmarked" : ""
-                              }
-                              aria-label="ذخیره کردن"
-                              aria-pressed={data.saved.includes(p.id)}
-                              onClick={() => toggle("saved", p.id)}
+                            <h2>{p.name}</h2>
+                            <p
+                              className={`caption ${expanded.includes(p.id) ? "expanded" : ""}`}
                             >
-                              <Bookmark
-                                size={23}
-                                fill={
-                                  data.saved.includes(p.id)
-                                    ? "currentColor"
-                                    : "none"
-                                }
-                              />
+                              {p.description}
+                            </p>
+                            <button
+                              className="more-text"
+                              aria-expanded={expanded.includes(p.id)}
+                              onClick={() =>
+                                setExpanded((e) =>
+                                  e.includes(p.id)
+                                    ? e.filter((i) => i !== p.id)
+                                    : [...e, p.id],
+                                )
+                              }
+                            >
+                              {expanded.includes(p.id) ? "کمتر" : "بیشتر بخون"}
+                              <ChevronDown size={12} />
+                            </button>
+                            {colorPicker(p)}
+                            <div className="buy-row">
+                              {priceBlock(p)}
+                              {mode === "retail" && !p.isDemo ? (
+                                <CartAddButton
+                                  mode="RETAIL"
+                                  itemId={
+                                    p.colors.find(
+                                      (c) =>
+                                        c.name ===
+                                        (colorById[p.id] ||
+                                          p.colors.find(
+                                            (c) => c.available !== false,
+                                          )?.name ||
+                                          p.colors[0].name),
+                                    )?.id
+                                  }
+                                  disabled={
+                                    offline ||
+                                    p.colors.every((c) => c.available === false)
+                                  }
+                                />
+                              ) : (
+                                <button
+                                  className="primary"
+                                  disabled={
+                                    offline ||
+                                    (mode === "retail" &&
+                                      p.colors.every(
+                                        (c) => c.available === false,
+                                      ))
+                                  }
+                                  onClick={() => addCart(p)}
+                                >
+                                  {mode === "retail" ? (
+                                    <>
+                                      <ShoppingBag size={16} />
+                                      {p.colors.every(
+                                        (c) => c.available === false,
+                                      )
+                                        ? "ناموجود"
+                                        : "افزودن به سبد"}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <MessageCircle size={16} />
+                                      استعلام عمده
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="post-footer">
+                            <span>
+                              <Package size={13} />{" "}
+                              {p.isDemo
+                                ? "نمونهٔ طراحی؛ قابل خرید واقعی نیست"
+                                : "کالای ثبت‌شده؛ سفارش اولیه بدون پرداخت"}
+                            </span>
+                            <button onClick={() => openPost(p.id)}>
+                              جزئیات و دیدگاه‌ها <ChevronLeft size={13} />
                             </button>
                           </div>
-                          <h2>{p.name}</h2>
-                          <p
-                            className={`caption ${expanded.includes(p.id) ? "expanded" : ""}`}
-                          >
-                            {p.description}
-                          </p>
-                          <button
-                            className="more-text"
-                            aria-expanded={expanded.includes(p.id)}
-                            onClick={() =>
-                              setExpanded((e) =>
-                                e.includes(p.id)
-                                  ? e.filter((i) => i !== p.id)
-                                  : [...e, p.id],
-                              )
-                            }
-                          >
-                            {expanded.includes(p.id) ? "کمتر" : "بیشتر بخون"}
-                            <ChevronDown size={12} />
-                          </button>
-                          {colorPicker(p)}
-                          <div className="buy-row">
-                            {priceBlock(p)}
-                            {mode === "retail" && !p.isDemo ? (
-                              <CartAddButton
-                                mode="RETAIL"
-                                itemId={
-                                  p.colors.find(
-                                    (c) =>
-                                      c.name ===
-                                      (colorById[p.id] ||
-                                        p.colors.find(
-                                          (c) => c.available !== false,
-                                        )?.name ||
-                                        p.colors[0].name),
-                                  )?.id
-                                }
-                                disabled={
-                                  offline ||
-                                  p.colors.every((c) => c.available === false)
-                                }
-                              />
-                            ) : (
-                              <button
-                                className="primary"
-                                disabled={
-                                  offline ||
-                                  (mode === "retail" &&
-                                    p.colors.every(
-                                      (c) => c.available === false,
-                                    ))
-                                }
-                                onClick={() => addCart(p)}
-                              >
-                                {mode === "retail" ? (
-                                  <>
-                                    <ShoppingBag size={16} />
-                                    {p.colors.every(
-                                      (c) => c.available === false,
-                                    )
-                                      ? "ناموجود"
-                                      : "افزودن به سبد"}
-                                  </>
-                                ) : (
-                                  <>
-                                    <MessageCircle size={16} />
-                                    استعلام عمده
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="post-footer">
-                          <span>
-                            <Package size={13} /> نمونهٔ طراحی؛ قابل خرید واقعی
-                            نیست
-                          </span>
-                          <button onClick={() => openPost(p.id)}>
-                            جزئیات و دیدگاه‌ها <ChevronLeft size={13} />
-                          </button>
-                        </div>
-                      </article>
+                        </article>
+                        {section === "home" && index === 2 ? (
+                          <TemplateWholesaleInsert />
+                        ) : null}
+                      </Fragment>
                     ),
                   )}
                 </div>
@@ -1022,7 +864,7 @@ export default function Store({
                     <p>
                       {section === "saved"
                         ? "روی نشانهٔ ذخیره زیر پست‌ها بزن."
-                        : "فیلتر دیگری را امتحان کن؛ این کاتالوگ فعلاً نمونه است."}
+                        : "فیلتر یا عبارت جست‌وجوی دیگری را امتحان کن."}
                     </p>
                     <button
                       className="secondary"
@@ -1037,7 +879,7 @@ export default function Store({
                 )}
                 <div className="feed-end">
                   <span>✦</span>
-                  <p>تا اینجا، همهٔ انتخاب‌های نمونه رو دیدی.</p>
+                  <p>تا اینجا، فهرست فعلی رو دیدی.</p>
                   <small>چیزهای خوب بیشتری در راهه.</small>
                 </div>
               </>
@@ -1101,7 +943,7 @@ export default function Store({
                   </a>
                 </section>
               </>
-            ) : (
+            ) : section === "account" ? (
               <>
                 <div className="page-heading">
                   <div>
@@ -1112,14 +954,16 @@ export default function Store({
                   <UserRound size={28} />
                 </div>
                 <AccountPanel />
+                <CustomerOrders />
                 <section className="surface support-page">
                   <h2>همکاری با کیا</h2>
                   <PartnerPanel showLogin={false} />
                 </section>
               </>
-            )}
+            ) : null}
           </main>
           <aside className="utility">
+            <TemplateServiceCard />
             <section className="surface cart-panel">
               <div className="panel-title">
                 <div className="title-icon">
@@ -1186,9 +1030,9 @@ export default function Store({
             <footer className="utility-footer">
               <span>دربارهٔ این نسخه</span>
               <p>
-                نسخهٔ ۰.۴ · مدیریت واقعی تیم و دسترسی
+                قالب انتخابی مالک · متصل به هستهٔ سروری
                 <br />
-                فروش و پرداخت واقعی فعال نیست.
+                سفارش اولیه فعال؛ پرداخت و ارسال هنوز فعال نیست.
               </p>
               <b>
                 KIYA <span>—</span> MADE FOR YOU
@@ -1197,24 +1041,7 @@ export default function Store({
           </aside>
         </div>
       </div>
-      <nav inert={!!modal} className="mobile-nav" aria-label="ناوبری موبایل">
-        {[nav[0], nav[1], nav[2], nav[4]].map(
-          ({ href, label, icon: Icon, key }) => (
-            <Link
-              key={key}
-              href={href}
-              className={section === key ? "active" : ""}
-            >
-              <Icon size={22} />
-              <span>{label}</span>
-            </Link>
-          ),
-        )}
-        <Link href="/cart" className={section === "cart" ? "active" : ""}>
-          <ShoppingBag size={22} />
-          <span>سبد {cartCount ? faNumber(cartCount) : ""}</span>
-        </Link>
-      </nav>
+      <TemplateBottomNav section={section} inert={!!modal} />
       {toast && (
         <div className="toast" role="status">
           <Check size={17} />
