@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span>محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span>انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span>سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span>دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span>مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span>دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span>مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span>SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span>ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span>تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span>ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full">
+<!-- Page Header Sub-strip -->
+<div class="flex flex-col items-center justify-center text-center py-6">
+<div class="inline-flex items-center gap-2 mb-1.5">
+<span class="material-symbols-outlined text-ink-700 text-[26px]">settings</span>
+<h1 class="font-headline-lg text-headline-lg text-ink-900 tracking-tight">تنظیمات و اتصالات</h1>
+</div>
+<div class="inline-flex items-center gap-1.5 text-ink-500 font-label-caption text-label-caption">
+<span>اینجا کیا رو به دنیای واقعی وصل می‌کنیم</span>
+<span class="text-[15px]">🔌</span>
+</div>
+</div>
+<div class="max-w-4xl w-full mx-auto flex flex-col gap-6 pb-12">
+<!-- Card 1: Telegram Bot Core Integration -->
+<section class="bg-surface rounded-xl shadow-sm p-6 sm:p-7 flex flex-col gap-6 relative overflow-hidden">
+<!-- Status Badge & Section Header -->
+<div class="flex items-center justify-between flex-wrap gap-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-info/10 text-info flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">near_me</span>
+</div>
+<div class="flex items-center gap-1.5">
+<h2 class="font-headline-md text-headline-md text-ink-900">ربات تلگرام</h2>
+<span class="font-code-mono text-code-mono text-info font-bold" dir="ltr">@kiyaco24bot</span>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 text-success font-label-micro text-label-micro font-bold shadow-sm">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>متصل</span>
+</div>
+</div>
+<!-- Form Grid (2 columns on tablet/desktop) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+<!-- Bot Token -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<label class="font-label-micro text-label-micro font-bold text-ink-700 flex items-center gap-1">
+<span>توکن ربات (از <span class="font-code-mono text-info" dir="ltr">@BotFather</span>)</span>
+<span class="text-[14px]">🔑</span>
+</label>
+<button class="text-ink-400 hover:text-ink-600 font-label-micro text-label-micro transition-colors flex items-center gap-0.5" onclick="toggleTokenVisibility()" type="button">
+<span class="material-symbols-outlined text-[15px]" id="tokenEyeIcon">visibility_off</span>
+</button>
+</div>
+<div class="relative">
+<input class="w-full h-11 px-3.5 rounded-lg bg-canvas-sunken font-code-mono text-code-mono text-ink-900 focus:bg-surface focus:outline-none transition-all placeholder:text-ink-400 text-left tracking-widest" dir="ltr" id="botTokenInput" type="password" value="7382910482:AAFlw93kd_s0qLMNz-kx298Pqw120zY"/>
+</div>
+</div>
+<!-- Bot Username -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-micro text-label-micro font-bold text-ink-700 flex items-center gap-1">
+<span>یوزرنیم ربات</span>
+<span class="text-[13px]">🤖</span>
+<span class="text-ink-400 font-normal">(برای ورود تلگرامی)</span>
+</label>
+<input class="w-full h-11 px-3.5 rounded-lg bg-canvas-sunken font-code-mono text-code-mono text-ink-900 focus:bg-surface focus:outline-none transition-all text-left" dir="ltr" type="text" value="kiyaco24bot"/>
+</div>
+<!-- Admin Chat ID -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-micro text-label-micro font-bold text-ink-700 flex items-center gap-1">
+<span>چت‌آیدی ادمین (از <span class="font-code-mono text-info" dir="ltr">@userinfobot</span>)</span>
+</label>
+<input class="w-full h-11 px-3.5 rounded-lg bg-canvas-sunken font-code-mono text-code-mono text-ink-900 focus:bg-surface focus:outline-none transition-all text-left" dir="ltr" type="text" value="944021185"/>
+</div>
+<!-- Channel ID -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-micro text-label-micro font-bold text-ink-700 flex items-center gap-1">
+<span>آیدی چنل</span>
+<span class="text-ink-400 font-normal">(اختیاری)</span>
+</label>
+<input class="w-full h-11 px-3.5 rounded-lg bg-canvas-sunken font-code-mono text-code-mono text-ink-900 focus:bg-surface focus:outline-none transition-all text-left" dir="ltr" type="text" value="@kiyaco24"/>
+</div>
+<!-- Site URL / Webhook Full-span -->
+<div class="flex flex-col gap-1.5 md:col-span-2">
+<label class="font-label-micro text-label-micro font-bold text-ink-700 flex items-center gap-1">
+<span>آدرس سایت</span>
+<span class="text-ink-400 font-normal">(برای وب‌هوک و Mini App)</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-ink-400 absolute right-3 pointer-events-none text-[19px]">link</span>
+<input class="w-full h-11 pr-10 pl-3.5 rounded-lg bg-canvas-sunken font-code-mono text-code-mono text-ink-800 focus:bg-surface focus:outline-none transition-all text-left" dir="ltr" type="text" value="https://kiya-shop.avidkiya.workers.dev"/>
+</div>
+</div>
+</div>
+<!-- Notification Toggle Checkbox -->
+<div class="pt-1">
+<label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+<input checked="" class="w-4 h-4 rounded text-info focus:ring-0 focus:ring-offset-0 bg-canvas-sunken cursor-pointer" type="checkbox"/>
+<span class="text-[15px]">🔔</span>
+<span class="font-body-emphasis text-body-emphasis text-ink-800">اعلان سفارش جدید به تلگرام من</span>
+</label>
+</div>
+<!-- Action Buttons Row -->
+<div class="flex flex-wrap items-center gap-2.5 pt-2">
+<!-- Save CTA -->
+<button class="h-10 px-5 rounded-lg bg-info hover:bg-blue-600 text-on-secondary font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[19px]">save</span>
+<span>ذخیره اتصالات</span>
+</button>
+<!-- Send Test Message -->
+<button class="h-10 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-800 font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors" onclick="flashNotice('پیام آزمایشی با موفقیت به تلگرام ادمین ارسال شد ✨')" type="button">
+<span class="material-symbols-outlined text-[19px] text-ink-500">send</span>
+<span>ارسال پیام تست به تلگرام</span>
+</button>
+<!-- Auto Register Webhook -->
+<button class="h-10 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-800 font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors" onclick="flashNotice('وب‌هوک با موفقیت روی سرور Cloudflare تایید شد 🤖')" type="button">
+<span class="material-symbols-outlined text-[19px] text-ink-500">smart_toy</span>
+<span>ثبت وب‌هوک خودکار</span>
+</button>
+</div>
+<!-- Auto Bot Config Banner -->
+<div class="rounded-xl bg-canvas-sunken p-4 sm:p-5 flex flex-col gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<span class="text-[18px]">⚡</span>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-ink-900">اتصال خودکار ربات</span>
+<span class="font-label-micro text-label-micro text-ink-500">وب‌هوک + منوی کشویی + دستورها — یک‌پکیکی و خودکار، از مرورگر خودت</span>
+</div>
+</div>
+<button class="h-9 px-4 rounded-lg bg-info hover:bg-blue-600 text-on-secondary font-label-caption text-label-caption font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all whitespace-nowrap self-start sm:self-auto active:scale-[0.98]" id="autoConnectBtn" onclick="runAutoConnect()" type="button">
+<span class="material-symbols-outlined text-[17px]">rocket_launch</span>
+<span id="autoConnectText">اتصال خودکار</span>
+</button>
+</div>
+<!-- 4-step Guide Text Block -->
+<div class="rounded-lg bg-surface p-3.5 sm:p-4 text-ink-600 font-label-caption text-label-caption leading-relaxed flex flex-col gap-2">
+<p class="text-ink-800 font-bold">
+            راهنمای اتصال:
+            <span class="font-normal text-ink-600">۱) توی تلگرام به <span class="font-code-mono text-info" dir="ltr">@BotFather</span> پیام بده و با <span class="font-code-mono bg-canvas-sunken px-1 rounded text-ink-800" dir="ltr">/newbot</span> ربات بساز ۲) توکن و یوزرنیم ربات رو اینجا بذار ۳) به رباتت پیام بده و چت‌آیدیات رو از <span class="font-code-mono text-info" dir="ltr">@userinfobot</span> بگیر ۴) «ذخیره» و بعد «اتصال خودکار» رو بزن 🚀</span>
+</p>
+<div class="flex items-start gap-1.5 text-ink-700">
+<span class="material-symbols-outlined text-[17px] text-info shrink-0 mt-0.5">phonelink_setup</span>
+<span>با این کارها: Mini App روشن می‌شه + «ورود با تلگرام» توی صفحه‌ی لاگین کار می‌کنه (مشتری دکمه رو می‌زنه، توی ربات Start می‌کنه، خودکار وارد می‌شه!)</span>
+</div>
+<div class="flex items-start gap-1.5 text-ink-500 font-label-micro text-label-micro">
+<span class="material-symbols-outlined text-[15px] text-warning shrink-0 mt-0.5">vpn_lock</span>
+<span>اتصال خودکار از مرورگر خود شما صورت می‌گیره (vpn روشن) — وب‌هوک، منوی کشویی ربات و دستورها یکجا تنظیم می‌شن.</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 2: Telegram Bot Campaigns & Growth Engine -->
+<section class="bg-surface rounded-xl shadow-sm p-6 sm:p-7 flex flex-col gap-6">
+<!-- Section Title -->
+<div class="flex items-center gap-2">
+<span class="text-[20px]">🎁</span>
+<h2 class="font-headline-md text-headline-md text-ink-900">کمپین ربات تلگرام</h2>
+</div>
+<!-- Campaign Row 1: KyaMag Daily Gazette Broadcast -->
+<div class="rounded-xl bg-canvas-sunken p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="material-symbols-outlined text-ink-500 text-[19px]">newspaper</span>
+<span class="font-body-emphasis text-body-emphasis text-ink-900">روزنامه‌ی کیامگ — مشترک‌ها:</span>
+<span class="font-headline-sm text-headline-sm text-info font-bold">نامحدود نفر</span>
+</div>
+<div class="flex items-center gap-1.5 text-ink-500 font-label-caption text-label-caption">
+<span>هر روز ساعت ۱۰ صبح خودکار برای مشترک‌ها میره</span>
+<span class="text-[14px]">📰</span>
+</div>
+</div>
+<button class="h-10 px-4 rounded-lg bg-surface hover:bg-canvas-subtle text-ink-900 font-label-caption text-label-caption font-bold shadow-sm flex items-center justify-center gap-1.5 transition-all self-start sm:self-auto shrink-0 active:scale-[0.98]" onclick="flashNotice('روزنامه کیامگ با موفقیت در صف ارسال تلگرام قرار گرفت 🗞️')" type="button">
+<span class="material-symbols-outlined text-[18px] text-info">cell_tower</span>
+<span>ارسال دستی الان</span>
+<span class="text-[13px]">📱</span>
+</button>
+</div>
+<!-- Campaign Row 2: KyaMag Treasure Hunt Discount Generator -->
+<div class="flex flex-col gap-3 pt-1">
+<div class="flex items-center gap-1.5 text-ink-800 font-body-emphasis text-body-emphasis">
+<span class="material-symbols-outlined text-warning text-[19px]">key</span>
+<span>ساخت کد گنج (شکار گنج کیامگ)</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+<!-- Code Input -->
+<div class="sm:col-span-5">
+<input class="w-full h-11 px-3.5 rounded-lg bg-canvas-sunken font-code-mono text-code-mono font-bold text-ink-900 focus:bg-surface focus:outline-none transition-all uppercase tracking-wider text-center" dir="ltr" id="treasureCode" placeholder="کد گنج (مثلاً GOLD25)" type="text" value="GOLD25"/>
+</div>
+<!-- Discount % Input -->
+<div class="sm:col-span-2">
+<div class="relative flex items-center">
+<input class="w-full h-11 pl-7 pr-3 rounded-lg bg-canvas-sunken font-code-mono text-code-mono font-bold text-ink-900 focus:bg-surface focus:outline-none transition-all text-center" dir="ltr" id="treasurePercent" max="100" min="1" type="number" value="10"/>
+<span class="absolute left-2.5 text-ink-400 font-label-micro text-label-micro font-bold pointer-events-none">%</span>
+</div>
+</div>
+<!-- Usage Cap (Times) -->
+<div class="sm:col-span-2">
+<div class="relative flex items-center">
+<input class="w-full h-11 pl-7 pr-3 rounded-lg bg-canvas-sunken font-code-mono text-code-mono font-bold text-ink-900 focus:bg-surface focus:outline-none transition-all text-center" dir="ltr" id="treasureCap" min="1" type="number" value="20"/>
+<span class="absolute left-2.5 text-ink-400 font-label-micro text-label-micro pointer-events-none">بار</span>
+</div>
+</div>
+<!-- Create Button -->
+<div class="sm:col-span-3">
+<button class="w-full h-11 px-4 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-info font-headline-sm text-headline-sm font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]" onclick="createTreasureCode()" type="button">
+<span>ساخت گنج</span>
+<span class="text-[15px]">🪄</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Global Floating Feedback Toast -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-ink-900 text-white px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 font-label-caption text-label-caption transition-all duration-300 opacity-0 pointer-events-none translate-y-3" id="settingsToast">
+<span class="material-symbols-outlined text-success text-[19px]">check_circle</span>
+<span id="settingsToastMsg">عملیات با موفقیت انجام شد</span>
+</div>
+</div>
+<script>
+    function toggleTokenVisibility() {
+      const input = document.getElementById('botTokenInput');
+      const icon = document.getElementById('tokenEyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility';
+      } else {
+        input.type = 'password';
+        icon.textContent = 'visibility_off';
+      }
+    }
+
+    function flashNotice(msg) {
+      const toast = document.getElementById('settingsToast');
+      const toastMsg = document.getElementById('settingsToastMsg');
+      toastMsg.textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 3500);
+    }
+
+    function runAutoConnect() {
+      const btn = document.getElementById('autoConnectBtn');
+      const text = document.getElementById('autoConnectText');
+      const originalText = text.textContent;
+
+      btn.disabled = true;
+      text.textContent = 'در حال اتصال و پیکربندی...';
+      btn.classList.add('opacity-80');
+
+      setTimeout(() => {
+        btn.disabled = false;
+        text.textContent = originalText;
+        btn.classList.remove('opacity-80');
+        flashNotice('ربات تلگرام، منوی دستورات و وب‌هوک با موفقیت همگام‌سازی شدند 🚀');
+      }, 1400);
+    }
+
+    function createTreasureCode() {
+      const code = document.getElementById('treasureCode').value || 'GOLD';
+      const pct = document.getElementById('treasurePercent').value || '10';
+      const cap = document.getElementById('treasureCap').value || '20';
+      flashNotice(`کد گنج «${code}» با ${pct}٪ تخفیف برای ${cap} بار استفاده فعال شد! 🪄`);
+    }
+  </script>
+</div></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+      
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+</body></html>

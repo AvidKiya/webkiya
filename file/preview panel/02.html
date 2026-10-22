@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span>محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span>انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span>سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span>دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span>مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span>دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span>مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span>SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span>ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span>تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span>ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full gap-5">
+<!-- Top Stat HUD Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+<div class="bg-surface rounded-xl p-3.5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">inbox</span>
+</div>
+<div>
+<span class="text-label-caption text-ink-500 font-label-caption block">گفتگوهای فعال امروز</span>
+<span class="text-headline-sm font-headline-sm text-ink-900">۱۴۲ مکالمه</span>
+</div>
+</div>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded-full bg-success/15 text-success font-bold">+۱۸٪</span>
+</div>
+<div class="bg-surface rounded-xl p-3.5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container flex items-center justify-center text-danger">
+<span class="material-symbols-outlined text-[22px]">mark_chat_unread</span>
+</div>
+<div>
+<span class="text-label-caption text-ink-500 font-label-caption block">در انتظار پاسخ فوری</span>
+<span class="text-headline-sm font-headline-sm text-danger">۵ تیکت</span>
+</div>
+</div>
+<span class="w-2.5 h-2.5 rounded-full bg-danger animate-ping"></span>
+</div>
+<div class="bg-surface rounded-xl p-3.5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">timer</span>
+</div>
+<div>
+<span class="text-label-caption text-ink-500 font-label-caption block">میانگین زمان اولین پاسخ</span>
+<span class="text-headline-sm font-headline-sm text-ink-900">۲ دقیقه و ۱۲ ثانیه</span>
+</div>
+</div>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded-full bg-info/15 text-info">عالی</span>
+</div>
+<div class="bg-surface rounded-xl p-3.5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary-container">
+<span class="material-symbols-outlined text-[22px]">shopping_cart_checkout</span>
+</div>
+<div>
+<span class="text-label-caption text-ink-500 font-label-caption block">فروش تبدیل‌شده چت</span>
+<span class="text-headline-sm font-headline-sm text-ink-900">۱۸,۴۵۰,۰۰۰ تومان</span>
+</div>
+</div>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded bg-surface-container text-ink-700 font-code-mono">۷ فاکتور</span>
+</div>
+</div>
+<!-- 3-Column Modern Social Inbox Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+<!-- COLUMN 1: Conversation Queue & Filters (Span 3 on Desktop) -->
+<section class="lg:col-span-4 xl:col-span-3 bg-surface rounded-xl shadow-sm flex flex-col h-[780px] overflow-hidden">
+<!-- Search & Channel Toggle -->
+<div class="p-3.5 bg-canvas-sunken flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">forum</span>
+<span class="text-headline-sm font-headline-sm text-ink-900">صف پیام‌ها</span>
+</div>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded-full bg-primary text-on-primary">۲۴ فعال</span>
+</div>
+<div class="relative w-full">
+<input class="w-full h-10 pr-9 pl-3 text-label-caption font-label-caption rounded-lg bg-surface text-ink-900 placeholder:text-ink-400 focus:outline-none" placeholder="جستجو در نام، شماره یا شناسه..." type="text"/>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-ink-400 text-[18px]">search</span>
+</div>
+<!-- Filter Tabs -->
+<div class="flex items-center gap-1 overflow-x-auto pb-1 text-label-micro font-label-micro">
+<button class="px-2.5 py-1 rounded-lg bg-primary text-on-primary font-bold whitespace-nowrap shadow-sm">
+            همه (۲۴)
+          </button>
+<button class="px-2.5 py-1 rounded-lg bg-surface text-ink-600 hover:text-ink-900 whitespace-nowrap flex items-center gap-1 shadow-sm">
+<span>بی‌پاسخ</span>
+<span class="w-1.5 h-1.5 rounded-full bg-danger"></span>
+</button>
+<button class="px-2.5 py-1 rounded-lg bg-surface text-ink-600 hover:text-ink-900 whitespace-nowrap shadow-sm">
+            سفارش‌ها (۸)
+          </button>
+<button class="px-2.5 py-1 rounded-lg bg-surface text-ink-600 hover:text-ink-900 whitespace-nowrap flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[13px] text-warning">star</span>
+<span>VIP (۴)</span>
+</button>
+</div>
+</div>
+<!-- Conversations List -->
+<div class="flex-1 overflow-y-auto divide-y divide-surface-container-high/60">
+<!-- Active Item: Ovid Kiya -->
+<div class="p-3 bg-surface-container-low cursor-pointer transition-colors relative">
+<div class="absolute right-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex items-start gap-2.5">
+<div class="relative shrink-0">
+<div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-warning via-primary to-secondary">
+<img class="w-full h-full rounded-full object-cover bg-surface" data-alt="Close-up portrait of modern middle eastern young man with stylish haircut smiling subtly wearing casual urban jacket indoors, natural soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtQTVSLTT-DiLgxhkqZUya3m9MIOfwKLLH6GWzQBqkoALC0Z5E9guuNJAcaM-K0habrX4B7zH0llFuFl2rPFKcPksIofZtYSlsCO363kv30_FCKNU16nZQ3V2FD-nfTPtfuD1jaRJUBm_XGoFEscG8xcWl8Sjv_Jl0rPeEo-zo81mTIdNPMj64woPJxiuMRQvkjtT-T9rKHDgfGwbZo3_-y3H1jraImHXDfFNclbp6mTFEdnwd2gP7"/>
+</div>
+<span class="absolute bottom-0 left-0 w-3 h-3 bg-success rounded-full ring-2 ring-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<div class="flex items-center gap-1 truncate">
+<span class="text-body-emphasis font-body-emphasis text-ink-900 truncate">سارا محمدی</span>
+<span class="material-symbols-outlined text-[15px] text-info" title="حساب تایید شده">verified</span>
+</div>
+<span class="text-label-micro font-label-micro text-primary font-bold shrink-0">۲ دقیقه پیش</span>
+</div>
+<div class="flex items-center gap-1 text-label-micro font-label-micro text-ink-500 mb-1">
+<span class="material-symbols-outlined text-[13px] text-secondary">alternate_email</span>
+<span class="truncate">@sara_mohammadi</span>
+<span class="mx-0.5 text-ink-300">•</span>
+<span class="text-warning font-bold">سبد فعال</span>
+</div>
+<p class="text-label-caption font-label-caption text-ink-700 truncate">
+                سلام، فاکتور هودی فوتر و شلوار ست رو واسم بفرستین پرداخت کنم ممنون...
+              </p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded bg-surface-container text-ink-800">
+                  سفارش #KIA-671670
+                </span>
+<span class="w-5 h-5 rounded-full bg-primary text-on-primary text-[10px] flex items-center justify-center font-bold">
+                  ۲
+                </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 2: Ali Parsa -->
+<div class="p-3 bg-surface hover:bg-canvas-sunken cursor-pointer transition-colors">
+<div class="flex items-start gap-2.5">
+<div class="relative shrink-0">
+<div class="w-11 h-11 rounded-full p-[2px] bg-ink-200">
+<img class="w-full h-full rounded-full object-cover bg-surface" data-alt="Headshot of a middle eastern man with short beard wearing clean dark denim shirt in minimalist studio photography with warm rim light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvlpoO53RToNOY2mz4SqUV9VcdnyfBtNHkyesvse046rGW9-z6NBlPikwe7E1_UxAa_Dm4IsrThoR8ZjmtM6tHw5zUAxkAcwnFwIPaK5WzujJX7xTWd6702gCWYeS3PGVRB1735a-dvnUUCnXBZRYGCELAbcnwMLgB91Irznv6_9cKtbKSdX1htTFjthCcDEsMBP-3sCa3wKOkDGLonhikfZCkXlVeIQNa3qEJyAKzNrhf6MUrpWRB"/>
+</div>
+<span class="absolute bottom-0 left-0 w-3 h-3 bg-ink-400 rounded-full ring-2 ring-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<span class="text-body-emphasis font-body-emphasis text-ink-900 truncate">علی پارسا</span>
+<span class="text-label-micro font-label-micro text-ink-400 shrink-0">۱۴ دقیقه پیش</span>
+</div>
+<div class="flex items-center gap-1 text-label-micro font-label-micro text-ink-500 mb-1">
+<span class="material-symbols-outlined text-[13px] text-info">send</span>
+<span class="truncate">تلگرام @aliparsa_dev</span>
+<span class="mx-0.5 text-ink-300">•</span>
+<span class="text-success font-semibold">ارسال شد</span>
+</div>
+<p class="text-label-caption font-label-caption text-ink-500 truncate">
+                کد رهگیری پستی مرسوله کی ارسال میشه؟
+              </p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded bg-surface-container-high text-ink-700">
+                  تیپاکس اکسپرس
+                </span>
+<span class="text-label-micro font-label-micro text-ink-400">پاسخ داده شد</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 3: Maryam Rad (VIP) -->
+<div class="p-3 bg-surface hover:bg-canvas-sunken cursor-pointer transition-colors">
+<div class="flex items-start gap-2.5">
+<div class="relative shrink-0">
+<div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-warning to-tertiary">
+<img class="w-full h-full rounded-full object-cover bg-surface" data-alt="Chic fashionable Iranian woman with stylish scarf and modern sunglasses resting on head, bright daylight cafe background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3-6YKn6xQQvL3RpF_M4uRnu6FIXjjv8FMf1bZUX8-4l5mHevji4CIv-rnWaXDHahQ-JrskoninznCk3Fwlcu-m8zpTetFL7q4eNwqUpQF0a6KhfHWaytAC0xPoFFn1l4vHKF_-WJr9zwkAiK5InZOrNmCfhldk_rhxO65KXVg-o3RJoG6pz8Nkm9kVKIOq0gNNmYsyF125NHv4njs3GL1FLeiIQOw347T9cgoRTx_ZD_0r3hj03kt"/>
+</div>
+<span class="absolute bottom-0 left-0 w-3 h-3 bg-success rounded-full ring-2 ring-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<div class="flex items-center gap-1 truncate">
+<span class="text-body-emphasis font-body-emphasis text-ink-900 truncate">مریم راد</span>
+<span class="text-label-micro font-label-micro px-1 rounded bg-warning/20 text-warning font-bold">VIP</span>
+</div>
+<span class="text-label-micro font-label-micro text-ink-400 shrink-0">۴۵ دقیقه پیش</span>
+</div>
+<div class="flex items-center gap-1 text-label-micro font-label-micro text-ink-500 mb-1">
+<span class="material-symbols-outlined text-[13px] text-secondary">alternate_email</span>
+<span class="truncate">@maryam.rad.style</span>
+</div>
+<p class="text-label-caption font-label-caption text-ink-600 truncate">
+                سایز ۳۸ کت چرم مشکی دوباره شارژ میشه تا آخر هفته؟
+              </p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded bg-surface-container text-ink-800">
+                  خریدار با وفاداری بالا
+                </span>
+<span class="w-2 h-2 rounded-full bg-danger"></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 4: Reza Tehrani -->
+<div class="p-3 bg-surface hover:bg-canvas-sunken cursor-pointer transition-colors">
+<div class="flex items-start gap-2.5">
+<div class="relative shrink-0">
+<div class="w-11 h-11 rounded-full p-[2px] bg-ink-200">
+<img class="w-full h-full rounded-full object-cover bg-surface" data-alt="Young Iranian male creator smiling with headset microphone in home studio soft neon accent backdrop" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg_GqdFGeQad_BdTwm6PVWu9s4mywoqeHV_AVtK9nSrWZ3VivKfJESKLTTMfYTjYmneVW-2lYFwF3vDmeu6X5-EDzyZqd8Lk2YTr-EKeWz1fpYb74X3_TzVWSiyh-iZT6ckN0n85ElzQZtNdsg1P4zw3tmTxAu7CZ0uiqVduH98ZpUk_4MB3Pwzkt8qw4OnIp4mpyhoxdrXMWLfYMRaQSlMjbJ38ejL_zQqy2XhbLlKWjUYeNDPrdv"/>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<span class="text-body-emphasis font-body-emphasis text-ink-900 truncate">رضا تهرانی</span>
+<span class="text-label-micro font-label-micro text-ink-400 shrink-0">دیروز</span>
+</div>
+<div class="flex items-center gap-1 text-label-micro font-label-micro text-ink-500 mb-1">
+<span class="material-symbols-outlined text-[13px] text-info">send</span>
+<span class="truncate">ربات سفارشات @rezat</span>
+</div>
+<p class="text-label-caption font-label-caption text-ink-500 truncate">
+                پرداخت از درگاه ناموفق بود، مبلغ کسر شده برگشت می‌خوره؟
+              </p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded bg-surface-container-high text-ink-700">
+                  تراکنش بانکی
+                </span>
+<span class="material-symbols-outlined text-[16px] text-success">done_all</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- COLUMN 2: Active Chat Canvas & Quick Actions (Span 5 on Desktop) -->
+<section class="lg:col-span-8 xl:col-span-6 bg-surface rounded-xl shadow-sm flex flex-col h-[780px] overflow-hidden">
+<!-- Conversation Header -->
+<div class="p-3.5 bg-canvas-sunken flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-warning via-primary to-secondary">
+<img class="w-full h-full rounded-full object-cover bg-surface" data-alt="Profile portrait of Iranian young woman with stylish headwear in natural light smiling politely" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASJjcZfXLD-_U5Fu63RkJdNAwqg_xn8E7FNjICYJlNpR1MpZ6hAp3_UmTYErBk-QdbXSqTsPE5a4mfM-oRiFRnBwYukh7I5dz-_OI4O7HYsXo8W9lavTATinitDmmY3bvLInk1f4VcX1sRJhRaaBczRQw19UAjbW1QKNK-ivNopuNzWEwCiU4yC8i9eOVNEVuNcTd0D4v2p7L0kWW4KimMSa14gwJXMcQoh10QbYqrLAiLpQNFqABE"/>
+</div>
+<span class="absolute bottom-0 left-0 w-3 h-3 bg-success rounded-full ring-2 ring-surface"></span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-headline-sm font-headline-sm text-ink-900">سارا محمدی</span>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded-full bg-success/15 text-success font-bold">آنلاین</span>
+</div>
+<div class="flex items-center gap-2 text-label-caption font-label-caption text-ink-500">
+<span class="flex items-center gap-0.5 text-secondary">
+<span class="material-symbols-outlined text-[14px]">alternate_email</span>
+                sara_mohammadi
+              </span>
+<span>•</span>
+<span class="flex items-center gap-0.5 text-info">
+<span class="material-symbols-outlined text-[14px]">send</span>
+                @sara_m_24
+              </span>
+<span>•</span>
+<span>تهران، سعادت‌آباد</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container flex items-center justify-center text-ink-600 transition-colors shadow-sm" title="انتقال تیکت به همکار">
+<span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container flex items-center justify-center text-ink-600 transition-colors shadow-sm" title="مسدود کردن یا گزارش">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Pinned Order Bar (Active Transaction Context) -->
+<div class="bg-surface-container-low px-4 py-2.5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-warning/20 text-warning flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-label-caption font-label-caption font-bold text-ink-900">سفارش جاری: #KIA-671670</span>
+<span class="text-label-micro font-label-micro px-2 py-0.2 rounded bg-warning text-ink-900 font-bold">در انتظار پرداخت</span>
+</div>
+<span class="text-label-micro font-label-micro text-ink-500">۲ قلم کالا • مجموع: ۲,۵۲۵,۰۰۰ تومان</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-buy-primary hover:bg-buy-hover text-on-primary text-label-micro font-label-micro font-bold flex items-center gap-1 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[15px]">send_money</span>
+<span>ارسال لینک پرداخت</span>
+</button>
+</div>
+</div>
+<!-- Chat Bubbles Stream -->
+<div class="flex-1 overflow-y-auto p-4 space-y-4 bg-canvas">
+<!-- Center Timestamp Divider -->
+<div class="flex items-center justify-center">
+<span class="px-3 py-1 rounded-full bg-surface-container text-ink-500 text-label-micro font-label-micro">
+            امروز - یکشنبه ۲۸ آبان
+          </span>
+</div>
+<!-- Incoming Message (Customer) -->
+<div class="flex items-start gap-2.5 max-w-[85%]">
+<div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1">
+<img class="w-full h-full object-cover" data-alt="Customer avatar Iranian woman portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcILGC90ezbvT4yVCz9oudKqKQRbO976zySfSn92OApSuYS2RQgCA1me8bqPYtVjzocdk1ZRyLK4h9NmBioznCwfQ0yUsvEe1d67stXl4r2igGEIPOXV-zdL1U79zk5say5vexIep6_svV_xGeiLplW-RGm1qVZGYpCX_lFfJM7hH7W_K7RH-K5b1FO80n9ofs5EVlnBdqkA-OoUbpPk6QLJwHvcp7B9kUK1TE2epu9rB1P29jy2_q"/>
+</div>
+<div class="flex flex-col gap-1 items-start">
+<div class="p-3.5 rounded-2xl rounded-tr-xs bg-surface shadow-sm text-ink-900 text-body-default font-body-default">
+              سلام و وقت بخیر، خسته نباشید 🌸 من دیشب دو تا آیتم رو داخل استوری دیدم و توی سبدم گذاشتم، فقط می‌خواستم مطمئن بشم سایز مدیوم برای دور سینه ۹۸ مناسبه یا لارج بردارم؟
+            </div>
+<span class="text-label-micro font-label-micro text-ink-400 mr-2">۱۰:۱۸ ق.ظ</span>
+</div>
+</div>
+<!-- Outgoing Message (Support Staff - Ovid) -->
+<div class="flex items-start gap-2.5 max-w-[85%] mr-auto flex-row-reverse">
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-secondary text-on-primary flex items-center justify-center text-[12px] font-bold shrink-0 mt-1">
+            اوید
+          </div>
+<div class="flex flex-col gap-1 items-end">
+<div class="p-3.5 rounded-2xl rounded-tl-xs bg-surface-container-high text-ink-900 text-body-default font-body-default shadow-sm">
+              درود سارا جان عزیز، روزتون بخیر ✨<br/>
+              برای دور سینه ۹۸ سانتیمتر، قطعاً پیشنهاد ما سایز <span class="font-bold text-primary">مدیوم (M)</span> هست؛ چون قواره این مدل اورسایز طراحی شده و تن‌خور بسیار شیکی داره.
+            </div>
+<div class="flex items-center gap-1 ml-2 text-label-micro font-label-micro text-ink-400">
+<span class="material-symbols-outlined text-[15px] text-info">done_all</span>
+<span>۱۰:۲۱ ق.ظ • پشتیبان اوید</span>
+</div>
+</div>
+</div>
+<!-- Pinned Interactive Product Attachment Bubble inside Chat -->
+<div class="max-w-[85%] mr-auto">
+<div class="p-3.5 rounded-2xl bg-surface-container-low shadow-sm flex flex-col gap-2.5">
+<div class="flex items-center justify-between pb-2">
+<span class="text-label-micro font-label-micro font-bold text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">shopping_bag</span>
+                کالای استعلام شده
+              </span>
+<span class="text-label-micro font-label-micro text-success font-bold">موجود در انبار کیا (۷ عدد)</span>
+</div>
+<div class="flex items-center gap-3">
+<img class="w-16 h-16 rounded-lg object-cover" data-alt="High quality studio shot of a modern oversized beige minimalist winter fleece hoodie hanging on timber rack" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxhqlVYvSWcOrMhng-7Z4szB9Ws9jln07F_YV30Nax1H6UJHS5jYf-rfrU3V-Xcn2n9NdVGscxUKNgDMDtSYJJOg52DWjE7BkGPjOS0lDG5_fTkNkpoElwz81-Kh3RMjwIuSwb8H6NkMTDkXLt6SkYmQtFlOc3AG1gdnyycqYbJ-3zPZHRrxhvBy1tJg8iSSo9sNtP2Q9j_tH1mYSQFg4ougFgbYbILPkX8OMyVVd8ZWd-YIhJPptT"/>
+<div class="flex-1 min-w-0">
+<h4 class="text-body-emphasis font-body-emphasis text-ink-900 truncate">هودی فوتر گرم زمستانه کیاکو</h4>
+<div class="flex items-center gap-2 mt-0.5 text-label-caption font-label-caption text-ink-600">
+<span>رنگ: کرم استخوانی</span>
+<span>•</span>
+<span>سایز: مدیوم</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-price-headline font-price-headline text-buy-primary">۱,۴۵۰,۰۰۰ تومان</span>
+<span class="text-label-micro font-label-micro text-ink-400 line-through">۱,۶۸۰,۰۰۰</span>
+</div>
+</div>
+</div>
+<!-- Direct Actions inside chat card -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="py-2 px-3 rounded-lg bg-surface text-ink-800 text-label-micro font-label-micro font-bold hover:bg-surface-container transition-colors flex items-center justify-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">straighten</span>
+                ارسال جدول سایز
+              </button>
+<button class="py-2 px-3 rounded-lg bg-primary text-on-primary text-label-micro font-label-micro font-bold hover:bg-brand-hover transition-colors flex items-center justify-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+                رزرو موقت انبار (۱۵ دقیقه)
+              </button>
+</div>
+</div>
+</div>
+<!-- Customer Reply -->
+<div class="flex items-start gap-2.5 max-w-[85%]">
+<div class="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1">
+<img class="w-full h-full object-cover" data-alt="Customer avatar Iranian woman portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr9LfSz_oIx08Q2qKDCmVECSkNifjspX_680W6D5gjByrJCBOZt-BnTpTj_BgTnsbsdc19PfyJIok_xarMvsTF-j14om9fUMUaPXVnybhavkBwvCTJNtT0mtAMXrnXg2uTOd5NI-nnz122ig1fh9_rMedaSdhBoSpiyKFe_0vAYwkUANvhLSu809Oa3ZHFQOG7lbxErkz8WyiGLv_dcUnqZzsrnivmnMN9SFjD4cznjkyAGEBCX_5-"/>
+</div>
+<div class="flex flex-col gap-1 items-start">
+<div class="p-3.5 rounded-2xl rounded-tr-xs bg-surface shadow-sm text-ink-900 text-body-default font-body-default">
+              عالیه! پس فاکتور نهایی رو به همراه شلوار ست برام بفرستید، پرداخت مستقیم زرین‌پال یا کارت‌به‌کارت انجام بدم؟
+            </div>
+<span class="text-label-micro font-label-micro text-ink-400 mr-2">۱۰:۲۵ ق.ظ</span>
+</div>
+</div>
+<!-- Direct Invoice Widget in Chat -->
+<div class="max-w-[85%] mr-auto">
+<div class="p-3.5 rounded-2xl bg-surface shadow-md flex flex-col gap-2">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-buy-primary text-[20px]">receipt</span>
+<span class="text-body-emphasis font-body-emphasis text-ink-900">پیش‌فاکتور رسمی کیا #۶۷۱۶۷۰</span>
+</div>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded bg-surface-container text-ink-700">دارای نماد زرین‌پال</span>
+</div>
+<div class="space-y-1.5 text-label-caption font-label-caption text-ink-700">
+<div class="flex justify-between">
+<span>۱. هودی فوتر زمستانه (M)</span>
+<span class="font-bold">۱,۴۵۰,۰۰۰ تومان</span>
+</div>
+<div class="flex justify-between">
+<span>۲. شلوار جاگر فوتر ست (M)</span>
+<span class="font-bold">۱,۰۷۵,۰۰۰ تومان</span>
+</div>
+<div class="flex justify-between text-success">
+<span>هزینه بسته‌بندی و ارسال پیشتاز</span>
+<span class="font-bold">رایگان (کمپین پاییزه)</span>
+</div>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-high flex items-center justify-between mt-1">
+<span class="text-body-emphasis font-body-emphasis text-ink-900">مبلغ قابل پرداخت:</span>
+<span class="text-price-headline font-price-headline text-buy-primary">۲,۵۲۵,۰۰۰ تومان</span>
+</div>
+<div class="flex items-center gap-2 pt-1">
+<a class="flex-1 py-2 rounded-lg bg-buy-primary hover:bg-buy-hover text-on-primary font-bold text-label-caption font-label-caption text-center transition-colors shadow-sm flex items-center justify-center gap-1.5" href="#">
+<span class="material-symbols-outlined text-[16px]">credit_card</span>
+<span>درگاه پرداخت مستقیم زرین‌پال ↗</span>
+</a>
+<button class="py-2 px-3 rounded-lg bg-surface-container text-ink-700 text-label-caption font-label-caption hover:bg-surface-container-high transition-colors">
+                لغو پیش‌فاکتور
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Canned Responses Bar -->
+<div class="px-3.5 py-2 bg-surface-container-low flex items-center gap-2 overflow-x-auto">
+<span class="text-label-micro font-label-micro text-ink-500 shrink-0 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">bolt</span>
+          پاسخ سریع:
+        </span>
+<button class="px-2.5 py-1 rounded-md bg-surface hover:bg-surface-container text-label-micro font-label-micro text-ink-700 whitespace-nowrap transition-colors shadow-sm">
+          📦 استعلام موجودی انبار
+        </button>
+<button class="px-2.5 py-1 rounded-md bg-surface hover:bg-surface-container text-label-micro font-label-micro text-ink-700 whitespace-nowrap transition-colors shadow-sm">
+          🧾 ارسال فاکتور فوری
+        </button>
+<button class="px-2.5 py-1 rounded-md bg-surface hover:bg-surface-container text-label-micro font-label-micro text-ink-700 whitespace-nowrap transition-colors shadow-sm">
+          📐 جدول راهنمای سایز
+        </button>
+<button class="px-2.5 py-1 rounded-md bg-surface hover:bg-surface-container text-label-micro font-label-micro text-ink-700 whitespace-nowrap transition-colors shadow-sm">
+          💳 شماره کارت‌های رسمی فروشگاه
+        </button>
+</div>
+<!-- Input Message Composer -->
+<div class="p-3 bg-surface flex flex-col gap-2">
+<div class="relative flex items-center gap-2">
+<!-- Textarea / Input -->
+<div class="flex-1 relative">
+<textarea class="w-full p-2.5 pl-10 rounded-xl bg-canvas-sunken text-label-caption font-label-caption text-ink-900 placeholder:text-ink-400 focus:outline-none resize-none" placeholder="پاسخ خود را بنویسید یا دکمه‌های پاسخ سریع را بزنید..." rows="2"></textarea>
+<button class="absolute left-2.5 top-2.5 text-ink-400 hover:text-ink-700">
+<span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+</button>
+</div>
+<!-- Send Button -->
+<button class="w-12 h-12 rounded-xl bg-primary hover:bg-brand-hover text-on-primary flex items-center justify-center transition-colors shadow-md shrink-0">
+<span class="material-symbols-outlined text-[22px] rotate-180">send</span>
+</button>
+</div>
+<!-- Composer Action Bar -->
+<div class="flex items-center justify-between text-ink-500 text-label-micro font-label-micro">
+<div class="flex items-center gap-1.5">
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-ink-600 transition-colors flex items-center gap-1" title="پیوست عکس و ویدیو">
+<span class="material-symbols-outlined text-[18px]">add_photo_alternate</span>
+<span class="hidden sm:inline">ارسال تصویر</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-buy-primary transition-colors flex items-center gap-1 font-bold" title="صدور لینک فاکتور زرین‌پال">
+<span class="material-symbols-outlined text-[18px]">request_quote</span>
+<span>لینک پرداخت زرین‌پال</span>
+</button>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-secondary transition-colors flex items-center gap-1" title="پیوست بن تخفیف اختصاصی">
+<span class="material-symbols-outlined text-[18px]">loyalty</span>
+<span class="hidden sm:inline">کد تخفیف اختصاصی</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<label class="flex items-center gap-1.5 cursor-pointer">
+<input checked="" class="w-3.5 h-3.5 rounded text-primary focus:ring-0" type="checkbox"/>
+<span class="text-ink-500">ارسال همزمان به پیامک خریدار</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- COLUMN 3: Customer 360 Context Dossier (Span 4 on Desktop, 3 on XL) -->
+<section class="lg:col-span-12 xl:col-span-3 bg-surface rounded-xl shadow-sm flex flex-col h-[780px] overflow-hidden">
+<!-- Dossier Header -->
+<div class="p-3.5 bg-canvas-sunken flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">badge</span>
+<span class="text-headline-sm font-headline-sm text-ink-900">پرونده مشتری</span>
+</div>
+<span class="text-label-micro font-label-micro px-2 py-0.5 rounded-full bg-secondary/15 text-secondary font-bold">باشگاه نقره‌ای</span>
+</div>
+<div class="flex-1 overflow-y-auto p-3.5 space-y-4">
+<!-- Profile Identity Card -->
+<div class="flex flex-col items-center text-center p-3 rounded-xl bg-canvas-sunken">
+<div class="w-16 h-16 rounded-full p-1 bg-surface shadow-sm mb-2 relative">
+<img class="w-full h-full rounded-full object-cover" data-alt="Customer avatar Iranian woman portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQBkZpRZZi7sZGlDAAbi1MBTCyY_MZJHAFLOJTOz413w9uaDP0BjXpc8JNXjqizyIdvSLYhOIIqHvN2vT1jHSMAFXJSDGkkA8L119EzNOTyhC2yHADr-7YbGOZv3KW_hQ6utGAokYYAFSQb-WsDSrkCTtiGPGJh0RYdJUu5YA9uzYIblw6ddP57Dp_JTQoGXF2yEgUnzxqDtV_FercRKLZli2bWmD4FvMlxQf1yq2ykFa4fT1Ud9Xx"/>
+<span class="absolute bottom-0 left-0 w-4 h-4 bg-success rounded-full ring-2 ring-surface"></span>
+</div>
+<h3 class="text-body-emphasis font-body-emphasis text-ink-900">سارا محمدی</h3>
+<span class="text-label-caption font-label-caption text-ink-500">عضو کیا از خرداد ۱۴۰۲</span>
+<div class="grid grid-cols-2 gap-2 w-full mt-3 pt-3 border-t-0 bg-surface rounded-lg p-2 shadow-sm text-center">
+<div>
+<span class="text-label-micro font-label-micro text-ink-400 block">مجموع خریدها</span>
+<span class="text-headline-sm font-headline-sm text-ink-900 font-code-mono">۱۱,۸۵۰,۰۰۰</span>
+<span class="text-label-micro font-label-micro text-ink-500">تومان</span>
+</div>
+<div>
+<span class="text-label-micro font-label-micro text-ink-400 block">تعداد سفارشات</span>
+<span class="text-headline-sm font-headline-sm text-ink-900 font-code-mono">۵ سفارش</span>
+<span class="text-label-micro font-label-micro text-success">بدون مرجوعی</span>
+</div>
+</div>
+</div>
+<!-- Contact & Delivery Info -->
+<div class="space-y-2">
+<span class="text-label-micro font-label-micro font-bold text-ink-400 uppercase tracking-wider block">اطلاعات تماس و نشانی</span>
+<div class="p-2.5 rounded-lg bg-surface-container-low space-y-1.5 text-label-caption font-label-caption">
+<div class="flex items-center justify-between">
+<span class="text-ink-500">شماره موبایل:</span>
+<span class="text-ink-900 font-code-mono font-bold">۰۹۱۲۴۵۶۷۸۹۰</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-ink-500">شهر و منطقه:</span>
+<span class="text-ink-900">تهران، سعادت‌آباد</span>
+</div>
+<div class="text-ink-700 text-label-micro font-label-micro mt-1 leading-relaxed">
+              بلوار شهرداری، خیابان شانزدهم، پلاک ۱۲، واحد ۴
+            </div>
+</div>
+</div>
+<!-- Active Cart Widget -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-label-micro font-label-micro font-bold text-ink-400 uppercase tracking-wider">سبد خرید فعال (۲ قلم)</span>
+<span class="text-label-micro font-label-micro text-buy-primary font-bold">۲,۵۲۵,۰۰۰ تومان</span>
+</div>
+<div class="space-y-1.5">
+<div class="p-2 rounded-lg bg-surface shadow-sm flex items-center gap-2">
+<img class="w-10 h-10 rounded-md object-cover" data-alt="Beige minimalist hoodie thumbnail" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJWYOjHr7zfjw-uVeaiNk4Oh9D55WK2ETxsZhVQqfutmtNEhSWGpt1u8pQxz-Bln-N51UsLgbaEoPqOK7e_fVnCCWnPEO3vw0u_6hXrPfhcq1rNlycVfU5SPpCUFlBjc35oSkFKEBZvk0DSac6yq3Q1UCkgg34owG3GeisDIcor1S64DBVAgTWYBRphYYCbuZEBrWnM4z4H16Si1PdByIc-VuWMh3u0gUQHfC_5EKHwPNtv0kzgIVq"/>
+<div class="flex-1 min-w-0 text-label-micro font-label-micro">
+<span class="font-bold text-ink-900 truncate block">هودی فوتر زمستانه</span>
+<span class="text-ink-500">سایز M | کرم | ۱,۴۵۰,۰۰۰ تومان</span>
+</div>
+</div>
+<div class="p-2 rounded-lg bg-surface shadow-sm flex items-center gap-2">
+<img class="w-10 h-10 rounded-md object-cover" data-alt="Matching beige fleece jogger pants studio photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9K8Up4ZBM8ZWiZuEs0CL66MDxGXRApb9Jyl3ljUubIpDjbT-8rDFqztZE_88uJKtVYPA6uqEoGXUF51a0Dzgr836L9Bxm58AncnGrwFzXsYuaU7bnreZ__UK7f2vGFhd7YAY9eD6-gzbPFGuUXGNWymn-3NySBbRjKpQS0NFqD1tZHIXzUt36pB0Wp1fzeHF4fMfxCWtPj5RI2u6A-CSzq5Fx01QcqygOQ1qCb7lcoYEqVfH8XYBo"/>
+<div class="flex-1 min-w-0 text-label-micro font-label-micro">
+<span class="font-bold text-ink-900 truncate block">شلوار جاگر فوتر ست</span>
+<span class="text-ink-500">سایز M | کرم | ۱,۰۷۵,۰۰۰ تومان</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Last Viewed Product -->
+<div class="p-2.5 rounded-lg bg-surface-container-high/60 space-y-1">
+<span class="text-label-micro font-label-micro text-ink-500 block">آخرین بازدید کالا در سایت:</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">visibility</span>
+<span class="text-label-caption font-label-caption font-bold text-ink-900 truncate">پالتو کتی فوتر یقه انگلیسی (زغالی)</span>
+</div>
+<span class="text-label-micro font-label-micro text-ink-400 block">۳۸ دقیقه قبل از طریق استوری اینستاگرام</span>
+</div>
+<!-- Internal Staff Note -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="text-label-micro font-label-micro font-bold text-ink-400 uppercase tracking-wider">یادداشت داخلی تیم (پنهان از مشتری)</span>
+<span class="text-label-micro font-label-micro text-primary">ذخیره شد</span>
+</div>
+<textarea class="w-full p-2 rounded-lg bg-surface-container-low text-label-caption font-label-caption text-ink-800 placeholder:text-ink-400 focus:outline-none" placeholder="یادداشتی برای انبار یا اپراتورهای بعدی بنویسید..." rows="2">مشتری بسیار محترم و منظم. حتماً همراه بسته، کارت پستال اختصاصی پاییزه و اشانتیون عطر کیا قرار داده شود.</textarea>
+</div>
+<!-- Order History List -->
+<div class="space-y-2 pt-1">
+<span class="text-label-micro font-label-micro font-bold text-ink-400 uppercase tracking-wider block">سفارش‌های گذشته</span>
+<div class="space-y-1.5 text-label-micro font-label-micro">
+<div class="p-2 rounded-lg bg-surface shadow-sm flex items-center justify-between">
+<div>
+<span class="font-bold text-ink-800 block">#KIA-559124</span>
+<span class="text-ink-400">۲۲ شهریور ۱۴۰۲</span>
+</div>
+<div class="text-left">
+<span class="font-bold text-ink-900 font-code-mono block">۳,۱۲۰,۰۰۰ تومان</span>
+<span class="text-success font-semibold">تحویل موفق</span>
+</div>
+</div>
+<div class="p-2 rounded-lg bg-surface shadow-sm flex items-center justify-between">
+<div>
+<span class="font-bold text-ink-800 block">#KIA-482010</span>
+<span class="text-ink-400">۱۵ تیر ۱۴۰۲</span>
+</div>
+<div class="text-left">
+<span class="font-bold text-ink-900 font-code-mono block">۶,۲۱۰,۰۰۰ تومان</span>
+<span class="text-success font-semibold">تحویل موفق</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Instant Dossier Action -->
+<div class="pt-2">
+<button class="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-tertiary text-on-primary font-bold text-label-caption font-label-caption shadow-sm flex items-center justify-center gap-1.5 hover:opacity-95 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+<span>ایجاد دستی سفارش / صدور فاکتور آنی</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for canned response insertion
+  document.querySelectorAll('button:contains("پاسخ سریع")').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const textarea = document.querySelector('textarea[placeholder*="پاسخ خود را"]');
+      if (textarea) {
+        textarea.focus();
+      }
+    });
+  });
+</script></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+      
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+</body></html>

@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span>محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span>انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span>سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span>دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span>مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span>دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span>مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span>SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span>ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span>تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span>ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full gap-6">
+<!-- ================= TOP SUMMARY & ACTIONS STRIP ================= -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<span class="text-ink-400 font-code-mono text-code-mono tracking-wider">CRM.CUSTOMERS.V3</span>
+<span class="bg-surface-container-high text-primary px-2 py-0.5 rounded text-label-micro font-label-micro font-bold">زنده: ۲۴۷ پروفایل فعال</span>
+</div>
+<h1 class="text-ink-900 font-headline-lg text-headline-lg tracking-tight">بانک اطلاعات مشتریان و پرونده‌های ۳۶۰ درجه</h1>
+<p class="text-ink-500 font-body-default text-body-default">نظارت بر وفاداری، تحلیل پرسونای خریداران شبکه اجتماعی (اینستاگرام و تلگرام) و همگام‌سازی لحظه‌ای تراکنش‌ها</p>
+</div>
+<!-- Quick Tool CTAs -->
+<div class="flex items-center gap-2.5 flex-wrap">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface text-ink-700 shadow-sm hover:bg-canvas transition-all font-body-emphasis text-body-emphasis" type="button">
+<span class="material-symbols-outlined text-[18px] text-ink-500">file_download</span>
+<span>خروجی اکسل (XLSX)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-surface text-ink-700 shadow-sm hover:bg-canvas transition-all font-body-emphasis text-body-emphasis" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">tune</span>
+<span>قوانین RFM</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-buy-primary hover:bg-buy-hover text-on-primary shadow-sm hover:shadow-md transition-all font-headline-sm text-headline-sm" onclick="openNewCustomerModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+<span>افزودن مشتری جدید</span>
+</button>
+</div>
+</div>
+<!-- ================= 4-GRID KEY CRM METRICS ================= -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<!-- Card 1: Total Registered -->
+<div class="relative overflow-hidden bg-surface rounded-xl p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-ink-500 font-label-caption text-label-caption">کل مشتریان ثبت‌شده</span>
+<div class="flex items-baseline gap-1.5">
+<span class="text-ink-900 font-display text-display">۲۴۷</span>
+<span class="text-ink-500 font-label-micro text-label-micro">نفر</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">group</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between">
+<div class="flex items-center gap-1 text-success font-label-micro text-label-micro font-bold">
+<span class="material-symbols-outlined text-[15px]">trending_up</span>
+<span>+۱۲٪ این ماه</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro font-code-mono">۹۸٪ هویت تایید شده</span>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 bg-primary/5 rounded-full pointer-events-none"></div>
+</div>
+<!-- Card 2: Loyal / Repeat Buyers -->
+<div class="relative overflow-hidden bg-surface rounded-xl p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-ink-500 font-label-caption text-label-caption">مشتریان وفادار (تکرار خرید)</span>
+<div class="flex items-baseline gap-1.5">
+<span class="text-ink-900 font-display text-display">۶۸</span>
+<span class="text-ink-500 font-label-micro text-label-micro">نفر (VIP)</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-xl bg-secondary-fixed text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">workspace_premium</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between">
+<div class="w-28 bg-canvas-sunken h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 27.5%;"></div>
+</div>
+<span class="text-secondary font-label-micro text-label-micro font-bold">۲۷.۵٪ سهم سبد</span>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 bg-secondary/5 rounded-full pointer-events-none"></div>
+</div>
+<!-- Card 3: Average LTV -->
+<div class="relative overflow-hidden bg-surface rounded-xl p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-ink-500 font-label-caption text-label-caption">میانگین ارزش طول عمر (LTV)</span>
+<div class="flex items-baseline gap-1.5">
+<span class="text-ink-900 font-display text-display">۱,۸۹۰,۰۰۰</span>
+<span class="text-ink-500 font-label-micro text-label-micro">تومان</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-xl bg-surface-container text-info flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">payments</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between">
+<div class="flex items-center gap-1 text-success font-label-micro text-label-micro font-bold">
+<span class="material-symbols-outlined text-[15px]">north_east</span>
+<span>+۲۱۰,۰۰۰ تومان</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro">نسبت به فصل قبل</span>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 bg-info/5 rounded-full pointer-events-none"></div>
+</div>
+<!-- Card 4: Retention Rate -->
+<div class="relative overflow-hidden bg-surface rounded-xl p-5 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<span class="text-ink-500 font-label-caption text-label-caption">نرخ بازگشت مجدد (Retention)</span>
+<div class="flex items-baseline gap-1.5">
+<span class="text-ink-900 font-display text-display">۳۴٪</span>
+<span class="text-success font-label-micro text-label-micro font-bold">عالی</span>
+</div>
+</div>
+<div class="w-11 h-11 rounded-xl bg-amber-50 text-warning flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">replay_circle_filled</span>
+</div>
+</div>
+<div class="mt-4 pt-3 flex items-center justify-between">
+<div class="flex items-center gap-1 text-ink-600 font-label-micro text-label-micro">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>معیار اینستاگرام: ۲۱٪</span>
+</div>
+<span class="text-primary font-label-micro text-label-micro font-bold">+۱۳٪ بالاتر از میانگین</span>
+</div>
+<div class="absolute -bottom-6 -left-6 w-20 h-20 bg-warning/5 rounded-full pointer-events-none"></div>
+</div>
+</div>
+<!-- ================= FILTER & SEGMENTATION CONTROLS ================= -->
+<div class="bg-surface rounded-xl p-4 shadow-sm flex flex-col gap-4">
+<!-- Row 1: Quick Segment Pills -->
+<div class="flex items-center justify-between gap-2 flex-wrap">
+<div class="flex items-center gap-1.5 flex-wrap" id="segmentPills">
+<button class="segment-btn px-3 py-1.5 rounded-lg bg-ink-900 text-on-primary font-body-emphasis text-body-emphasis shadow-sm transition-all" onclick="setSegment(this, 'all')" type="button">
+          همه مشتریان (۲۴۷)
+        </button>
+<button class="segment-btn px-3 py-1.5 rounded-lg bg-canvas text-ink-600 hover:text-ink-900 font-body-default text-body-default transition-all flex items-center gap-1.5" onclick="setSegment(this, 'vip')" type="button">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>خریداران فعال VIP (۶۸)</span>
+</button>
+<button class="segment-btn px-3 py-1.5 rounded-lg bg-canvas text-ink-600 hover:text-ink-900 font-body-default text-body-default transition-all flex items-center gap-1.5" onclick="setSegment(this, 'abandoned')" type="button">
+<span class="w-2 h-2 rounded-full bg-warning"></span>
+<span>سبد رها شده (۱۹)</span>
+</button>
+<button class="segment-btn px-3 py-1.5 rounded-lg bg-canvas text-ink-600 hover:text-ink-900 font-body-default text-body-default transition-all flex items-center gap-1.5" onclick="setSegment(this, 'new')" type="button">
+<span class="w-2 h-2 rounded-full bg-info"></span>
+<span>خریداران جدید این هفته (۳۲)</span>
+</button>
+<button class="segment-btn px-3 py-1.5 rounded-lg bg-canvas text-ink-600 hover:text-ink-900 font-body-default text-body-default transition-all flex items-center gap-1.5" onclick="setSegment(this, 'churn')" type="button">
+<span class="w-2 h-2 rounded-full bg-danger"></span>
+<span>در معرض ریزش (+۶۰ روز بدون خرید) (۱۴)</span>
+</button>
+</div>
+<!-- Quick batch action -->
+<div class="hidden sm:flex items-center gap-2">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container text-ink-700 hover:text-ink-900 font-label-micro text-label-micro flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">forward_to_inbox</span>
+<span>پیام گروهی تلگرام</span>
+</button>
+</div>
+</div>
+<!-- Row 2: Search, City Filter & Sorting Bar -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3">
+<!-- Search Input -->
+<div class="md:col-span-5 relative">
+<span class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-ink-400">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</span>
+<input class="w-full h-11 pr-10 pl-4 rounded-lg bg-canvas text-ink-900 placeholder:text-ink-400 font-body-default text-body-default focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" id="customerSearchInput" oninput="filterCustomers()" placeholder="جستجوی نام خریدار، شماره موبایل، آیدی اینستاگرام یا تلگرام..." type="text"/>
+</div>
+<!-- City Dropdown -->
+<div class="md:col-span-3">
+<div class="relative">
+<select class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-800 font-body-default text-body-default focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer" id="cityFilter" onchange="filterCustomers()">
+<option value="">همه استان‌ها و شهرها</option>
+<option value="تهران">تهران (۱۱۴)</option>
+<option value="مشهد">خراسان رضوی / مشهد (۳۸)</option>
+<option value="اصفهان">اصفهان (۲۹)</option>
+<option value="تبریز">آذربایجان شرقی / تبریز (۲۱)</option>
+<option value="شیراز">فارس / شیراز (۱۸)</option>
+<option value="سایر">سایر شهرستان‌ها (۲۷)</option>
+</select>
+</div>
+</div>
+<!-- RFM Segment Dropdown -->
+<div class="md:col-span-2">
+<select class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-800 font-body-default text-body-default focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer" id="rfmScoreFilter" onchange="filterCustomers()">
+<option value="">رتبه RFM</option>
+<option value="قهرمانان (Champions)">قهرمانان (۵۵۵)</option>
+<option value="وفادار">مشتریان وفادار</option>
+<option value="امیدبخش">امیدبخش و فعال</option>
+<option value="نیاز به توجه">نیازمند بازفعال‌سازی</option>
+</select>
+</div>
+<!-- Active Filter Status / Reset -->
+<div class="md:col-span-2 flex items-center justify-end gap-2">
+<button class="w-full h-11 px-3 rounded-lg bg-canvas hover:bg-surface-container text-ink-600 hover:text-ink-900 font-label-caption text-label-caption flex items-center justify-center gap-1 transition-all" onclick="resetCustomerFilters()" type="button">
+<span class="material-symbols-outlined text-[17px]">restart_alt</span>
+<span>بازنشانی فیلترها</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ================= CUSTOMERS 360 DETAILED TABLE ================= -->
+<div class="bg-surface rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Table Header Info Bar -->
+<div class="px-5 py-3.5 bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-ink-900 font-headline-sm text-headline-sm">لیست هوشمند مشتریان کیااستور</span>
+<span class="px-2 py-0.5 rounded-full bg-white text-ink-600 font-code-mono text-label-micro shadow-sm font-bold" id="resultCount">۶ نتیجه نمایش داده شد</span>
+</div>
+<div class="flex items-center gap-3">
+<label class="flex items-center gap-2 cursor-pointer text-ink-600 font-label-micro text-label-micro">
+<input class="rounded text-primary focus:ring-primary w-4 h-4" id="unmaskPhoneToggle" onchange="togglePhoneMasking(this)" type="checkbox"/>
+<span>نمایش شماره کامل بدون ماسک</span>
+</label>
+</div>
+</div>
+<!-- Responsive Table Wrapper -->
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-canvas-sunken text-ink-500 font-label-caption text-label-caption tracking-tight">
+<th class="p-3.5 pr-5 w-10 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</th>
+<th class="p-3.5 font-bold">پروفایل و هویت خریدار</th>
+<th class="p-3.5 font-bold">شبکه اجتماعی متصل</th>
+<th class="p-3.5 font-bold">شماره همراه</th>
+<th class="p-3.5 font-bold">موقعیت مکانی</th>
+<th class="p-3.5 font-bold text-center">سفارش‌ها</th>
+<th class="p-3.5 font-bold text-left">مجموع خرید (تومان)</th>
+<th class="p-3.5 font-bold text-left">کیف پول</th>
+<th class="p-3.5 font-bold text-center">سگمنت RFM</th>
+<th class="p-3.5 font-bold">آخرین تعامل</th>
+<th class="p-3.5 pl-5 font-bold text-center">عملیات پرونده</th>
+</tr>
+</thead>
+<tbody class="font-body-default text-body-default text-ink-800" id="customersTableBody">
+<!-- CUSTOMER ROW 1: اوید کیا (VIP Champion) -->
+<tr class="customer-row hover:bg-canvas transition-colors" data-city="تهران" data-name="اوید کیا" data-phone="09121112233" data-rfm="قهرمانان (Champions)" data-segment="vip">
+<td class="p-3.5 pr-5 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover shadow-sm" data-alt="Close up warm studio portrait of Avid Kiya, confident Persian customer profile with natural soft rim light, clean minimal aesthetic, stylish dark jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsvQecEeKl16C9Zi2EPSgQEzZ9ktD25DfzlbM-ecqxnTcz6v5wqVzse2iijP0TOfXgzShBp1IbEF1Re6GV0QfcN9FgShDCTMVEW7LwxPjHd0LMpU392QSWGBHl2Wv1eoSNK4dnrwuJF_Js_ScmSfIWdhKDGze5Z6_WA1v_tpuIvm6zcEoDMgSDAjg975BuiUVaS1XdHxynshRF9MlIqGjiJbgqPG0mujpS_4DvK7W5rkJ_LJ18Wqeo"/>
+<span class="absolute -bottom-1 -left-1 w-4 h-4 bg-secondary text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm" title="مشتری VIP طلایی">★</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold truncate">اوید کیا</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-secondary font-label-micro text-label-micro font-bold">VIP ویژه</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro">عضویت: ۱۴۰۲/۰۶/۱۵ (۵۷۸ روز)</span>
+</div>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col gap-0.5 font-code-mono text-label-caption">
+<span class="flex items-center gap-1 text-primary">
+<span class="text-label-micro">📸</span> @avid_kiya
+                </span>
+<span class="flex items-center gap-1 text-info">
+<span class="text-label-micro">✈️</span> @avidkiya_tg
+                </span>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 font-code-mono text-label-caption text-ink-700">
+<span class="phone-display" data-real="۰۹۱۲۱۱۱۲۲۳۳">۰۹۱۲***۲۲۳۳</span>
+<button class="text-ink-400 hover:text-ink-700" onclick="copyText('۰۹۱۲۱۱۱۲۲۳۳', this)" title="کپی شماره" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 text-ink-700">
+<span class="material-symbols-outlined text-[16px] text-ink-400">location_on</span>
+<span>تهران، زعفرانیه</span>
+</div>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex px-2 py-0.5 rounded-full bg-surface-container font-headline-sm text-headline-sm text-ink-900 font-bold">۱۴</span>
+</td>
+<td class="p-3.5 text-left font-price-headline text-price-headline text-ink-900 font-bold">
+              ۸,۴۵۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">تومان</span>
+</td>
+<td class="p-3.5 text-left font-code-mono text-label-caption font-bold text-success">
+              +۳۲۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">ت</span>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-success font-label-micro text-label-micro font-bold">
+                قهرمانان (Champions)
+              </span>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col text-label-micro">
+<span class="text-ink-800 font-bold">امروز، ۱۴:۲۰</span>
+<span class="text-ink-400">سفارش #۴۹۸۱ (ارسال شد)</span>
+</div>
+</td>
+<td class="p-3.5 pl-5 text-center">
+<div class="flex items-center justify-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-primary flex items-center justify-center transition-all" onclick="open360Drawer('اوید کیا', '۸,۴۵۰,۰۰۰ تومان', '۱۴ سفارش', 'تهران، زعفرانیه', '@avid_kiya')" title="مشاهده پرونده ۳۶۰ درجه" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-info flex items-center justify-center transition-all" onclick="sendDirectTelegram('avidkiya_tg')" title="ارسال پیام به تلگرام" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-all" onclick="issueCouponModal('اوید کیا')" title="صدور کوپن تخفیف" type="button">
+<span class="material-symbols-outlined text-[18px]">redeem</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- CUSTOMER ROW 2: سارا محمدی (VIP) -->
+<tr class="customer-row hover:bg-canvas transition-colors" data-city="مشهد" data-name="سارا محمدی" data-phone="09354448899" data-rfm="قهرمانان (Champions)" data-segment="vip">
+<td class="p-3.5 pr-5 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover shadow-sm" data-alt="Portrait photography of Sara Mohammadi Persian woman with modern scarf, soft warm studio lighting with pink gradient rim light, highly professional and friendly" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcqUvlcXl2QfmHYWmvMjfuBtQqtI-qVibpjOW-VZrkWypK8YuY11gL6uJyMD9VA1faN8oFkFox2iIhUN4X6aGAbq0j-5eZe0vfAFO5zccpmTKj7dUmDPpWrDWbebM9p_dlta26vu6xrJlrKSLWiXTQme2KpTfrfR3NvExwEtvh79OzsbW1XTXU3VjWdKgKL6lHdqvs8Q8CQXd6Nw86pt3vqNVXMCAVpJMhSWeEaM8EwA17zDPoV53P"/>
+<span class="absolute -bottom-1 -left-1 w-4 h-4 bg-secondary text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">★</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold truncate">سارا محمدی</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-fixed text-secondary font-label-micro text-label-micro font-bold">VIP</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro">عضویت: ۱۴۰۲/۱۰/۰۲</span>
+</div>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col gap-0.5 font-code-mono text-label-caption">
+<span class="flex items-center gap-1 text-primary">
+<span class="text-label-micro">📸</span> @sara_mhd
+                </span>
+<span class="text-ink-400 font-label-micro">—</span>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 font-code-mono text-label-caption text-ink-700">
+<span class="phone-display" data-real="۰۹۳۵۴۴۴۸۸۹۹">۰۹۳۵***۸۸۹۹</span>
+<button class="text-ink-400 hover:text-ink-700" onclick="copyText('۰۹۳۵۴۴۴۸۸۹۹', this)" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 text-ink-700">
+<span class="material-symbols-outlined text-[16px] text-ink-400">location_on</span>
+<span>مشهد، وکیل‌آباد</span>
+</div>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex px-2 py-0.5 rounded-full bg-surface-container font-headline-sm text-headline-sm text-ink-900 font-bold">۹</span>
+</td>
+<td class="p-3.5 text-left font-price-headline text-price-headline text-ink-900 font-bold">
+              ۵,۱۲۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">تومان</span>
+</td>
+<td class="p-3.5 text-left font-code-mono text-label-caption font-bold text-ink-600">
+              ۰ <span class="font-label-micro text-ink-400 font-normal">ت</span>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-success font-label-micro text-label-micro font-bold">
+                وفادار (Loyal)
+              </span>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col text-label-micro">
+<span class="text-ink-800 font-bold">دیروز، ۱۹:۱۰</span>
+<span class="text-ink-400">مشاهده ۳ استوری محصول</span>
+</div>
+</td>
+<td class="p-3.5 pl-5 text-center">
+<div class="flex items-center justify-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-primary flex items-center justify-center transition-all" onclick="open360Drawer('سارا محمدی', '۵,۱۲۰,۰۰۰ تومان', '۹ سفارش', 'مشهد، وکیل‌آباد', '@sara_mhd')" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-info flex items-center justify-center transition-all" onclick="sendDirectTelegram('sara_mhd')" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-all" onclick="issueCouponModal('سارا محمدی')" type="button">
+<span class="material-symbols-outlined text-[18px]">redeem</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- CUSTOMER ROW 3: علی پارسا (Abandoned Cart) -->
+<tr class="customer-row hover:bg-canvas transition-colors" data-city="اصفهان" data-name="علی پارسا" data-phone="09139876543" data-rfm="امیدبخش" data-segment="abandoned">
+<td class="p-3.5 pr-5 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-ink-100 text-ink-700 flex items-center justify-center font-bold text-headline-sm">
+                  ع‌‌پ
+                </div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold truncate">علی پارسا</span>
+<span class="text-ink-400 font-label-micro text-label-micro">عضویت: ۱۴۰۳/۰۱/۱۰</span>
+</div>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col gap-0.5 font-code-mono text-label-caption">
+<span class="flex items-center gap-1 text-info">
+<span class="text-label-micro">✈️</span> @ali_parsa98
+                </span>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 font-code-mono text-label-caption text-ink-700">
+<span class="phone-display" data-real="۰۹۱۳۹۸۷۶۵۴۳">۰۹۱۳***۶۵۴۳</span>
+<button class="text-ink-400 hover:text-ink-700" onclick="copyText('۰۹۱۳۹۸۷۶۵۴۳', this)" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 text-ink-700">
+<span class="material-symbols-outlined text-[16px] text-ink-400">location_on</span>
+<span>اصفهان، چهارباغ</span>
+</div>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex px-2 py-0.5 rounded-full bg-surface-container font-headline-sm text-headline-sm text-ink-900 font-bold">۲</span>
+</td>
+<td class="p-3.5 text-left font-price-headline text-price-headline text-ink-900 font-bold">
+              ۱,۲۸۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">تومان</span>
+</td>
+<td class="p-3.5 text-left font-code-mono text-label-caption font-bold text-ink-600">
+              ۵۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">ت</span>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-warning font-label-micro text-label-micro font-bold">
+                سبد رها شده (۱ قلم)
+              </span>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col text-label-micro">
+<span class="text-warning font-bold">۳ ساعت پیش</span>
+<span class="text-ink-400">رهاسازی هودی کیا سایز L</span>
+</div>
+</td>
+<td class="p-3.5 pl-5 text-center">
+<div class="flex items-center justify-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-primary flex items-center justify-center transition-all" onclick="open360Drawer('علی پارسا', '۱,۲۸۰,۰۰۰ تومان', '۲ سفارش', 'اصفهان، چهارباغ', '@ali_parsa98')" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-info flex items-center justify-center transition-all" onclick="sendDirectTelegram('ali_parsa98')" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-all" onclick="issueCouponModal('علی پارسا')" type="button">
+<span class="material-symbols-outlined text-[18px]">redeem</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- CUSTOMER ROW 4: مریم حسینی (New Customer) -->
+<tr class="customer-row hover:bg-canvas transition-colors" data-city="تهران" data-name="مریم حسینی" data-phone="09127771122" data-rfm="امیدبخش" data-segment="new">
+<td class="p-3.5 pr-5 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover shadow-sm" data-alt="Portrait of Maryam Hosseini Iranian professional woman in high key lighting with neutral soft background, smiling warmly, studio profile headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBicbIva-R_orPxoDH1s08oh0nhUq8E-pf9S9m3lY5BObw5WzGCFsRbrBEYiXhr5LXpzZ6jC3GEPwJfT0Em5QrnrNwhxJkqBnerWDZi3-Ge2v2Zcf5ac-1tUjXun1pvQIm32eAWPfal2nKa1amY1yffGwZQWLR2VtUuiATES9psZvJ__9uB6lekc8gChTX8CleAksyT_BjtWbMZSM2-54bC-WdHMSmDoTUoREKt_MtJfO2F54Lt0lFC"/>
+<span class="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-success rounded-full ring-2 ring-white"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold truncate">مریم حسینی</span>
+<span class="px-1.5 py-0.2 rounded bg-blue-50 text-info font-label-micro text-label-micro font-bold">تازه پیوسته</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro">عضویت: دیروز (کمپین اینستاگرام)</span>
+</div>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col gap-0.5 font-code-mono text-label-caption">
+<span class="flex items-center gap-1 text-primary">
+<span class="text-label-micro">📸</span> @mary_hosseini
+                </span>
+<span class="flex items-center gap-1 text-info">
+<span class="text-label-micro">✈️</span> @mary_hss
+                </span>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 font-code-mono text-label-caption text-ink-700">
+<span class="phone-display" data-real="۰۹۱۲۷۷۷۱۱۲۲">۰۹۱۲***۱۱۲۲</span>
+<button class="text-ink-400 hover:text-ink-700" onclick="copyText('۰۹۱۲۷۷۷۱۱۲۲', this)" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 text-ink-700">
+<span class="material-symbols-outlined text-[16px] text-ink-400">location_on</span>
+<span>تهران، سعادت‌آباد</span>
+</div>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex px-2 py-0.5 rounded-full bg-surface-container font-headline-sm text-headline-sm text-ink-900 font-bold">۱</span>
+</td>
+<td class="p-3.5 text-left font-price-headline text-price-headline text-ink-900 font-bold">
+              ۸۹۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">تومان</span>
+</td>
+<td class="p-3.5 text-left font-code-mono text-label-caption font-bold text-ink-600">
+              ۰ <span class="font-label-micro text-ink-400 font-normal">ت</span>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-info font-label-micro text-label-micro font-bold">
+                خریدار جدید (Newbie)
+              </span>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col text-label-micro">
+<span class="text-ink-800 font-bold">دیروز، ۲۳:۴۰</span>
+<span class="text-ink-400">خرید اولین محصول</span>
+</div>
+</td>
+<td class="p-3.5 pl-5 text-center">
+<div class="flex items-center justify-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-primary flex items-center justify-center transition-all" onclick="open360Drawer('مریم حسینی', '۸۹۰,۰۰۰ تومان', '۱ سفارش', 'تهران، سعادت‌آباد', '@mary_hosseini')" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-info flex items-center justify-center transition-all" onclick="sendDirectTelegram('mary_hss')" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-all" onclick="issueCouponModal('مریم حسینی')" type="button">
+<span class="material-symbols-outlined text-[18px]">redeem</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- CUSTOMER ROW 5: نگار رستمی (Churn Risk) -->
+<tr class="customer-row hover:bg-canvas transition-colors" data-city="تبریز" data-name="نگار رستمی" data-phone="09142223344" data-rfm="در معرض ریزش" data-segment="churn">
+<td class="p-3.5 pr-5 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-rose-50 text-danger flex items-center justify-center font-bold text-headline-sm">
+                  ن‌ر
+                </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold truncate">نگار رستمی</span>
+<span class="px-1.5 py-0.2 rounded bg-rose-50 text-danger font-label-micro text-label-micro font-bold">خاموش</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro">عضویت: ۱۴۰۲/۰۴/۱۸</span>
+</div>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col gap-0.5 font-code-mono text-label-caption">
+<span class="flex items-center gap-1 text-primary">
+<span class="text-label-micro">📸</span> @negar_rst
+                </span>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 font-code-mono text-label-caption text-ink-700">
+<span class="phone-display" data-real="۰۹۱۴۲۲۲۳۳۴۴">۰۹۱۴***۳۳۴۴</span>
+<button class="text-ink-400 hover:text-ink-700" onclick="copyText('۰۹۱۴۲۲۲۳۳۴۴', this)" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 text-ink-700">
+<span class="material-symbols-outlined text-[16px] text-ink-400">location_on</span>
+<span>تبریز، آبرسان</span>
+</div>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex px-2 py-0.5 rounded-full bg-surface-container font-headline-sm text-headline-sm text-ink-900 font-bold">۳</span>
+</td>
+<td class="p-3.5 text-left font-price-headline text-price-headline text-ink-900 font-bold">
+              ۲,۳۵۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">تومان</span>
+</td>
+<td class="p-3.5 text-left font-code-mono text-label-caption font-bold text-ink-600">
+              ۱۰۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">ت</span>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-rose-50 text-danger font-label-micro text-label-micro font-bold">
+                در معرض ریزش (At Risk)
+              </span>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col text-label-micro">
+<span class="text-danger font-bold">۷۴ روز پیش</span>
+<span class="text-ink-400">آخرین سفارش پاییزی</span>
+</div>
+</td>
+<td class="p-3.5 pl-5 text-center">
+<div class="flex items-center justify-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-primary flex items-center justify-center transition-all" onclick="open360Drawer('نگار رستمی', '۲,۳۵۰,۰۰۰ تومان', '۳ سفارش', 'تبریز، آبرسان', '@negar_rst')" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-info flex items-center justify-center transition-all" onclick="sendDirectTelegram('negar_rst')" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-all" onclick="issueCouponModal('نگار رستمی')" type="button">
+<span class="material-symbols-outlined text-[18px]">redeem</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- CUSTOMER ROW 6: پویا سعادتمند (Active Buyer) -->
+<tr class="customer-row hover:bg-canvas transition-colors" data-city="شیراز" data-name="پویا سعادتمند" data-phone="09171239874" data-rfm="امیدبخش" data-segment="all">
+<td class="p-3.5 pr-5 text-center">
+<input class="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-amber-50 text-warning flex items-center justify-center font-bold text-headline-sm">
+                  پ‌س
+                </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold truncate">پویا سعادتمند</span>
+<span class="px-1.5 py-0.2 rounded bg-ink-100 text-ink-600 font-label-micro text-label-micro">معمولی</span>
+</div>
+<span class="text-ink-400 font-label-micro text-label-micro">عضویت: ۱۴۰۲/۱۱/۲۰</span>
+</div>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col gap-0.5 font-code-mono text-label-caption">
+<span class="flex items-center gap-1 text-primary">
+<span class="text-label-micro">📸</span> @pouya_saadat
+                </span>
+<span class="flex items-center gap-1 text-info">
+<span class="text-label-micro">✈️</span> @pouyasaadat
+                </span>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 font-code-mono text-label-caption text-ink-700">
+<span class="phone-display" data-real="۰۹۱۷۱۲۳۹۸۷۴">۰۹۱۷***۹۸۷۴</span>
+<button class="text-ink-400 hover:text-ink-700" onclick="copyText('۰۹۱۷۱۲۳۹۸۷۴', this)" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span>
+</button>
+</div>
+</td>
+<td class="p-3.5">
+<div class="flex items-center gap-1 text-ink-700">
+<span class="material-symbols-outlined text-[16px] text-ink-400">location_on</span>
+<span>شیراز، معالی‌آباد</span>
+</div>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex px-2 py-0.5 rounded-full bg-surface-container font-headline-sm text-headline-sm text-ink-900 font-bold">۴</span>
+</td>
+<td class="p-3.5 text-left font-price-headline text-price-headline text-ink-900 font-bold">
+              ۳,۱۵۰,۰۰۰ <span class="font-label-micro text-ink-400 font-normal">تومان</span>
+</td>
+<td class="p-3.5 text-left font-code-mono text-label-caption font-bold text-ink-600">
+              ۰ <span class="font-label-micro text-ink-400 font-normal">ت</span>
+</td>
+<td class="p-3.5 text-center">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-ink-700 font-label-micro text-label-micro font-bold">
+                خریدار متناوب
+              </span>
+</td>
+<td class="p-3.5">
+<div class="flex flex-col text-label-micro">
+<span class="text-ink-800 font-bold">۵ روز پیش</span>
+<span class="text-ink-400">ارسال تیکت سایز کفش</span>
+</div>
+</td>
+<td class="p-3.5 pl-5 text-center">
+<div class="flex items-center justify-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-primary flex items-center justify-center transition-all" onclick="open360Drawer('پویا سعادتمند', '۳,۱۵۰,۰۰۰ تومان', '۴ سفارش', 'شیراز، معالی‌آباد', '@pouya_saadat')" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-info flex items-center justify-center transition-all" onclick="sendDirectTelegram('pouyasaadat')" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface shadow-sm hover:bg-surface-container text-secondary flex items-center justify-center transition-all" onclick="issueCouponModal('پویا سعادتمند')" type="button">
+<span class="material-symbols-outlined text-[18px]">redeem</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination & Bulk Status Footer -->
+<div class="p-4 bg-surface flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-2 text-ink-500 font-label-caption text-label-caption">
+<span>نمایش ردیف ۱ تا ۶ از کل ۲۴۷ پرونده ثبت‌شده</span>
+<span class="text-ink-300">|</span>
+<span class="text-ink-700 font-bold">صفحه ۱ از ۴۲</span>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-canvas text-ink-400 hover:text-ink-900 flex items-center justify-center disabled:opacity-40" disabled="" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-primary text-white font-bold font-code-mono text-label-caption shadow-sm" type="button">۱</button>
+<button class="w-8 h-8 rounded-lg bg-canvas hover:bg-surface-container text-ink-700 font-bold font-code-mono text-label-caption transition-colors" type="button">۲</button>
+<button class="w-8 h-8 rounded-lg bg-canvas hover:bg-surface-container text-ink-700 font-bold font-code-mono text-label-caption transition-colors" type="button">۳</button>
+<span class="px-1 text-ink-400">...</span>
+<button class="w-8 h-8 rounded-lg bg-canvas hover:bg-surface-container text-ink-700 font-bold font-code-mono text-label-caption transition-colors" type="button">۴۲</button>
+<button class="w-8 h-8 rounded-lg bg-canvas text-ink-700 hover:text-ink-900 flex items-center justify-center" type="button">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ================= 360-DEGREE PROFILE SLIDE-OVER DRAWER (HIDDEN BY DEFAULT) ================= -->
+<div class="fixed inset-0 z-50 overflow-hidden pointer-events-none opacity-0 transition-opacity duration-300" id="customer360Drawer">
+<!-- Scrim -->
+<div class="absolute inset-0 bg-ink-900/60 backdrop-blur-xs transition-opacity" onclick="close360Drawer()"></div>
+<div class="fixed inset-y-0 left-0 max-w-full flex pl-0 pr-10">
+<div class="w-screen max-w-xl bg-surface shadow-2xl p-6 flex flex-col justify-between transform -translate-x-full transition-transform duration-300 pointer-events-auto overflow-y-auto" id="drawerPanel">
+<!-- Drawer Header -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between pb-3 bg-canvas-sunken -mx-6 -mt-6 p-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-secondary text-white font-bold text-headline-lg flex items-center justify-center shadow-md">
+                👤
+              </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h2 class="font-headline-md text-headline-md text-ink-900 font-bold" id="drawerCustomerName">اوید کیا</h2>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-secondary font-label-micro text-label-micro font-bold">سطح ۱۰۰ طلایی</span>
+</div>
+<span class="text-ink-500 font-code-mono text-label-micro" id="drawerCustomerHandle">@avid_kiya (اینستاگرام) | @avidkiya_tg</span>
+</div>
+</div>
+<button class="w-9 h-9 rounded-full bg-surface text-ink-500 hover:text-ink-900 flex items-center justify-center shadow-sm" onclick="close360Drawer()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Quick 360 Stats Grid -->
+<div class="grid grid-cols-3 gap-3">
+<div class="bg-canvas p-3 rounded-xl flex flex-col">
+<span class="text-ink-400 font-label-micro text-label-micro">مجموع پرداخت</span>
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold" id="drawerTotalSpend">۸,۴۵۰,۰۰۰</span>
+</div>
+<div class="bg-canvas p-3 rounded-xl flex flex-col">
+<span class="text-ink-400 font-label-micro text-label-micro">تعداد خرید موفق</span>
+<span class="font-headline-sm text-headline-sm text-ink-900 font-bold" id="drawerOrderCount">۱۴ سفارش</span>
+</div>
+<div class="bg-canvas p-3 rounded-xl flex flex-col">
+<span class="text-ink-400 font-label-micro text-label-micro">اعتبار وفاداری</span>
+<span class="font-headline-sm text-headline-sm text-success font-bold">۳۲۰,۰۰۰ ت</span>
+</div>
+</div>
+<!-- Timeline of Interactions -->
+<div class="flex flex-col gap-3 mt-2">
+<h3 class="font-headline-sm text-headline-sm text-ink-900 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[20px]">history</span>
+<span>تاریخچه و فعالیت‌های اخیر ۳۶۰ درجه</span>
+</h3>
+<div class="space-y-3 relative before:absolute before:inset-0 before:right-3.5 before:w-0.5 before:bg-canvas-sunken pr-2">
+<div class="relative flex items-start gap-3">
+<span class="w-7 h-7 rounded-full bg-emerald-50 text-success flex items-center justify-center shrink-0 z-10 shadow-xs">
+<span class="material-symbols-outlined text-[15px]">local_shipping</span>
+</span>
+<div class="bg-canvas p-3 rounded-xl flex-1 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-emphasis text-body-emphasis text-ink-900">سفارش شماره #۴۹۸۱ تحویل شد</span>
+<span class="font-label-micro text-ink-400">امروز ۱۴:۲۰</span>
+</div>
+<p class="font-label-caption text-label-caption text-ink-600">شامل ۲ قلم: ست ورزشی مشکی + کلاه بیسبال کیا. کد رهگیری پست: ۳۸۲۹۱۰۲</p>
+</div>
+</div>
+<div class="relative flex items-start gap-3">
+<span class="w-7 h-7 rounded-full bg-blue-50 text-info flex items-center justify-center shrink-0 z-10 shadow-xs">
+<span class="material-symbols-outlined text-[15px]">forum</span>
+</span>
+<div class="bg-canvas p-3 rounded-xl flex-1 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-emphasis text-body-emphasis text-ink-900">گفتگو در دایرکت اینستاگرام</span>
+<span class="font-label-micro text-ink-400">دیروز ۱۱:۰۵</span>
+</div>
+<p class="font-label-caption text-label-caption text-ink-600">پرسش در مورد شارژ مجدد رنگ کرم هودی - پاسخ داده شد توسط ربات هوشمند</p>
+</div>
+</div>
+<div class="relative flex items-start gap-3">
+<span class="w-7 h-7 rounded-full bg-purple-50 text-secondary flex items-center justify-center shrink-0 z-10 shadow-xs">
+<span class="material-symbols-outlined text-[15px]">card_giftcard</span>
+</span>
+<div class="bg-canvas p-3 rounded-xl flex-1 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-emphasis text-body-emphasis text-ink-900">استفاده از کد تخفیف یلدایی VIP</span>
+<span class="font-label-micro text-ink-400">۳ هفته پیش</span>
+</div>
+<p class="font-label-caption text-label-caption text-ink-600">کد YALDA-VIP با ۱۵٪ تخفیف اعمال شد.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Customer Delivery Address Card -->
+<div class="bg-canvas p-4 rounded-xl flex flex-col gap-2">
+<span class="text-ink-500 font-label-micro text-label-micro">نشانی ارسال پیش‌فرض</span>
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-ink-400 text-[18px] shrink-0 mt-0.5">pin_drop</span>
+<p class="text-ink-800 font-body-default text-body-default leading-relaxed" id="drawerCustomerAddress">
+                تهران، زعفرانیه، خیابان آصف، کوچه سوم، پلاک ۱۲، واحد ۴ - کد پستی: ۱۹۸۸۷۶۳۳۱۱
+              </p>
+</div>
+</div>
+</div>
+<!-- Drawer Footer Direct Actions -->
+<div class="pt-4 flex items-center gap-2 border-t border-canvas-sunken">
+<button class="flex-1 py-2.5 rounded-lg bg-primary hover:bg-brand-hover text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+<span>شروع چت اختصاصی</span>
+</button>
+<button class="px-4 py-2.5 rounded-lg bg-canvas hover:bg-surface-container text-ink-700 font-body-emphasis text-body-emphasis transition-all" onclick="close360Drawer()" type="button">
+            بستن
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= MODAL: ISSUE DISCOUNT COUPON ================= -->
+<div class="fixed inset-0 z-50 overflow-hidden pointer-events-none opacity-0 transition-opacity duration-200 flex items-center justify-center p-4" id="couponModal">
+<div class="absolute inset-0 bg-ink-900/60 backdrop-blur-xs" onclick="closeCouponModal()"></div>
+<div class="relative bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 pointer-events-auto flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">redeem</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline-md text-headline-md text-ink-900">صدور کوپن هدیه اختصاصی</h3>
+<span class="text-ink-500 font-label-micro text-label-micro" id="couponTargetCustomer">برای: اوید کیا</span>
+</div>
+</div>
+<button class="text-ink-400 hover:text-ink-800" onclick="closeCouponModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="flex flex-col gap-3">
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">نوع تخفیف</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 rounded-lg bg-primary text-white font-body-emphasis text-body-emphasis text-center" type="button">درصدی (٪)</button>
+<button class="py-2 rounded-lg bg-canvas text-ink-700 hover:bg-surface-container font-body-default text-body-default text-center" type="button">مبلغ ثابت (تومان)</button>
+</div>
+</div>
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">میزان درصد تخفیف</label>
+<input class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-900 font-headline-sm text-headline-sm focus:outline-none focus:ring-2 focus:ring-secondary/30" type="number" value="15"/>
+</div>
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">کد کوپن پیشنهادی</label>
+<input class="w-full h-11 px-3 rounded-lg bg-canvas text-secondary font-code-mono text-body-emphasis uppercase tracking-wider focus:outline-none" type="text" value="GIFT-AVID-15"/>
+</div>
+<div class="flex items-center gap-2 text-ink-600 font-label-caption text-label-caption">
+<input checked="" class="rounded text-secondary focus:ring-secondary w-4 h-4" id="autoSendTelegram" type="checkbox"/>
+<label for="autoSendTelegram">ارسال خودکار کد از طریق ربات تلگرام به مشتری</label>
+</div>
+</div>
+<div class="pt-3 flex items-center justify-end gap-2">
+<button class="px-4 py-2.5 rounded-lg bg-canvas hover:bg-surface-container text-ink-700 font-body-emphasis text-body-emphasis" onclick="closeCouponModal()" type="button">انصراف</button>
+<button class="px-5 py-2.5 rounded-lg bg-secondary hover:bg-violet-dark text-on-secondary font-headline-sm text-headline-sm shadow-sm" onclick="confirmIssueCoupon()" type="button">تایید و ارسال کوپن</button>
+</div>
+</div>
+</div>
+<!-- ================= MODAL: ADD NEW CUSTOMER ================= -->
+<div class="fixed inset-0 z-50 overflow-hidden pointer-events-none opacity-0 transition-opacity duration-200 flex items-center justify-center p-4" id="newCustomerModal">
+<div class="absolute inset-0 bg-ink-900/60 backdrop-blur-xs" onclick="closeNewCustomerModal()"></div>
+<div class="relative bg-surface rounded-2xl shadow-xl w-full max-w-lg p-6 pointer-events-auto flex flex-col gap-4 max-h-[921px] overflow-y-auto">
+<div class="flex items-center justify-between pb-2 border-b border-canvas-sunken">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">person_add</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline-md text-headline-md text-ink-900">ثبت پرونده مشتری جدید</h3>
+<span class="text-ink-500 font-label-micro text-label-micro">اتصال به پایگاه هوشمند اینستاستور</span>
+</div>
+</div>
+<button class="text-ink-400 hover:text-ink-800" onclick="closeNewCustomerModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div class="sm:col-span-2">
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">نام و نام خانوادگی خریدار *</label>
+<input class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-900 font-body-default text-body-default focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="مثال: پرهام رادمنش" type="text"/>
+</div>
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">شماره تلفن همراه *</label>
+<input class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-900 font-code-mono text-body-default focus:outline-none focus:ring-2 focus:ring-primary/20" dir="ltr" placeholder="09120000000" type="tel"/>
+</div>
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">آیدی اینستاگرام</label>
+<input class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-900 font-code-mono text-body-default focus:outline-none focus:ring-2 focus:ring-primary/20" dir="ltr" placeholder="@username" type="text"/>
+</div>
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">شناسه تلگرام</label>
+<input class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-900 font-code-mono text-body-default focus:outline-none focus:ring-2 focus:ring-primary/20" dir="ltr" placeholder="@telegram_handle" type="text"/>
+</div>
+<div>
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">شهر و استان</label>
+<select class="w-full h-11 px-3 rounded-lg bg-canvas text-ink-900 font-body-default text-body-default focus:outline-none">
+<option>تهران</option>
+<option>مشهد</option>
+<option>اصفهان</option>
+<option>تبریز</option>
+<option>شیراز</option>
+<option>اهواز</option>
+</select>
+</div>
+<div class="sm:col-span-2">
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">نشانی پستی دقیق</label>
+<textarea class="w-full p-3 rounded-lg bg-canvas text-ink-900 font-body-default text-body-default focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="خیابان، کوچه، پلاک، واحد..." rows="2"></textarea>
+</div>
+<div class="sm:col-span-2">
+<label class="block text-ink-700 font-label-caption text-label-caption mb-1">سطح اولیه مشتری</label>
+<div class="flex items-center gap-3">
+<label class="flex items-center gap-1.5 cursor-pointer font-label-caption text-ink-700">
+<input checked="" class="text-primary focus:ring-primary" name="cust_tier" type="radio"/>
+<span>مشتری استاندارد</span>
+</label>
+<label class="flex items-center gap-1.5 cursor-pointer font-label-caption text-ink-700">
+<input class="text-secondary focus:ring-secondary" name="cust_tier" type="radio"/>
+<span>مشتری VIP (سقف اعتبار بالاتر)</span>
+</label>
+</div>
+</div>
+</div>
+<div class="pt-3 flex items-center justify-end gap-2 border-t border-canvas-sunken">
+<button class="px-4 py-2.5 rounded-lg bg-canvas hover:bg-surface-container text-ink-700 font-body-emphasis text-body-emphasis" onclick="closeNewCustomerModal()" type="button">انصراف</button>
+<button class="px-5 py-2.5 rounded-lg bg-buy-primary hover:bg-buy-hover text-on-primary font-headline-sm text-headline-sm shadow-sm" onclick="saveNewCustomer()" type="button">ذخیره و فعال‌سازی</button>
+</div>
+</div>
+</div>
+<!-- Toast Notification Box -->
+<div class="fixed bottom-6 right-6 z-50 bg-ink-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none" id="toastNotification">
+<span class="material-symbols-outlined text-success text-[20px]" id="toastIcon">check_circle</span>
+<span class="font-body-emphasis text-body-emphasis" id="toastMessage">عملیات با موفقیت انجام شد</span>
+</div>
+</div>
+<!-- ================= CLIENT-SIDE INTERACTIVITY SCRIPTS ================= -->
+<script>
+  // 1. Toast Notification Utility
+  function showToast(message, isSuccess = true) {
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+    if (!toast || !toastMsg) return;
+
+    toastMsg.textContent = message;
+    toastIcon.textContent = isSuccess ? 'check_circle' : 'info';
+    toastIcon.className = `material-symbols-outlined text-[20px] ${isSuccess ? 'text-success' : 'text-warning'}`;
+
+    toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      toast.classList.remove('translate-y-0', 'opacity-100');
+    }, 2800);
+  }
+
+  // 2. Segment Switcher Functionality
+  let currentSegment = 'all';
+
+  function setSegment(btn, segment) {
+    currentSegment = segment;
+    const buttons = document.querySelectorAll('.segment-btn');
+    buttons.forEach(b => {
+      b.classList.remove('bg-ink-900', 'text-on-primary', 'shadow-sm');
+      b.classList.add('bg-canvas', 'text-ink-600');
+    });
+    btn.classList.add('bg-ink-900', 'text-on-primary', 'shadow-sm');
+    btn.classList.remove('bg-canvas', 'text-ink-600');
+    filterCustomers();
+  }
+
+  // 3. Live Customer Search & Table Filter
+  function filterCustomers() {
+    const searchVal = (document.getElementById('customerSearchInput')?.value || '').toLowerCase().trim();
+    const cityVal = (document.getElementById('cityFilter')?.value || '').trim();
+    const rfmVal = (document.getElementById('rfmScoreFilter')?.value || '').trim();
+    
+    const rows = document.querySelectorAll('.customer-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const name = (row.getAttribute('data-name') || '').toLowerCase();
+      const phone = (row.getAttribute('data-phone') || '').toLowerCase();
+      const city = row.getAttribute('data-city') || '';
+      const seg = row.getAttribute('data-segment') || '';
+      const rfm = row.getAttribute('data-rfm') || '';
+
+      const matchSearch = !searchVal || name.includes(searchVal) || phone.includes(searchVal);
+      const matchCity = !cityVal || city === cityVal;
+      const matchSegment = (currentSegment === 'all') || (seg === currentSegment);
+      const matchRfm = !rfmVal || rfm.includes(rfmVal);
+
+      if (matchSearch && matchCity && matchSegment && matchRfm) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    const resultCountEl = document.getElementById('resultCount');
+    if (resultCountEl) {
+      resultCountEl.textContent = `${visibleCount} نتیجه نمایش داده شد`;
+    }
+  }
+
+  function resetCustomerFilters() {
+    if (document.getElementById('customerSearchInput')) document.getElementById('customerSearchInput').value = '';
+    if (document.getElementById('cityFilter')) document.getElementById('cityFilter').value = '';
+    if (document.getElementById('rfmScoreFilter')) document.getElementById('rfmScoreFilter').value = '';
+    
+    // Reset to first pill
+    const firstPill = document.querySelector('.segment-btn');
+    if (firstPill) setSegment(firstPill, 'all');
+    filterCustomers();
+    showToast('فیلترها بازنشانی شدند');
+  }
+
+  // 4. Toggle Phone Masking
+  function togglePhoneMasking(checkbox) {
+    const displays = document.querySelectorAll('.phone-display');
+    displays.forEach(el => {
+      const real = el.getAttribute('data-real');
+      if (checkbox.checked) {
+        el.textContent = real;
+      } else {
+        // Mask middle digits
+        el.textContent = real.substring(0, 4) + '***' + real.substring(7);
+      }
+    });
+    showToast(checkbox.checked ? 'شماره‌های تماس آشکار شدند' : 'حالت امنیتی ماسک فعال شد');
+  }
+
+  // 5. Copy Text Utility
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`شماره ${text} در کلیپ‌بورد کپی شد`);
+    }).catch(() => {
+      showToast('خطا در کپی شماره', false);
+    });
+  }
+
+  // 6. Customer 360 Slide-over Drawer
+  function open360Drawer(name, totalSpend, orderCount, address, handle) {
+    const drawer = document.getElementById('customer360Drawer');
+    const panel = document.getElementById('drawerPanel');
+    if (!drawer || !panel) return;
+
+    document.getElementById('drawerCustomerName').textContent = name;
+    document.getElementById('drawerTotalSpend').textContent = totalSpend;
+    document.getElementById('drawerOrderCount').textContent = orderCount;
+    document.getElementById('drawerCustomerAddress').textContent = address;
+    document.getElementById('drawerCustomerHandle').textContent = `${handle} (اینستاگرام)`;
+
+    drawer.classList.remove('pointer-events-none', 'opacity-0');
+    drawer.classList.add('opacity-100');
+    panel.classList.remove('-translate-x-full');
+    panel.classList.add('translate-x-0');
+  }
+
+  function close360Drawer() {
+    const drawer = document.getElementById('customer360Drawer');
+    const panel = document.getElementById('drawerPanel');
+    if (!drawer || !panel) return;
+
+    panel.classList.add('-translate-x-full');
+    panel.classList.remove('translate-x-0');
+    setTimeout(() => {
+      drawer.classList.add('pointer-events-none', 'opacity-0');
+      drawer.classList.remove('opacity-100');
+    }, 200);
+  }
+
+  // 7. Coupon Modal
+  function issueCouponModal(name) {
+    const modal = document.getElementById('couponModal');
+    const target = document.getElementById('couponTargetCustomer');
+    if (target) target.textContent = `برای: ${name}`;
+    if (modal) {
+      modal.classList.remove('pointer-events-none', 'opacity-0');
+      modal.classList.add('opacity-100');
+    }
+  }
+
+  function closeCouponModal() {
+    const modal = document.getElementById('couponModal');
+    if (modal) {
+      modal.classList.add('pointer-events-none', 'opacity-0');
+      modal.classList.remove('opacity-100');
+    }
+  }
+
+  function confirmIssueCoupon() {
+    closeCouponModal();
+    showToast('کوپن هدیه صادر و به ربات تلگرام ارسال شد');
+  }
+
+  // 8. New Customer Modal
+  function openNewCustomerModal() {
+    const modal = document.getElementById('newCustomerModal');
+    if (modal) {
+      modal.classList.remove('pointer-events-none', 'opacity-0');
+      modal.classList.add('opacity-100');
+    }
+  }
+
+  function closeNewCustomerModal() {
+    const modal = document.getElementById('newCustomerModal');
+    if (modal) {
+      modal.classList.add('pointer-events-none', 'opacity-0');
+      modal.classList.remove('opacity-100');
+    }
+  }
+
+  function saveNewCustomer() {
+    closeNewCustomerModal();
+    showToast('پرونده خریدار با موفقیت ایجاد و همگام شد');
+  }
+
+  // 9. Quick Telegram Redirect Simulation
+  function sendDirectTelegram(username) {
+    showToast(`در حال اتصال به دایرکت @${username} در ربات...`);
+  }
+</script></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+      
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+</body></html>

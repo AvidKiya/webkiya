@@ -1,0 +1,732 @@
+<!DOCTYPE html><html dir="rtl" lang="fa"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="">داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span class="">محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span class="">انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span class="">سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span class="">دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span class="">مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span class="">دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span class="">مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span class="">SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span class="">ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span class="">تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span class="">ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full gap-8">
+<!-- Header Area -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-6 rounded-xl shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-primary via-primary-container to-secondary flex items-center justify-center text-on-primary shadow-md">
+<span class="material-symbols-outlined text-display" style="font-variation-settings: 'FILL' 1;">hub</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-lg text-headline-lg text-ink-900 tracking-tight">SocialHub</h1>
+<span class="text-headline-md">🚀</span>
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-micro text-label-micro font-code-mono uppercase">Multi-Sync Engine v3.2</span>
+</div>
+<p class="font-body-default text-body-default text-ink-500 mt-1">
+          یک‌جا منتشر کن، همه‌جا بره — سایت + چنل + ربات + اینستا
+        </p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2.5 rounded-lg bg-surface-container-low text-ink-700 hover:text-ink-900 hover:bg-surface-variant font-body-emphasis text-body-emphasis flex items-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-headline-sm">tune</span>
+<span class="">تنظیمات توکن‌ها</span>
+</button>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-lowest shadow-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
+<span class="font-label-caption text-label-caption text-ink-700">وب‌هوک فعال</span>
+</div>
+</div>
+</div>
+<!-- 4 Connected Channels Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Channel 1: Web -->
+<div class="bg-surface rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 left-0 h-1 bg-info"></div>
+<div class="flex items-start justify-between">
+<div class="w-11 h-11 rounded-lg bg-surface-container-low flex items-center justify-center text-info">
+<span class="material-symbols-outlined text-headline-md" style="font-variation-settings: 'FILL' 1;">language</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-success font-label-micro text-label-micro flex items-center gap-1 font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+          فعال
+        </span>
+</div>
+<div class="mt-4">
+<h3 class="font-headline-sm text-headline-sm text-ink-900">سایت کیا</h3>
+<p class="font-code-mono text-label-caption text-ink-400 mt-0.5 dir-ltr text-right">kiyaco24.ir</p>
+</div>
+<div class="mt-5 pt-3 bg-surface-container-lowest rounded-lg px-3 py-2 flex items-center justify-between">
+<span class="font-label-caption text-label-caption text-ink-500">آمار انتشار:</span>
+<span class="font-body-emphasis text-body-emphasis text-ink-800 font-code-mono">۰ انتشار</span>
+</div>
+</div>
+<!-- Channel 2: Telegram Channel -->
+<div class="bg-surface rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 left-0 h-1 bg-secondary-container"></div>
+<div class="flex items-start justify-between">
+<div class="w-11 h-11 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary-container">
+<span class="material-symbols-outlined text-headline-md" style="font-variation-settings: 'FILL' 1;">send</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-success font-label-micro text-label-micro flex items-center gap-1 font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+          فعال
+        </span>
+</div>
+<div class="mt-4">
+<h3 class="font-headline-sm text-headline-sm text-ink-900">چنل تلگرام</h3>
+<p class="font-code-mono text-label-caption text-secondary dir-ltr text-right font-medium">@kiyaco24</p>
+</div>
+<div class="mt-5 pt-3 bg-surface-container-lowest rounded-lg px-3 py-2 flex items-center justify-between">
+<span class="font-label-caption text-label-caption text-ink-500">آمار انتشار:</span>
+<span class="font-body-emphasis text-body-emphasis text-ink-800 font-code-mono">۰ انتشار</span>
+</div>
+</div>
+<!-- Channel 3: Telegram Bot -->
+<div class="bg-surface rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 left-0 h-1 bg-violet-dark"></div>
+<div class="flex items-start justify-between">
+<div class="w-11 h-11 rounded-lg bg-surface-container-low flex items-center justify-center text-violet-dark">
+<span class="material-symbols-outlined text-headline-md" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-success font-label-micro text-label-micro flex items-center gap-1 font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+          فعال
+        </span>
+</div>
+<div class="mt-4">
+<h3 class="font-headline-sm text-headline-sm text-ink-900">ربات تلگرام</h3>
+<p class="font-code-mono text-label-caption text-violet-dark dir-ltr text-right font-medium">@kiyaco24bot</p>
+</div>
+<div class="mt-5 pt-3 bg-surface-container-lowest rounded-lg px-3 py-2 flex items-center justify-between">
+<span class="font-label-caption text-label-caption text-ink-500">آمار انتشار:</span>
+<span class="font-body-emphasis text-body-emphasis text-ink-800 font-code-mono">۰ انتشار</span>
+</div>
+</div>
+<!-- Channel 4: Instagram -->
+<div class="bg-surface rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 left-0 h-1 bg-primary-container"></div>
+<div class="flex items-start justify-between">
+<div class="w-11 h-11 rounded-lg bg-surface-container-low flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-headline-md" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-success font-label-micro text-label-micro flex items-center gap-1 font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+          فعال
+        </span>
+</div>
+<div class="mt-4">
+<h3 class="font-headline-sm text-headline-sm text-ink-900">اینستاگرام</h3>
+<p class="font-code-mono text-label-caption text-primary dir-ltr text-right font-medium">@kiyaco24</p>
+</div>
+<div class="mt-5 pt-3 bg-surface-container-lowest rounded-lg px-3 py-2 flex items-center justify-between">
+<span class="font-label-caption text-label-caption text-ink-500">آمار انتشار:</span>
+<span class="font-body-emphasis text-body-emphasis text-ink-800 font-code-mono">۰ انتشار</span>
+</div>
+</div>
+</div>
+<!-- Smart Publishing Composer 2-Column Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left Column: Live Interactive Preview (Desktop width 5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-4">
+<div class="bg-surface rounded-xl p-5 shadow-sm">
+<!-- Tab Switcher -->
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-1.5 p-1 rounded-lg bg-surface-container-low">
+<button class="px-3 py-1.5 rounded-md font-body-emphasis text-body-emphasis transition-all flex items-center gap-1.5 text-ink-600" id="btn-tab-tg" onclick="switchPreview('telegram')">
+<span class="">پیش‌نمایش تلگرام</span>
+<span class="">✈️</span>
+</button>
+<button class="px-3 py-1.5 rounded-md hover:text-ink-900 font-body-emphasis text-body-emphasis transition-all flex items-center gap-1.5 bg-surface text-ink-900 shadow-sm" id="btn-tab-ig" onclick="switchPreview('instagram')">
+<span class="">پیش‌نمایش اینستا</span>
+<span class="">📷</span>
+</button>
+</div>
+<span class="font-label-micro text-label-micro text-ink-400 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+            رندر لحظه‌ای
+          </span>
+</div>
+<!-- Telegram Preview Box -->
+<div class="rounded-xl bg-canvas-sunken p-4 transition-all hidden" id="preview-telegram-card">
+<div class="flex items-center gap-3 mb-3 bg-surface p-2.5 rounded-lg shadow-sm">
+<div class="w-10 h-10 rounded-full bg-gradient-to-tr from-secondary to-primary-container flex items-center justify-center text-on-primary font-headline-sm text-headline-sm font-bold">
+              K
+            </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-ink-900">کیا | KIYA</span>
+<span class="text-label-micro">🇮🇷</span>
+</div>
+<span class="font-label-micro text-label-micro text-ink-500">کانال، ۱,۲۴۷ مشترک</span>
+</div>
+</div>
+<!-- Telegram Bubble -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex flex-col gap-3">
+<div class="relative w-full aspect-square rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" data-alt="Professional modern social commerce product photo of premium streetwear, soft studio warm lighting, aesthetic lifestyle composition matching the high-end apparel collection of Kiya brand, rich textures and sharp focus" id="preview-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChe_R4FlSGsXwA2Qu-PrWzcLHcP_yqNn9EA4fXRhAu-oJceKc2zrmgIhCNUV4UMdBEzmTKoc1GLQAZPY2rKoPZCfDmWlHPvxLLhDxOJaXZCNRk5eSNpg1DSm3FRaP1pfTJGhf7xDRKK1VGd5zkqLvp4cuvauvjqyHvWO9Y47v25w4Q5zf38R_UWL0wSFHAwWoNt75RMfjSHp1V2QDnDIy3ubCJj94KPJtV70wq8HXTCZdhPHjDyB2D">
+<div class="absolute bottom-2 right-2 px-2.5 py-1 rounded-md bg-ink-900/80 backdrop-blur text-on-primary font-price-headline text-price-headline">
+<span id="preview-price-tag" class="">۸۹۰,۰۰۰ تومان</span>
+</div>
+</div>
+<!-- Dynamic Post Caption -->
+<div class="text-ink-800 font-body-default text-body-default whitespace-pre-line leading-relaxed text-right" id="preview-caption-text">✨ محصول ویژه کالکشن کیا
+🔥 تیشرت اوورسایز نئو ۲۰۲۵
+📦 ارسال فوری با بسته‌بندی ویژه و اصالت کالا
+
+قیمت ویژه: ۸۹۰,۰۰۰ تومان
+سفارش فوری از وب‌سایت و بات:</div>
+<div class="flex items-center justify-between text-ink-400 font-label-micro text-label-micro pt-1 border-t-0">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">visibility</span>
+<span class="font-code-mono">1.2k</span>
+</div>
+<span class="font-code-mono">14:28</span>
+</div>
+<!-- Telegram Inline Glass Button -->
+<a class="w-full py-2.5 rounded-lg bg-surface-container-low hover:bg-surface-variant text-ink-800 font-body-emphasis text-body-emphasis text-center transition-colors flex items-center justify-center gap-2" href="#">
+<span class="material-symbols-outlined text-headline-sm text-primary">shopping_bag</span>
+<span class="">🛒 خرید از فروشگاه</span>
+</a>
+</div>
+</div>
+<!-- Instagram Preview Box (Hidden by default) -->
+<div class="rounded-xl bg-canvas-sunken p-4 transition-all" id="preview-instagram-card">
+<div class="bg-surface rounded-xl overflow-hidden shadow-sm">
+<div class="flex items-center justify-between p-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 via-primary-container to-secondary p-[2px]">
+<div class="w-full h-full bg-surface rounded-full flex items-center justify-center text-primary font-bold text-label-micro">
+                    KIYA
+                  </div>
+</div>
+<div class="flex flex-col">
+<span class="font-body-emphasis text-body-emphasis text-ink-900">kiyaco24</span>
+<span class="font-label-micro text-label-micro text-ink-500">تهران، ایران</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-ink-600">more_horiz</span>
+</div>
+<div class="w-full aspect-square bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="High resolution dynamic Instagram fashion showcase photo, trendy minimal aesthetic, Persian social commerce vibes, vibrant background, premium retail quality" id="preview-image-ig" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEcw64SVADODsJiBMU1mdW1magHTixSUSnJpfY2ezZ-hulEesF_KzWNd_U_mJ_HDDzvSMF7A8DQcNZfVP7xjzvFkYUa0eIt-3A-x9eVkT_V4lAFr4y9Zxbu4VtUU_lz3eL-AhVSWTosYPeikD_9aLZqRjhPRlwqj7OvCap4w3Ju9NxmluPMYC_bE1ukF0z3b1YPtjTYqhXlxdPB7Jrx8h-rYyQZrbyxrOSwAxUO_9UhH9yvfdlN5zX">
+</div>
+<div class="p-3 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3 text-ink-800">
+<span class="material-symbols-outlined text-headline-md text-primary">favorite</span>
+<span class="material-symbols-outlined text-headline-md">chat_bubble</span>
+<span class="material-symbols-outlined text-headline-md">send</span>
+</div>
+<span class="material-symbols-outlined text-headline-md text-ink-800">bookmark</span>
+</div>
+<div class="font-label-caption text-label-caption text-ink-900 font-bold">۲۴۵ پسند</div>
+<div class="text-ink-800 font-label-caption text-label-caption line-clamp-3 text-right" id="preview-caption-ig"><span class="font-bold ml-1">kiyaco24</span> ✨ محصول ویژه کالکشن کیا 🔥 تیشرت اوورسایز نئو ۲۰۲۵ 📦 ارسال فوری با بسته‌بندی ویژه و اصالت کالا  قیمت ویژه: ۸۹۰,۰۰۰ تومان سفارش فوری از وب‌سایت و بات:</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Smart Post Composer Form (Desktop width 7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-5">
+<div class="bg-surface rounded-xl p-6 shadow-sm flex flex-col gap-5">
+<!-- Card Header -->
+<div class="flex items-center justify-between pb-3 border-b-0">
+<div class="flex items-center gap-2">
+<span class="text-headline-md">✍️</span>
+<h2 class="font-headline-md text-headline-md text-ink-900">پست جدید</h2>
+</div>
+<span class="font-label-caption text-label-caption text-ink-400 bg-surface-container-low px-2.5 py-1 rounded-md">
+            هوشمند سازی اتصال کالا به محتوا
+          </span>
+</div>
+<!-- Product Selector Dropdown -->
+<div class="flex flex-col gap-2">
+<label class="font-body-emphasis text-body-emphasis text-ink-800 flex items-center justify-between">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-headline-sm text-primary">inventory_2</span>
+              انتخاب محصول از انبار
+            </span>
+<span class="font-label-micro text-label-micro text-ink-500">کپشن و قیمت اتوماتیک پر می‌شود</span>
+</label>
+<div class="relative">
+<select class="w-full h-12 rounded-lg bg-surface-container-low text-ink-900 font-body-default text-body-default px-4 pr-10 pl-10 focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer" id="product-selector" onchange="handleProductChange(this)">
+<option data-price="۸۹۰,۰۰۰ تومان" data-title="تیشرت اوورسایز نئو ۲۰۲۵" selected="" value="tee-neo">تیشرت اوورسایز کتان خالص مدل نئو ۲۰۲۵ (موجودی: ۲۴ عدد)</option>
+<option data-price="۱,۴۵۰,۰۰۰ تومان" data-title="هودی کلاه‌دار کرک‌دار زمستانه" value="hoodie-pro">هودی کلاه‌دار کرک‌دار زمستانه کیا (موجودی: ۱۲ عدد)</option>
+<option data-price="۳۸۰,۰۰۰ تومان" data-title="کلاه نقاب‌دار سیگنچر کیا" value="cap-signature">کلاه نقاب‌دار سیگنچر با دوخت برجسته (موجودی: ۵ عدد)</option>
+<option value="custom">-- متن سفارشی بدون محصول مشخص --</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-ink-400 pointer-events-none">style</span>
+<span class="material-symbols-outlined absolute left-3 top-3 text-ink-400 pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Caption Field -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<label class="font-body-emphasis text-body-emphasis text-ink-800 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-headline-sm text-secondary">auto_fix_high</span>
+              کپشن (خودکار ساخته شد، قابل ویرایش ✨)
+            </label>
+<button class="text-secondary hover:text-secondary-container font-label-micro text-label-micro flex items-center gap-1 transition-colors" onclick="regenerateAI()" type="button">
+<span class="material-symbols-outlined text-label-caption">refresh</span>
+              بازنویسی با هوش مصنوعی
+            </button>
+</div>
+<textarea class="w-full rounded-lg bg-surface-container-low text-ink-900 font-body-default text-body-default p-4 focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed resize-none" id="composer-caption" rows="6">✨ محصول ویژه کالکشن بهار کیا
+🔥 تیشرت اوورسایز کتان خالص مدل نئو ۲۰۲۵
+📦 همراه با ضمانت بازگشت و ارسال فوری به سراسر کشور
+
+قیمت ویژه: ۸۹۰,۰۰۰ تومان
+سفارش فوری از ربات و وب‌سایت:</textarea>
+<div class="flex items-center justify-between text-ink-400 font-label-micro text-label-micro px-1">
+<span class="">تعداد کاراکتر: <strong class="font-code-mono text-ink-700" id="char-count">۱۵۰</strong> / ۱۰۲۴</span>
+<span class="text-success font-medium">بهینه برای الگوریتم تلگرام و هشتگ‌های اینستاگرام</span>
+</div>
+</div>
+<!-- Publishing Destinations Checklist -->
+<div class="flex flex-col gap-2.5">
+<label class="font-body-emphasis text-body-emphasis text-ink-800 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-headline-sm text-ink-600">alt_route</span>
+            مقصدهای انتشار هدف:
+          </label>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<!-- Destination 1: Telegram Channel -->
+<label class="destination-card relative flex items-center gap-3 p-3.5 rounded-lg bg-surface-container-low cursor-pointer transition-all hover:bg-surface-variant">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary accent-primary" id="dest-tg-channel" type="checkbox">
+<div class="flex flex-col">
+<span class="font-body-emphasis text-body-emphasis text-ink-900 flex items-center gap-1">
+                  چنل تلگرام
+                  <span class="text-label-micro">✈️</span>
+</span>
+<span class="font-label-micro text-label-micro text-ink-500 font-code-mono">@kiyaco24</span>
+</div>
+</label>
+<!-- Destination 2: Telegram Bot -->
+<label class="destination-card relative flex items-center gap-3 p-3.5 rounded-lg bg-surface-container-low cursor-pointer transition-all hover:bg-surface-variant">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary accent-primary" id="dest-tg-bot" type="checkbox">
+<div class="flex flex-col">
+<span class="font-body-emphasis text-body-emphasis text-ink-900 flex items-center gap-1">
+                  ربات تلگرام
+                  <span class="text-label-micro">🤖</span>
+</span>
+<span class="font-label-micro text-label-micro text-ink-500 font-code-mono">@kiyaco24bot</span>
+</div>
+</label>
+<!-- Destination 3: Instagram -->
+<label class="destination-card relative flex items-center gap-3 p-3.5 rounded-lg bg-surface-container-low cursor-pointer transition-all hover:bg-surface-variant">
+<input checked="" class="w-5 h-5 rounded text-primary focus:ring-primary accent-primary" id="dest-instagram" type="checkbox">
+<div class="flex flex-col">
+<span class="font-body-emphasis text-body-emphasis text-ink-900 flex items-center gap-1">
+                  اینستاگرام
+                  <span class="text-label-micro">📷</span>
+</span>
+<span class="font-label-micro text-label-micro text-ink-500 font-code-mono">@kiyaco24</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+<!-- Primary Multi-Publish Button -->
+<button class="w-full sm:flex-1 py-3 px-5 rounded-lg bg-gradient-to-r from-primary to-primary-container hover:from-brand-hover hover:to-primary text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-sm transition-all transform active:scale-95" onclick="triggerPublish('multi')" type="button">
+<span class="">🚀</span>
+<span class="">انتشار همزمان</span>
+</button>
+<!-- Telegram Dedicated Live Publish Button -->
+<button class="w-full sm:w-auto py-3 px-5 rounded-lg bg-secondary hover:bg-violet-dark text-on-secondary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-sm transition-all transform active:scale-95" onclick="triggerPublish('telegram_live')" type="button">
+<span class="">✈️</span>
+<span class="">انتشار واقعی در کانال تلگرام (زنده)</span>
+</button>
+</div>
+<!-- Toast Feedback Banner (Hidden by default) -->
+<div class="hidden p-3.5 rounded-lg bg-surface-container-high text-success flex items-center justify-between" id="publish-toast">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-headline-sm">check_circle</span>
+<span class="font-body-emphasis text-body-emphasis" id="publish-toast-text">درخواست ارسال شد!</span>
+</div>
+<span class="font-code-mono text-label-micro text-ink-500">ID: #SYNC-984</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Recent Publishes -->
+<div class="bg-surface rounded-xl p-6 shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-headline-md">📑</span>
+<h2 class="font-headline-md text-headline-md text-ink-900">آخرین انتشارها</h2>
+</div>
+<span class="font-label-caption text-label-caption text-ink-400">تاریخچه ارسال زنده SocialHub</span>
+</div>
+<!-- Empty State Content as specified -->
+<div class="flex flex-col items-center justify-center py-12 px-4 rounded-lg bg-canvas-sunken text-center gap-3">
+<div class="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center text-ink-400">
+<span class="material-symbols-outlined text-display">cloud_queue</span>
+</div>
+<p class="font-headline-sm text-headline-sm text-ink-700">
+        هنوز چیزی منتشر نکردی — بالا یه پست بساز و بفرستش بیرون! 🚀
+      </p>
+<span class="font-label-caption text-label-caption text-ink-400 max-w-md">
+        هر زمان پستی به کانال تلگرام، اینستاگرام یا وب‌سایت همگام شود، جزئیات دسترسی و وضعیت بازدید آن در این جدول ثبت خواهد شد.
+      </span>
+</div>
+</div>
+</div>
+<!-- Interactive Client-side Script -->
+<script>
+  function switchPreview(mode) {
+    const tgCard = document.getElementById('preview-telegram-card');
+    const igCard = document.getElementById('preview-instagram-card');
+    const btnTg = document.getElementById('btn-tab-tg');
+    const btnIg = document.getElementById('btn-tab-ig');
+
+    if (mode === 'telegram') {
+      tgCard.classList.remove('hidden');
+      igCard.classList.add('hidden');
+      btnTg.classList.add('bg-surface', 'text-ink-900', 'shadow-sm');
+      btnTg.classList.remove('text-ink-600');
+      btnIg.classList.remove('bg-surface', 'text-ink-900', 'shadow-sm');
+      btnIg.classList.add('text-ink-600');
+    } else {
+      igCard.classList.remove('hidden');
+      tgCard.classList.add('hidden');
+      btnIg.classList.add('bg-surface', 'text-ink-900', 'shadow-sm');
+      btnIg.classList.remove('text-ink-600');
+      btnTg.classList.remove('bg-surface', 'text-ink-900', 'shadow-sm');
+      btnTg.classList.add('text-ink-600');
+    }
+  }
+
+  function handleProductChange(selectEl) {
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    const price = selectedOption.getAttribute('data-price') || '';
+    const title = selectedOption.getAttribute('data-title') || '';
+    const captionArea = document.getElementById('composer-caption');
+    const previewCaption = document.getElementById('preview-caption-text');
+    const previewIg = document.getElementById('preview-caption-ig');
+    const priceTag = document.getElementById('preview-price-tag');
+
+    if (selectEl.value === 'custom') {
+      captionArea.value = '✍️ متن سفارشی دلخواه خود را در این بخش بنویسید...';
+      priceTag.textContent = 'سفارشی';
+    } else {
+      captionArea.value = `✨ محصول ویژه کالکشن کیا\n🔥 ${title}\n📦 ارسال فوری با بسته‌بندی ویژه و اصالت کالا\n\nقیمت ویژه: ${price}\nسفارش فوری از وب‌سایت و بات:`;
+      priceTag.textContent = price;
+    }
+    
+    previewCaption.textContent = captionArea.value;
+    previewIg.innerHTML = `<span class="font-bold ml-1">kiyaco24</span> ${captionArea.value.replace(/\n/g, ' ')}`;
+    updateCharCount();
+  }
+
+  const captionTextarea = document.getElementById('composer-caption');
+  captionTextarea.addEventListener('input', function() {
+    document.getElementById('preview-caption-text').textContent = this.value;
+    document.getElementById('preview-caption-ig').innerHTML = `<span class="font-bold ml-1">kiyaco24</span> ${this.value.replace(/\n/g, ' ')}`;
+    updateCharCount();
+  });
+
+  function updateCharCount() {
+    const len = document.getElementById('composer-caption').value.length;
+    const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    document.getElementById('char-count').textContent = len.toString().replace(/\d/g, d => persianDigits[d]);
+  }
+
+  function regenerateAI() {
+    const area = document.getElementById('composer-caption');
+    area.value = "⚡ فرصت طلایی خرید استایل خیابانی کیا\nطراحی مینیمال و متریال صددرصد پنبه طبیعی.\nتخفیف محدود به مدت ۲۴ ساعت برای همراهان تلگرام!\n\n🛒 همین حالا ثبت سفارش کنید:";
+    document.getElementById('preview-caption-text').textContent = area.value;
+    updateCharCount();
+  }
+
+  function triggerPublish(type) {
+    const toast = document.getElementById('publish-toast');
+    const toastText = document.getElementById('publish-toast-text');
+    toast.classList.remove('hidden');
+
+    if (type === 'telegram_live') {
+      toastText.textContent = "پیام با موفقیت مستقیم به چنل تلگرام @kiyaco24 ارسال شد! ✈️";
+    } else {
+      toastText.textContent = "درخواست انتشار همزمان به وب‌سایت، تلگرام و اینستاگرام صادر شد! 🚀";
+    }
+
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 4500);
+  }
+</script></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+      
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+
+
+</body></html>
