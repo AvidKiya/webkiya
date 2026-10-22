@@ -1,16 +1,16 @@
-export const dynamicParams = false;
 import { notFound } from "next/navigation";
-import { products } from "@/lib/catalog";
 import Store from "@/components/store";
-export function generateStaticParams() {
-  return products.map(({ id }) => ({ id }));
-}
+import { publicCatalog, publicProduct } from "@/server/catalog";
+export const dynamic = "force-dynamic";
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (!products.some((p) => p.id === id)) notFound();
-  return <Store section="home" initialPost={id} />;
+  const product = await publicProduct(id);
+  if (!product) notFound();
+  const catalog = await publicCatalog();
+  if (!catalog.some((p) => p.id === id)) catalog.push(product);
+  return <Store section="home" initialPost={id} catalog={catalog} />;
 }

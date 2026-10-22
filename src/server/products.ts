@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "./db";
 import { requireStaff, limit } from "./auth";
 import { ApiError } from "./http";
+import { reauthorize } from "./product-workflow";
 export const draftInput = z
   .object({
     name: z.string().trim().min(2).max(160),
@@ -27,6 +28,7 @@ export async function createDraft(
   const current = await requireStaff(request, "product:write");
   await limit("product-write:" + current.user.id, 30, 60);
   return db().$transaction(async (tx) => {
+    await reauthorize(tx, current, "product:write");
     const p = await tx.product.create({
       data: {
         id: "draft-" + randomUUID(),
@@ -56,6 +58,7 @@ export async function editDraft(
   await limit("product-write:" + current.user.id, 30, 60);
   return db().$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id"=${id} FOR UPDATE`;
+    await reauthorize(tx, current, "product:write");
     const existing = await tx.product.findUnique({ where: { id } });
     if (!existing) throw new ApiError(404, "NOT_FOUND", "کالا پیدا نشد.");
     if (existing.status !== "DRAFT")
@@ -72,7 +75,12 @@ export async function editDraft(
       );
     const p = await tx.product.update({
       where: { id },
-      data: { name: input.name, price: input.price, version: { increment: 1 } },
+      data: {
+        name: input.name,
+        price: input.price,
+        previousPrice: null,
+        version: { increment: 1 },
+      },
       select,
     });
     await tx.auditLog.create({

@@ -107,3 +107,11 @@
 - تصمیم: حساب درخواست‌شده فقط در DB محلی، با hash رمز و phone ثبت‌شده ولی تأییدنشده؛ هیچ credential شخصی در seed/Git نیست. OWNER + MFA برای IAM، نقش پایه تغییرناپذیر، custom-role فقط مجوز عملیاتی، ارتقای مالک با تأیید صریح.
 - تصمیم: serialize عملیات IAM با advisory lock، reauthorization/session/actor row-lock داخل transaction؛ version، last-owner/self guard و audit؛ تغییر نقش/وضعیت/رمز، نشست‌های مربوط را باطل می‌کند.
 - پیامد: مدیریت تیم و نقش‌ها اجرایی‌اند؛ scope کالا/انبار، دعوت/بازیابی، reset MFA، تولید و فروش واقعی تکمیل نشده‌اند. گزارش۲۴ مرجع حدود و شواهد است.
+
+### ADR-015 — کاتالوگ DB و موجودی بدون وانمودکردن commerce
+- تاریخ: 2026-10-22
+- وضعیت: اجراشده در نسخه0.5.0؛ نه تکمیل FULL
+- تصمیم: فقط PUBLISHED به DTO عمومی با قیمت خرده و boolean دسترسی موجودی می‌رود؛ هیچ شمارش دقیق انبار/قیمت خصوصی در RSC یا API عمومی نیست. fixtures فقط seed/preview و در live مخفی‌اند. پست ناموجود/بایگانی قبل streaming با proxy404 کنترل می‌شود.
+- تصمیم: تغییر metadata/رنگ فقط DRAFT با version؛ تغییر وضعیت جداگانه و audited. نسخهٔ کالا از نسخهٔ SKU جداست؛ stock correction نسخهٔ SKU را تغییر می‌دهد، نه metadata. packSize صرفاً مشخصه است؛ BOM/quote/reservation/order نیست.
+- تصمیم: Stock ledger append-only + Product→Variant lock order + UUID advisory lock برای retry، بررسی session/permission داخل transaction و قواعد stock/reserved. عکس معتبر decode/re-encode و EXIF حذف، با hash محلی و gate تصویر draft؛ volume/backup/quota/object-storage پیش‌نیاز تولید است.
+- پیامد: مسیر ثبت تا انتشار واقعی و تست‌شده است؛ multiwarehouse، BOM واقعی، قیمت خصوصی عمده، سفارش/پرداخت، نگهداری رسانه و باقی FULL باز هستند. گزارش۲۵ مرجع شواهد و حدود است.

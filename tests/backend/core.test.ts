@@ -24,6 +24,18 @@ import { POST as createRole } from "@/app/api/admin/roles/route";
 import { PATCH as editRole } from "@/app/api/admin/roles/[id]/route";
 import { POST as createStaff } from "@/app/api/admin/staff/route";
 import { PATCH as editStaff } from "@/app/api/admin/staff/[id]/route";
+import sharp from "sharp";
+import { rm } from "node:fs/promises";
+import { GET as catalogApi } from "@/app/api/catalog/route";
+import { publicProduct } from "@/server/catalog";
+import { POST as uploadApi } from "@/app/api/admin/media/route";
+import { GET as mediaApi } from "@/app/api/media/[id]/route";
+import { PUT as detailsApi } from "@/app/api/admin/products/[id]/details/route";
+import { POST as variantApi } from "@/app/api/admin/products/[id]/variants/route";
+import { PATCH as variantEditApi } from "@/app/api/admin/products/[id]/variants/[variantId]/route";
+import { PATCH as statusApi } from "@/app/api/admin/products/[id]/status/route";
+import { POST as stockApi } from "@/app/api/admin/inventory/[variantId]/route";
+import { GET as stockReadApi } from "@/app/api/admin/products/[id]/inventory/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -92,14 +104,141 @@ async function add(
     context(postId),
   );
 }
+
+async function uploadPhoto(cookie: string, bytes: Buffer, type = "image/png") {
+  const form = new FormData();
+  form.set("file", new Blob([new Uint8Array(bytes)], { type }), "test-photo");
+  return uploadApi(
+    new Request(origin + "/api/admin/media", {
+      method: "POST",
+      headers: { Origin: origin, Cookie: cookie },
+      body: form,
+    }),
+  );
+}
+async function newSku(owner: Awaited<ReturnType<typeof staff>>) {
+  const p = (
+    await payload(
+      await createProduct(
+        request("/api/admin/products", "POST", owner.cookie, {
+          name: "کالای آزمون موجودی",
+          price: "250000",
+        }),
+      ),
+    )
+  ).data;
+  const v = (
+    await payload(
+      await variantApi(
+        request(
+          "/api/admin/products/" + p.id + "/variants",
+          "POST",
+          owner.cookie,
+          {
+            name: "بنفش",
+            hex: "#482780",
+            sku: "TEST-" + randomUUID().slice(0, 8),
+          },
+        ),
+        context(p.id),
+      ),
+    )
+  ).data;
+  return { p, v };
+}
+function stockContext(variantId: string) {
+  return { params: Promise.resolve({ variantId }) };
+}
+async function move(
+  cookie: string,
+  v: string,
+  delta: number,
+  version = 1,
+  requestId = randomUUID(),
+  reason = "اصلاح موجودی آزمون",
+) {
+  return stockApi(
+    request("/api/admin/inventory/" + v, "POST", cookie, {
+      delta,
+      version,
+      requestId,
+      reason,
+    }),
+    stockContext(v),
+  );
+}
+async function prepared(owner: Awaited<ReturnType<typeof staff>>) {
+  const { p, v } = await newSku(owner);
+  const bytes = await sharp({
+    create: { width: 300, height: 300, channels: 3, background: "#482780" },
+  })
+    .withMetadata({ exif: { IFD0: { Artist: "SYNTHETIC_PRIVATE_EXIF" } } })
+    .jpeg()
+    .toBuffer();
+  const photo = (
+    await payload(await uploadPhoto(owner.cookie, bytes, "image/jpeg"))
+  ).data;
+  const record = await db().product.findUniqueOrThrow({ where: { id: p.id } });
+  const details = {
+    name: "کیف آزمون انتشار",
+    price: "250000",
+    subtitle: "کیف کوچک آزمون",
+    category: "کیف و کیف پول",
+    description: "توضیحات کامل نمونه برای آزمون انتشار واقعی کالا در ویترین.",
+    imagePath: photo.url,
+    packSize: 6,
+    tag: "آزمون",
+    collection: "کاتالوگ آزمون",
+    version: record.version,
+  };
+  expect(
+    (
+      await detailsApi(
+        request(
+          "/api/admin/products/" + p.id + "/details",
+          "PUT",
+          owner.cookie,
+          details,
+        ),
+        context(p.id),
+      )
+    ).status,
+  ).toBe(200);
+  return { p, v, photo };
+}
+async function transition(
+  cookie: string,
+  id: string,
+  status: string,
+  version?: number,
+) {
+  const p = await db().product.findUniqueOrThrow({ where: { id } });
+  return statusApi(
+    request("/api/admin/products/" + id + "/status", "PATCH", cookie, {
+      status,
+      version: version ?? p.version,
+      reason: "تغییر وضعیت برای آزمون",
+    }),
+    context(id),
+  );
+}
 beforeEach(async () => {
+  await db().$executeRawUnsafe('TRUNCATE "InventoryMovement"');
+  await db().productVariant.deleteMany({
+    where: { productId: { startsWith: "draft-" } },
+  });
   await db().product.deleteMany({ where: { id: { startsWith: "draft-" } } });
   await db().$executeRawUnsafe(
     'TRUNCATE "UserRole","Session","RecoveryCode","Comment","PartnerAccount","AuditLog","RateBucket","User" CASCADE',
   );
+  await db().mediaAsset.deleteMany();
   await db().role.deleteMany({ where: { key: { startsWith: "CUSTOM_" } } });
 });
 afterAll(async () => {
+  await rm(process.cwd() + "/.data/test-media", {
+    recursive: true,
+    force: true,
+  });
   await db().$disconnect();
 });
 describe("real PostgreSQL backend", () => {
@@ -1138,5 +1277,300 @@ describe("real PostgreSQL backend", () => {
         }),
       ),
     ).not.toContain(newPassword);
+  });
+  it("serves catalog DTOs from PostgreSQL without SKU, exact stock or private fields", async () => {
+    const data = (await payload(await catalogApi())).data.items;
+    expect(data).toHaveLength(5);
+    expect(data[0].id).toBe("everyday-bag");
+    expect(data[0].price).toBe("1450000");
+    expect(data[0].isDemo).toBe(true);
+    expect(JSON.stringify(data)).not.toMatch(
+      /"stock"|"reserved"|"sku"|"passwordHash"/,
+    );
+    process.env.APP_MODE = "live";
+    try {
+      expect((await payload(await catalogApi())).data.items).toHaveLength(0);
+    } finally {
+      process.env.APP_MODE = "demo";
+    }
+  });
+  it("requires complete metadata and a real uploaded photo before publication", async () => {
+    const owner = await staff();
+    const { p } = await newSku(owner);
+    expect((await transition(owner.cookie, p.id, "PUBLISHED")).status).toBe(
+      422,
+    );
+    const record = await db().product.findUniqueOrThrow({
+      where: { id: p.id },
+    });
+    const input = {
+      name: p.name,
+      price: "1",
+      subtitle: "نمونه",
+      category: "لباس معمولی",
+      description: "توضیح نمونه",
+      imagePath: "https://evil.example/p.jpg",
+      packSize: 6,
+      tag: "",
+      collection: "",
+      version: record.version,
+    };
+    expect(
+      (
+        await detailsApi(
+          request(
+            "/api/admin/products/" + p.id + "/details",
+            "PUT",
+            owner.cookie,
+            input,
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await detailsApi(
+          request(
+            "/api/admin/products/" + p.id + "/details",
+            "PUT",
+            owner.cookie,
+            { ...input, category: "لباس زیر", imagePath: "/images/bag.webp" },
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(422);
+  });
+  it("sanitizes uploaded images, keeps drafts private, publishes and archives without leaks", async () => {
+    const owner = await staff();
+    const { p, photo } = await prepared(owner);
+    const mediaId = photo.id;
+    expect(
+      (await mediaApi(request("/api/media/" + mediaId), context(mediaId)))
+        .status,
+    ).toBe(404);
+    const privateImage = await mediaApi(
+      request("/api/media/" + mediaId, "GET", owner.cookie),
+      context(mediaId),
+    );
+    expect(privateImage.status).toBe(200);
+    const metadata = await sharp(
+      Buffer.from(await privateImage.arrayBuffer()),
+    ).metadata();
+    expect(metadata.format).toBe("webp");
+    expect(metadata.exif).toBeUndefined();
+    expect(await publicProduct(p.id)).toBeNull();
+    expect((await transition(owner.cookie, p.id, "PUBLISHED")).status).toBe(
+      200,
+    );
+    const visible = await publicProduct(p.id);
+    expect(visible?.name).toBe("کیف آزمون انتشار");
+    expect(visible?.colors[0].available).toBe(false);
+    expect(
+      (await mediaApi(request("/api/media/" + mediaId), context(mediaId)))
+        .status,
+    ).toBe(200);
+    expect((await transition(owner.cookie, p.id, "ARCHIVED")).status).toBe(200);
+    expect(await publicProduct(p.id)).toBeNull();
+    expect(
+      (await mediaApi(request("/api/media/" + mediaId), context(mediaId)))
+        .status,
+    ).toBe(404);
+  });
+  it("rejects anonymous, SVG, tiny, malformed and oversized image uploads", async () => {
+    const owner = await staff();
+    const svg = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><script>alert(1)</script></svg>',
+    );
+    expect((await uploadPhoto("", svg, "image/svg+xml")).status).toBe(401);
+    expect((await uploadPhoto(owner.cookie, svg, "image/svg+xml")).status).toBe(
+      422,
+    );
+    const tiny = await sharp({
+      create: { width: 10, height: 10, channels: 3, background: "red" },
+    })
+      .png()
+      .toBuffer();
+    expect((await uploadPhoto(owner.cookie, tiny)).status).toBe(422);
+    expect(
+      (await uploadPhoto(owner.cookie, Buffer.from("not an image"))).status,
+    ).toBe(422);
+    const response = await uploadApi(
+      new Request(origin + "/api/admin/media", {
+        method: "POST",
+        headers: {
+          Origin: origin,
+          Cookie: owner.cookie,
+          "Content-Type": "multipart/form-data; boundary=x",
+          "Content-Length": "7000000",
+        },
+        body: "x",
+      }),
+    );
+    expect(response.status).toBe(413);
+  });
+  it("enforces globally unique SKUs, same-product variants, and optimistic color updates", async () => {
+    const owner = await staff();
+    const { p, v } = await newSku(owner);
+    const existing = await db().productVariant.findUniqueOrThrow({
+      where: { id: v.id },
+    });
+    expect(
+      (
+        await variantApi(
+          request(
+            "/api/admin/products/" + p.id + "/variants",
+            "POST",
+            owner.cookie,
+            { name: "رنگ دیگر", hex: "#112233", sku: existing.sku },
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(409);
+    const another = await newSku(owner);
+    const cross = await variantEditApi(
+      request(
+        "/api/admin/products/" + another.p.id + "/variants/" + v.id,
+        "PATCH",
+        owner.cookie,
+        { name: "بنفش", hex: "#112233", isActive: true, version: 1 },
+      ),
+      { params: Promise.resolve({ id: another.p.id, variantId: v.id }) },
+    );
+    expect(cross.status).toBe(404);
+    const edit = () =>
+      variantEditApi(
+        request(
+          "/api/admin/products/" + p.id + "/variants/" + v.id,
+          "PATCH",
+          owner.cookie,
+          { name: "بنفش تازه", hex: "#112233", isActive: true, version: 1 },
+        ),
+        { params: Promise.resolve({ id: p.id, variantId: v.id }) },
+      );
+    expect((await edit()).status).toBe(200);
+    expect((await edit()).status).toBe(409);
+  });
+  it("separates stock/publishing permissions from product-read and customer access", async () => {
+    const owner = await staff(),
+      content = await staff("CONTENT"),
+      c = await customer();
+    const { p, v } = await newSku(owner);
+    expect(
+      (
+        await stockReadApi(
+          request(
+            "/api/admin/products/" + p.id + "/inventory",
+            "GET",
+            content.cookie,
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect((await move(content.cookie, v.id, 1)).status).toBe(403);
+    expect((await move(c.cookie, v.id, 1)).status).toBe(403);
+    expect((await transition(content.cookie, p.id, "PUBLISHED")).status).toBe(
+      403,
+    );
+  });
+  it("idempotently applies parallel retries once with one ledger and audit record", async () => {
+    const owner = await staff();
+    const { v } = await newSku(owner),
+      key = randomUUID();
+    const [a, b] = await Promise.all([
+      move(owner.cookie, v.id, 10, 1, key),
+      move(owner.cookie, v.id, 10, 1, key),
+    ]);
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(201);
+    expect((await payload(a)).data).toEqual((await payload(b)).data);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: v.id } }))
+        .stock,
+    ).toBe(10);
+    expect(
+      await db().inventoryMovement.count({ where: { variantId: v.id } }),
+    ).toBe(1);
+    expect(
+      await db().auditLog.count({ where: { action: "inventory:adjust" } }),
+    ).toBe(1);
+    expect((await move(owner.cookie, v.id, 11, 1, key)).status).toBe(409);
+  });
+  it("serializes distinct concurrent stock changes and prevents lost updates", async () => {
+    const owner = await staff();
+    const { v } = await newSku(owner);
+    const results = await Promise.all([
+      move(owner.cookie, v.id, 10),
+      move(owner.cookie, v.id, 10),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    const record = await db().productVariant.findUniqueOrThrow({
+      where: { id: v.id },
+    });
+    expect(record.stock).toBe(10);
+    expect(record.version).toBe(2);
+  });
+  it("rejects negative stock and reduction below reservations without partial ledger writes", async () => {
+    const owner = await staff();
+    const { v } = await newSku(owner);
+    expect((await move(owner.cookie, v.id, -1)).status).toBe(409);
+    expect((await move(owner.cookie, v.id, 5)).status).toBe(201);
+    await db().productVariant.update({
+      where: { id: v.id },
+      data: { reserved: 3 },
+    });
+    expect((await move(owner.cookie, v.id, -3, 2)).status).toBe(409);
+    expect(
+      await db().inventoryMovement.count({ where: { variantId: v.id } }),
+    ).toBe(1);
+    expect((await move(owner.cookie, v.id, -1, 2)).status).toBe(201);
+  });
+  it("keeps stock/reserved invariants and an append-only stock ledger at the database layer", async () => {
+    const owner = await staff();
+    const { v } = await newSku(owner);
+    await expect(
+      db().productVariant.update({ where: { id: v.id }, data: { stock: -1 } }),
+    ).rejects.toThrow();
+    await expect(
+      db().productVariant.update({
+        where: { id: v.id },
+        data: { reserved: 1 },
+      }),
+    ).rejects.toThrow();
+    await move(owner.cookie, v.id, 4);
+    const movement = await db().inventoryMovement.findFirstOrThrow({
+      where: { variantId: v.id },
+    });
+    await expect(
+      db().inventoryMovement.delete({ where: { id: movement.id } }),
+    ).rejects.toThrow();
+    await expect(
+      db().inventoryMovement.update({
+        where: { id: movement.id },
+        data: { delta: 100 },
+      }),
+    ).rejects.toThrow();
+  });
+  it("requires archive-to-draft transitions, a current version, and preserves stock through publication", async () => {
+    const owner = await staff();
+    const { p, v } = await prepared(owner);
+    await move(owner.cookie, v.id, 3);
+    expect((await transition(owner.cookie, p.id, "PUBLISHED")).status).toBe(
+      200,
+    );
+    expect((await publicProduct(p.id))?.colors[0].available).toBe(true);
+    expect((await transition(owner.cookie, p.id, "DRAFT")).status).toBe(409);
+    expect((await transition(owner.cookie, p.id, "ARCHIVED", 1)).status).toBe(
+      409,
+    );
+    expect((await transition(owner.cookie, p.id, "ARCHIVED")).status).toBe(200);
+    expect((await transition(owner.cookie, p.id, "DRAFT")).status).toBe(200);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: v.id } }))
+        .stock,
+    ).toBe(3);
   });
 });

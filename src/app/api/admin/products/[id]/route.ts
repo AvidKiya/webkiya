@@ -13,3 +13,13 @@ export async function PATCH(
     );
   });
 }
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  return endpoint(async () => {
+    const { productDetails } = await import("@/server/product-workflow");
+    return ok(await productDetails(request, (await params).id));
+  });
+}

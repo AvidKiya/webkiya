@@ -8,3 +8,5 @@ if (!url || new URL(url).pathname !== "/kiya_test")
 process.env.DATABASE_URL = url;
 process.env.APP_MODE = "demo";
 process.env.ALLOW_DEMO_LOGIN = "true";
+
+process.env.MEDIA_ROOT = process.cwd() + "/.data/test-media";

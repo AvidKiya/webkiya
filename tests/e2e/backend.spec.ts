@@ -290,11 +290,9 @@ test("real owner console creates staff and roles, revokes access, and rotates ow
     await staffCreate
       .getByRole("button", { name: "ساخت حساب واقعی پرسنل" })
       .click();
-    const record = page
-      .locator(".access-record")
-      .filter({
-        has: page.getByRole("heading", { name: staffName, exact: true }),
-      });
+    const record = page.locator(".access-record").filter({
+      has: page.getByRole("heading", { name: staffName, exact: true }),
+    });
     await expect(record).toBeVisible();
     const login = await member.request.post("/api/auth/staff", {
       headers: { Origin: base },
@@ -323,13 +321,11 @@ test("real owner console creates staff and roles, revokes access, and rotates ow
       .fill("پایان دسترسی حساب آزمون");
     await record.getByRole("button", { name: "ثبت وضعیت و نقش‌ها" }).click();
     await expect(record.getByText(/غیرفعال/)).toBeVisible();
-    const security = page
-      .locator("details")
-      .filter({
-        has: page
-          .locator("summary")
-          .getByText("امنیت حساب من · تغییر رمز", { exact: true }),
-      });
+    const security = page.locator("details").filter({
+      has: page
+        .locator("summary")
+        .getByText("امنیت حساب من · تغییر رمز", { exact: true }),
+    });
     await security.locator("summary").click();
     await security.getByLabel("رمز فعلی", { exact: true }).fill(password);
     await security.getByLabel("رمز جدید", { exact: true }).fill(newPassword);
@@ -355,6 +351,225 @@ test("real owner console creates staff and roles, revokes access, and rotates ow
       "DELETE FROM \"Role\" WHERE name=$1 AND key LIKE 'CUSTOM_%'",
       [roleName],
     );
+    await client.end();
+  }
+});
+
+test("owner manages a real photo, SKU, stock and public catalog lifecycle", async ({
+  page,
+}) => {
+  if (process.env.APP_MODE !== "demo" || !process.env.DATABASE_URL)
+    throw new Error("Local demo fixture only");
+  const url = new URL(process.env.DATABASE_URL);
+  if (
+    !["/kiya_dev", "/kiya_test"].includes(url.pathname) ||
+    !["127.0.0.1", "localhost"].includes(url.hostname)
+  )
+    throw new Error("Remote DB refused");
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  const suffix = randomBytes(6).toString("hex"),
+    handle = "catalog_" + suffix,
+    password = randomBytes(24).toString("hex"),
+    salt = randomBytes(16).toString("hex"),
+    name = "کیف آزمون مرورگر " + suffix;
+  let ownerId: string | undefined,
+    productId: string | undefined,
+    mediaId: string | undefined;
+  try {
+    const actor = await client.query(
+      'INSERT INTO "User"(kind,"displayName",handle,"passwordHash","isDemo") VALUES(\'STAFF\',\'مدیر موقت کاتالوگ\',$1,$2,true) RETURNING id',
+      [
+        handle,
+        salt +
+          ":" +
+          scryptSync(password, salt, 64, {
+            N: 32768,
+            maxmem: 64 * 1024 * 1024,
+          }).toString("hex"),
+      ],
+    );
+    ownerId = actor.rows[0].id;
+    await client.query(
+      'INSERT INTO "UserRole"("userId","roleId") SELECT $1,id FROM "Role" WHERE key=\'OWNER\'',
+      [ownerId],
+    );
+    await page.goto("/admin");
+    await page.getByLabel("شناسهٔ پرسنلی").fill(handle);
+    await page.getByLabel("رمز عبور", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "ادامهٔ ورود امن" }).click();
+    await page.getByRole("button", { name: "تنظیم تأیید دومرحله‌ای" }).click();
+    const secret = await page.locator(".admin-secret").textContent();
+    await page.getByLabel("کد تأیید یا بازیابی").fill(totp(secret!));
+    await page.getByRole("button", { name: "تأیید و ورود به مدیریت" }).click();
+    await page.getByRole("button", { name: "کدها را امن ذخیره کردم" }).click();
+    await page
+      .getByRole("navigation", { name: "ناوبری مدیریت" })
+      .getByRole("button", { name: "کاتالوگ", exact: true })
+      .click();
+    const create = page.locator("form.admin-product-form").first();
+    await create.getByLabel("نام کالا", { exact: true }).fill(name);
+    await create
+      .getByLabel("قیمت پایهٔ پیش‌نویس (تومان، فقط رقم انگلیسی)")
+      .fill("250000");
+    await create
+      .getByRole("button", { name: "ثبت پیش‌نویس", exact: true })
+      .click();
+    const record = page
+      .locator("article.admin-record")
+      .filter({ has: page.getByRole("heading", { name, exact: true }) });
+    await expect(record).toBeVisible();
+    productId = (
+      await client.query(
+        'SELECT p.id FROM "Product" p JOIN "AuditLog" a ON a."resourceId"=p.id WHERE a."actorId"=$1 AND a.action=\'product:draft_create\'',
+        [ownerId],
+      )
+    ).rows[0].id;
+    expect((await page.request.get("/p/" + productId)).status()).toBe(404);
+    const editor = record.locator("details.product-workbench");
+    await editor.locator("summary").first().click();
+    await expect(editor.getByLabel("نام اصلی کالا")).toBeVisible();
+    await editor
+      .getByLabel("عنوان کوتاه برای پست")
+      .fill("کیف کوچک واقعی آزمون");
+    await editor.getByLabel("دستهٔ کالا").selectOption("کیف و کیف پول");
+    await editor
+      .getByLabel("توضیحات کالا")
+      .fill("توضیحات کافی و دقیق برای آزمون ثبت کالای واقعی در پنل.");
+    await editor.getByLabel("تعداد واحد داخل بسته").fill("6");
+    const sharp = (await import("sharp")).default;
+    const image = await sharp({
+      create: {
+        width: 360,
+        height: 360,
+        channels: 3,
+        background: "#" + suffix.slice(0, 6),
+      },
+    })
+      .png()
+      .toBuffer();
+    await editor.getByLabel("تصویر اصلی کالا").setInputFiles({
+      name: "test.png",
+      mimeType: "image/png",
+      buffer: image,
+    });
+    await expect(
+      editor.getByText(
+        "تصویر آماده شد؛ برای اتصال به کالا، مشخصات را ذخیره کنید.",
+      ),
+    ).toBeVisible();
+    mediaId = (
+      await client.query('SELECT id FROM "MediaAsset" WHERE "createdBy"=$1', [
+        ownerId,
+      ])
+    ).rows[0].id;
+    expect(
+      (
+        await page.request.get("/api/media/" + mediaId, {
+          headers: { Cookie: "" },
+        })
+      ).status(),
+    ).toBe(404);
+    await editor
+      .getByRole("button", { name: "ذخیره مشخصات کالا", exact: true })
+      .click();
+    await expect(editor.getByText("تغییرات روی سرور ثبت شد.")).toBeVisible();
+    await editor.getByLabel("نام رنگ جدید").fill("بنفش آزمون");
+    await editor.getByLabel("کد SKU جدید").fill("BROWSER-" + suffix);
+    await editor
+      .getByRole("button", { name: "افزودن رنگ با موجودی صفر" })
+      .click();
+    await expect(editor.locator(".stock-record")).toHaveCount(1);
+    const stock = editor.locator(".stock-record");
+    await stock.getByLabel("تغییر تعداد (+ ورود / − خروج)").fill("8");
+    await stock
+      .getByLabel("دلیل اصلاح موجودی")
+      .fill("ورود موجودی آزمون مرورگر");
+    await stock.getByRole("button", { name: "ثبت اصلاح موجودی" }).click();
+    await expect(stock.getByText(/کل: ۸/)).toBeVisible();
+    for (const width of [360, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+        "open product editor overflow at " + width,
+      ).toBe(true);
+    }
+
+    await editor
+      .getByLabel("دلیل تغییر وضعیت")
+      .fill("تکمیل پرونده برای انتشار آزمون");
+    await editor.getByRole("button", { name: "انتشار در ویترین" }).click();
+    await expect(
+      editor.getByRole("button", { name: "بایگانی کالا", exact: true }),
+    ).toBeVisible();
+    await page.goto("/p/" + productId);
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByRole("heading", { name: "کیف کوچک واقعی آزمون" }),
+    ).toBeVisible();
+    expect(
+      (
+        await page.request.get("/api/media/" + mediaId, {
+          headers: { Cookie: "" },
+        })
+      ).status(),
+    ).toBe(200);
+    await page.goto("/admin");
+    await page
+      .getByRole("navigation", { name: "ناوبری مدیریت" })
+      .getByRole("button", { name: "کاتالوگ", exact: true })
+      .click();
+    await editor.locator("summary").first().click();
+    await editor.getByLabel("دلیل تغییر وضعیت").fill("پایان آزمون و بایگانی");
+    await editor
+      .getByRole("button", { name: "بایگانی کالا", exact: true })
+      .click();
+    await expect(
+      editor.getByRole("button", { name: "بازگردانی به پیش‌نویس" }),
+    ).toBeVisible();
+    expect((await page.request.get("/p/" + productId)).status()).toBe(404);
+  } finally {
+    // Privileged fixture cleanup is strictly scoped to the new actor's product.
+    // Do not truncate ledgers or disable triggers globally in the shared demo DB.
+    if (ownerId && productId) {
+      await client.query("BEGIN");
+      try {
+        await client.query("SET LOCAL session_replication_role = 'replica'");
+        await client.query(
+          'DELETE FROM "InventoryMovement" m USING "ProductVariant" v,"Product" p WHERE m."variantId"=v.id AND v."productId"=p.id AND p.id=$1 AND EXISTS(SELECT 1 FROM "AuditLog" a WHERE a."resourceId"=p.id AND a."actorId"=$2 AND a.action=\'product:draft_create\')',
+          [productId, ownerId],
+        );
+        await client.query(
+          'DELETE FROM "ProductVariant" v USING "Product" p WHERE v."productId"=p.id AND p.id=$1 AND EXISTS(SELECT 1 FROM "AuditLog" a WHERE a."resourceId"=p.id AND a."actorId"=$2 AND a.action=\'product:draft_create\')',
+          [productId, ownerId],
+        );
+        await client.query(
+          'DELETE FROM "Product" p WHERE p.id=$1 AND EXISTS(SELECT 1 FROM "AuditLog" a WHERE a."resourceId"=p.id AND a."actorId"=$2 AND a.action=\'product:draft_create\')',
+          [productId, ownerId],
+        );
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      }
+    }
+    if (mediaId && ownerId) {
+      const removed = await client.query(
+        'DELETE FROM "MediaAsset" WHERE id=$1 AND "createdBy"=$2 AND NOT EXISTS(SELECT 1 FROM "Product" WHERE "imagePath"=$3) RETURNING id',
+        [mediaId, ownerId, "/api/media/" + mediaId],
+      );
+      if (removed.rowCount) {
+        const { unlink } = await import("node:fs/promises");
+        await unlink(process.cwd() + "/.data/media/" + mediaId + ".webp").catch(
+          () => {},
+        );
+      }
+    }
+    if (ownerId)
+      await client.query('DELETE FROM "User" WHERE id=$1', [ownerId]);
     await client.end();
   }
 });

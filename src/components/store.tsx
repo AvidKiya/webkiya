@@ -50,7 +50,6 @@ import {
   categories,
   faNumber,
   money,
-  products,
   type CartItem,
   type Product,
 } from "@/lib/catalog";
@@ -145,11 +144,13 @@ function Dialog({
 export default function Store({
   section,
   initialPost,
+  catalog: products,
 }: {
   section: string;
   initialPost?: string;
+  catalog: Product[];
 }) {
-  const { data, setData, storageWarning } = usePreviewStore();
+  const { data, setData, storageWarning } = usePreviewStore(products);
   const { theme, setTheme } = usePreviewTheme();
   const [category, setCategory] = useState("همه");
   const [query, setQuery] = useState("");
@@ -195,7 +196,7 @@ export default function Store({
     }
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
-  }, []);
+  }, [products]);
 
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
@@ -214,7 +215,7 @@ export default function Store({
   }, [modal]);
 
   const cartCount = data.cart.reduce((s, i) => s + i.qty, 0);
-  const total = cartTotal(data.cart);
+  const total = cartTotal(data.cart, products);
   const toggle = (key: "liked" | "saved", id: string) =>
     setData((d) => ({
       ...d,
@@ -243,7 +244,14 @@ export default function Store({
       setToast("برای افزودن به سبد، دوباره به اینترنت وصل شو.");
       return;
     }
-    const color = colorById[product.id] || product.colors[0].name;
+    const color =
+      colorById[product.id] ||
+      product.colors.find((c) => c.available !== false)?.name ||
+      product.colors[0].name;
+    if (product.colors.find((c) => c.name === color)?.available === false) {
+      setToast("این رنگ فعلاً موجود نیست.");
+      return;
+    }
     const current = data.cart.find(
       (i) => i.productId === product.id && i.color === color,
     );
@@ -324,16 +332,26 @@ export default function Store({
   const colorPicker = (p: Product) => (
     <div className="color-row">
       <span>
-        رنگ: <b>{colorById[p.id] || p.colors[0].name}</b>
+        رنگ:{" "}
+        <b>
+          {colorById[p.id] ||
+            p.colors.find((c) => c.available !== false)?.name ||
+            p.colors[0].name}
+        </b>
       </span>
       <div>
         {p.colors.map((c) => (
           <button
             key={c.name}
-            title={c.name}
+            disabled={mode === "retail" && c.available === false}
+            title={c.available === false ? c.name + " · ناموجود" : c.name}
             aria-label={`رنگ ${c.name}`}
-            aria-pressed={(colorById[p.id] || p.colors[0].name) === c.name}
-            className={`swatch ${(colorById[p.id] || p.colors[0].name) === c.name ? "selected" : ""}`}
+            aria-pressed={
+              (colorById[p.id] ||
+                p.colors.find((c) => c.available !== false)?.name ||
+                p.colors[0].name) === c.name
+            }
+            className={`swatch ${(colorById[p.id] || p.colors.find((c) => c.available !== false)?.name || p.colors[0].name) === c.name ? "selected" : ""}`}
             style={{ background: c.hex }}
             onClick={() => setColorById((d) => ({ ...d, [p.id]: c.name }))}
           />
@@ -923,13 +941,19 @@ export default function Store({
                             {priceBlock(p)}
                             <button
                               className="primary"
-                              disabled={offline}
+                              disabled={
+                                offline ||
+                                (mode === "retail" &&
+                                  p.colors.every((c) => c.available === false))
+                              }
                               onClick={() => addCart(p)}
                             >
                               {mode === "retail" ? (
                                 <>
                                   <ShoppingBag size={16} />
-                                  افزودن به سبد
+                                  {p.colors.every((c) => c.available === false)
+                                    ? "ناموجود"
+                                    : "افزودن به سبد"}
                                 </>
                               ) : (
                                 <>
@@ -1231,10 +1255,18 @@ export default function Store({
                     {priceBlock(p)}
                     <button
                       className="primary"
-                      disabled={offline}
+                      disabled={
+                        offline ||
+                        (mode === "retail" &&
+                          p.colors.every((c) => c.available === false))
+                      }
                       onClick={() => addCart(p)}
                     >
-                      {mode === "retail" ? "افزودن به سبد" : "درخواست همکاری"}
+                      {mode === "retail"
+                        ? p.colors.every((c) => c.available === false)
+                          ? "ناموجود"
+                          : "افزودن به سبد"
+                        : "درخواست همکاری"}
                       <ShoppingBag size={16} />
                     </button>
                   </div>
@@ -1243,9 +1275,12 @@ export default function Store({
                       مشخصات، ارسال و مرجوعی <ChevronDown size={15} />
                     </summary>
                     <p>
-                      محصول و قیمت نمایشی است. جنس دقیق، ابعاد، شرایط گارانتی،
-                      هزینهٔ ارسال و مرجوعی باید پیش از شروع فروش واقعی ثبت و
-                      تأیید شوند.
+                      {p.isDemo
+                        ? "محصول و قیمت نمونه‌اند. "
+                        : "این کالا توسط مدیریت ثبت شده است. "}{" "}
+                      جنس دقیق، ابعاد، شرایط گارانتی، هزینهٔ ارسال و مرجوعی باید
+                      پیش از شروع فروش واقعی تأیید شوند. سفارش آنلاین هنوز فعال
+                      نیست.
                     </p>
                   </details>
                   <ServerComments postId={p.id} />

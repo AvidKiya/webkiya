@@ -30,6 +30,9 @@ const labels: Record<string, string> = {
   "partner:suspend": "تعلیق همکار",
   "product:read": "خواندن کالا",
   "product:write": "نوشتن پیش‌نویس کالا",
+  "product:publish": "انتشار و بایگانی کالا",
+  "inventory:read": "خواندن موجودی",
+  "inventory:manage": "اصلاح موجودی",
   "staff:read": "خواندن فهرست پرسنل",
   "audit:read": "خواندن رویداد امنیتی",
 };

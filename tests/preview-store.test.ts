@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parsePreview } from "../src/lib/preview-store";
-import { products } from "../src/lib/catalog";
+import { products, cartTotal } from "../src/lib/catalog";
 const id = products[0].id;
 describe("Local preview storage validation", () => {
   it("tolerates malformed JSON", () => {
@@ -43,5 +43,42 @@ describe("Local preview storage validation", () => {
     expect(parsed).not.toHaveProperty("approved");
     expect(parsed).not.toHaveProperty("role");
     expect(parsed).not.toHaveProperty("wholesalePrice");
+  });
+  it("accepts database product IDs only from the runtime public catalog", () => {
+    const product = {
+      ...products[0],
+      id: "draft-real-public",
+      isDemo: false,
+      price: "12345",
+    };
+    const raw = JSON.stringify({
+      cart: [{ productId: product.id, color: product.colors[0].name, qty: 2 }],
+      saved: [product.id],
+      liked: [product.id],
+    });
+    expect(parsePreview(raw, [product]).cart).toHaveLength(1);
+    expect(parsePreview(raw, []).cart).toHaveLength(0);
+    expect(parsePreview(raw, [product]).saved).toEqual([product.id]);
+    expect(cartTotal(parsePreview(raw, [product]).cart, [product])).toBe(
+      "24690",
+    );
+  });
+  it("uses current catalog prices, never a stale fixture or local price field", () => {
+    const current = { ...products[0], price: "99" };
+    const data = parsePreview(
+      JSON.stringify({
+        cart: [
+          {
+            productId: current.id,
+            color: current.colors[0].name,
+            qty: 2,
+            price: "1",
+          },
+        ],
+      }),
+      [current],
+    );
+    expect(cartTotal(data.cart, [current])).toBe("198");
+    expect(data.cart[0]).not.toHaveProperty("price");
   });
 });

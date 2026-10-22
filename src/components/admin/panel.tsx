@@ -22,6 +22,7 @@ import { api, useAccount, authChanged } from "@/lib/api";
 import { faNumber, money } from "@/lib/catalog";
 import "./panel.css";
 import { products } from "@/lib/catalog";
+import { ProductWorkbench } from "./product-workbench";
 import { DraftProductForm } from "./product-form";
 import { AccessManagement, PasswordChange } from "./access-management";
 const tabs = [
@@ -560,8 +561,8 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
             <ShieldCheck size={20} />
             <p>
               <b>مرحلهٔ زیرساخت، نه فروشگاه آمادهٔ فروش.</b> دیدگاه و بررسی
-              همکار متصل‌اند. پرداخت، سفارش، انبار و پیامک هنوز فعال نیستند.
-              حساب‌های آزمایشی برچسب دارند.
+              همکار متصل‌اند. مدیریت موجودی اولیه فعال است؛ پرداخت، سفارش و
+              پیامک هنوز فعال نیستند. حساب‌های آزمایشی برچسب دارند.
             </p>
           </div>
           {notice}
@@ -680,8 +681,9 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
             <section className="admin-card">
               <h2>ساخت پیش‌نویس کالا</h2>
               <p className="admin-note">
-                فقط نام و قیمت پایهٔ پیش‌نویس؛ انتشار، واریانت، پک و موجودی هنوز
-                فعال نیست.
+                ابتدا پیش‌نویس بسازید؛ سپس در پروندهٔ کالا مشخصات، تصویر، رنگ و
+                موجودی را تکمیل کنید. انتشار ویترین به معنی فعال‌شدن پرداخت
+                نیست.
               </p>
               <DraftProductForm onSaved={() => setNonce((n) => n + 1)} />
             </section>
@@ -781,6 +783,13 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                           price: row.price!,
                           version: row.version!,
                         }}
+                        onSaved={() => setNonce((n) => n + 1)}
+                      />
+                    ) : null}
+                    {!preview && visibleTab === "products" ? (
+                      <ProductWorkbench
+                        id={row.id}
+                        permissions={user?.permissions || []}
                         onSaved={() => setNonce((n) => n + 1)}
                       />
                     ) : null}

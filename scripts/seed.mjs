@@ -1,5 +1,9 @@
 import { config } from "dotenv";
 import { Client } from "pg";
+import { readFileSync } from "node:fs";
+const fixtures = JSON.parse(
+  readFileSync("src/lib/catalog-fixtures.json", "utf8"),
+);
 config({ path: ".env.local", quiet: true });
 const client = new Client({
   connectionString: process.argv.includes("--test")
@@ -18,6 +22,9 @@ const owner = [
   "partner:suspend",
   "product:read",
   "product:write",
+  "product:publish",
+  "inventory:read",
+  "inventory:manage",
   "staff:read",
   "staff:manage",
   "role:manage",
@@ -59,6 +66,42 @@ try {
       'INSERT INTO "Product" ("id","name","price","status") VALUES($1,$2,$3,\'PUBLISHED\') ON CONFLICT ("id") DO NOTHING',
       [id, name, price],
     );
+  for (const [order, p] of fixtures.entries()) {
+    await client.query(
+      'UPDATE "Product" SET subtitle=$2,category=$3,description=$4,"imagePath"=$5,"packSize"=$6,tag=$7,collection=$8,"previousPrice"=$9,"isDemo"=true,"sortOrder"=$10 WHERE id=$1 AND "imagePath"=\'\' AND category=\'\'',
+      [
+        p.id,
+        p.subtitle,
+        p.category,
+        p.description,
+        p.image,
+        p.packSize,
+        p.tag,
+        p.collection,
+        p.previous || null,
+        order,
+      ],
+    );
+    const count = await client.query(
+      'SELECT 1 FROM "ProductVariant" WHERE "productId"=$1 LIMIT 1',
+      [p.id],
+    );
+    const demo = await client.query(
+      'SELECT 1 FROM "Product" WHERE id=$1 AND "isDemo"=true',
+      [p.id],
+    );
+    if (!count.rowCount && demo.rowCount)
+      for (const [i, color] of p.colors.entries())
+        await client.query(
+          'INSERT INTO "ProductVariant"("productId",sku,name,hex) VALUES($1,$2,$3,$4)',
+          [
+            p.id,
+            ("DEMO-" + p.id + "-" + i).toUpperCase(),
+            color.name,
+            color.hex,
+          ],
+        );
+  }
   await client.query("COMMIT");
   console.log(
     "Demo products and baseline roles seeded; no owner password or user PII seeded.",

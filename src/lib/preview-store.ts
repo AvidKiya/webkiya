@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { products, validCart, type CartItem } from "./catalog";
+import { useSyncExternalStore, useMemo } from "react";
+import { products, validCart, type CartItem, type Product } from "./catalog";
 export type PreviewData = {
   cart: CartItem[];
   liked: string[];
@@ -10,10 +10,12 @@ export type PreviewData = {
 const EMPTY: PreviewData = { cart: [], liked: [], saved: [] };
 const KEY = "kiya.preview.v1";
 const EVENT = "kiya-preview-updated";
-let cachedRaw: string | null = null;
-let cached: PreviewData = EMPTY;
+let memoryRaw: string | null = null;
 let storageFailed = false;
-export function parsePreview(raw: string | null): PreviewData {
+export function parsePreview(
+  raw: string | null,
+  catalog: Product[] = products,
+): PreviewData {
   if (!raw) return EMPTY;
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -25,13 +27,13 @@ export function parsePreview(raw: string | null): PreviewData {
             ...new Set(
               value.filter(
                 (id): id is string =>
-                  typeof id === "string" && products.some((p) => p.id === id),
+                  typeof id === "string" && catalog.some((p) => p.id === id),
               ),
             ),
           ]
         : [];
     return {
-      cart: validCart(data.cart),
+      cart: validCart(data.cart, catalog),
       liked: ids(data.liked),
       saved: ids(data.saved),
     };
@@ -39,19 +41,15 @@ export function parsePreview(raw: string | null): PreviewData {
     return EMPTY;
   }
 }
-function snapshot() {
-  if (typeof window === "undefined") return EMPTY;
-  if (storageFailed) return cached;
+function snapshot(): string | null {
+  if (typeof window === "undefined") return null;
+  if (storageFailed) return memoryRaw;
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw !== cachedRaw) {
-      cachedRaw = raw;
-      cached = parsePreview(raw);
-    }
+    memoryRaw = localStorage.getItem(KEY);
   } catch {
     storageFailed = true;
   }
-  return cached;
+  return memoryRaw;
 }
 function subscribe(listener: () => void) {
   window.addEventListener(EVENT, listener);
@@ -61,25 +59,24 @@ function subscribe(listener: () => void) {
     window.removeEventListener("storage", listener);
   };
 }
-function update(fn: (data: PreviewData) => PreviewData) {
-  const next = fn(snapshot());
-  const raw = JSON.stringify(next);
-  cached = next;
-  cachedRaw = raw;
-  try {
-    localStorage.setItem(KEY, raw);
-  } catch {
-    storageFailed = true;
-  }
-  window.dispatchEvent(new Event(EVENT));
-}
-export function usePreviewStore() {
-  const data = useSyncExternalStore(subscribe, snapshot, () => EMPTY);
+export function usePreviewStore(catalog: Product[] = products) {
+  const raw = useSyncExternalStore(subscribe, snapshot, () => null);
+  const data = useMemo(() => parsePreview(raw, catalog), [raw, catalog]);
   const warning = useSyncExternalStore(
     subscribe,
     () => storageFailed,
     () => false,
   );
+  function update(fn: (data: PreviewData) => PreviewData) {
+    const next = fn(parsePreview(snapshot(), catalog));
+    memoryRaw = JSON.stringify(next);
+    try {
+      localStorage.setItem(KEY, memoryRaw);
+    } catch {
+      storageFailed = true;
+    }
+    window.dispatchEvent(new Event(EVENT));
+  }
   return { data, setData: update, storageWarning: warning };
 }
 
