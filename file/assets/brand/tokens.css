@@ -1,0 +1,40 @@
+/* KIYA reference tokens, not a pre-built application. Use logical properties. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+  --brand-500: #482780;
+  --brand-600: #381C68;
+  --brand-tint: #F3EEFA;
+  --brand-gold: #D19A43;
+  --gold-text: #805600;
+  --canvas: #FAF8FC;
+  --surface: #FFFFFF;
+  --ink: #211A2B;
+  --muted: #655C70;
+  --border: #E7DFEE;
+  --action-bg: #482780;
+  --action-text: #FFFFFF;
+  --danger: #B4233D;
+  --focus: #482780;
+  --accent-rose: #F9E7EF;
+  --accent-lilac: #EEE5FA;
+  --accent-blue: #E7EEF8;
+  --accent-sage: #E5F2EC;
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-sheet: 16px;
+  --radius-dialog: 24px;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --brand-tint: #30213F;
+  --gold-text: #E4B66C;
+  --canvas: #141018;
+  --surface: #211A29;
+  --ink: #F7F3FC;
+  --muted: #C0B5CC;
+  --border: #44364F;
+  --action-bg: #C7AFF0;
+  --action-text: #211A2B;
+  --danger: #FF9EB0;
+  --focus: #C7AFF0;
+}
