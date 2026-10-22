@@ -22,6 +22,7 @@ import { api, useAccount, authChanged } from "@/lib/api";
 import { faNumber, money } from "@/lib/catalog";
 import "./panel.css";
 import { products } from "@/lib/catalog";
+import { PartnerValidity } from "./wholesale-prices";
 import { ProductWorkbench } from "./product-workbench";
 import { DraftProductForm } from "./product-form";
 import { AccessManagement, PasswordChange } from "./access-management";
@@ -77,6 +78,7 @@ type Row = {
   body?: string;
   postId?: string;
   businessName?: string;
+  expiresAt?: string | null;
   city?: string;
   note?: string;
   version?: number;
@@ -791,6 +793,17 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                       <ProductWorkbench
                         id={row.id}
                         permissions={user?.permissions || []}
+                        onSaved={() => setNonce((n) => n + 1)}
+                      />
+                    ) : null}
+                    {!preview &&
+                    visibleTab === "partners" &&
+                    row.status === "APPROVED" &&
+                    user?.permissions.includes("partner:approve") ? (
+                      <PartnerValidity
+                        id={row.id}
+                        version={row.version!}
+                        expiresAt={row.expiresAt || null}
                         onSaved={() => setNonce((n) => n + 1)}
                       />
                     ) : null}

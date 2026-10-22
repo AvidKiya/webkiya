@@ -2731,3 +2731,34 @@ button:hover:not(:disabled) {
     display: none;
   }
 }
+
+.private-wholesale {
+  padding: 24px;
+  margin: 20px 0;
+}
+.private-wholesale > p,
+.private-wholesale small {
+  font-size: 12px;
+  line-height: 2;
+  color: var(--muted);
+}
+.private-wholesale h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+.private-wholesale > button {
+  margin: 12px 0;
+}
+.private-price-card {
+  border-top: 1px solid var(--border);
+  padding: 20px 0;
+  overflow-wrap: anywhere;
+}
+.private-price-card h3 {
+  font-size: 14px;
+}
+.private-price-card p {
+  font-size: 13px;
+  line-height: 2;
+  margin: 8px 0;
+}

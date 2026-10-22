@@ -34,6 +34,9 @@ const labels: Record<string, string> = {
   "inventory:read": "خواندن موجودی",
   "inventory:manage": "اصلاح موجودی",
   "wholesale:pack:manage": "تنظیم ترکیب جین",
+  "wholesale:price:read": "خواندن قیمت خصوصی عمده",
+  "wholesale:price:manage": "ثبت قیمت خصوصی عمده",
+  "wholesale:price:publish": "تأیید مستقل قیمت عمده",
   "wholesale:pack:publish": "فعال‌سازی جین",
   "staff:read": "خواندن فهرست پرسنل",
   "audit:read": "خواندن رویداد امنیتی",
@@ -128,7 +131,7 @@ export function AccessManagement({ selfId }: { selfId: string }) {
                   name="handle"
                   dir="ltr"
                   required
-                  pattern="[a-z][a-z0-9_-]{2,39}"
+                  pattern={String.raw`[a-z][a-z0-9_\-]{2,39}`}
                   autoComplete="off"
                 />
               </label>

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { ServerComments } from "./server-comments";
+import { WholesaleCatalog } from "./wholesale-catalog";
 import { AccountPanel, PartnerPanel } from "./account-panel";
 import { usePreviewStore, usePreviewTheme } from "@/lib/preview-store";
 import Link from "next/link";
@@ -705,6 +706,7 @@ export default function Store({
                     </div>
                   </section>
                 )}
+                {section === "wholesale" ? <WholesaleCatalog /> : null}
                 {section === "wholesale" && (
                   <section className="partner-inline">
                     <UsersRound size={29} />
@@ -1221,7 +1223,7 @@ export default function Store({
                             جین
                           </>
                         ) : (
-                          "ارائهٔ ترکیب و قیمت اختصاصی جین در ویترین هنوز فعال نیست؛ فعلاً استعلام."
+                          "قیمت و ترکیب اختصاصی را در بخش قیمت‌های حساب همکار بررسی کنید؛ این کارت فقط استعلام است."
                         )}
                       </span>
                       <div className="pack-preview">

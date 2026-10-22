@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect, useRef } from "react";
+import { WholesalePrices } from "./wholesale-prices";
 import { PackManager } from "./pack-manager";
 import Image from "next/image";
 import Link from "next/link";
@@ -413,7 +414,7 @@ export function ProductWorkbench({
                         dir="ltr"
                         required
                         maxLength={60}
-                        pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,59}"
+                        pattern={String.raw`[A-Za-z0-9][A-Za-z0-9_\-]{0,59}`}
                       />
                     </label>
                     <label>
@@ -433,6 +434,9 @@ export function ProductWorkbench({
                 variants={detail.variants}
                 permissions={permissions}
               />
+              {permissions.includes("wholesale:price:read") ? (
+                <WholesalePrices productId={id} permissions={permissions} />
+              ) : null}
               {canStock ? (
                 <section className="workbench-section">
                   <h4>موجودی واقعی (واحد تکی)</h4>

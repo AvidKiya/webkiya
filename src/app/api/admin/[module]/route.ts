@@ -56,6 +56,7 @@ export async function GET(
           orderBy: { createdAt: "desc" },
           select: {
             id: true,
+            expiresAt: true,
             businessName: true,
             city: true,
             note: true,

@@ -42,6 +42,13 @@ import {
 } from "@/app/api/admin/products/[id]/packs/route";
 import { PUT as packsEdit } from "@/app/api/admin/products/[id]/packs/[packId]/route";
 import { PATCH as packsStatus } from "@/app/api/admin/products/[id]/packs/[packId]/status/route";
+import {
+  GET as offersRead,
+  POST as offersCreate,
+} from "@/app/api/admin/products/[id]/offers/route";
+import { PATCH as offersStatus } from "@/app/api/admin/products/[id]/offers/[offerId]/status/route";
+import { GET as wholesaleRead } from "@/app/api/wholesale/catalog/route";
+import { PUT as validityApi } from "@/app/api/admin/partners/[id]/validity/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -272,9 +279,81 @@ async function packState(
     packContext(id, packId),
   );
 }
+
+async function wholesaleFixture() {
+  const owner = await staff(),
+    reviewer = await staff(),
+    buyer = await customer();
+  const partner = await db().partnerAccount.create({
+    data: {
+      userId: buyer.id,
+      businessName: "همکار آزمون قیمت خصوصی",
+      city: "تهران",
+      note: "داده مصنوعی تست",
+      status: "APPROVED",
+      reviewerId: owner.user.id,
+    },
+  });
+  const { p, v } = await prepared(owner);
+  const pack = (await payload(await addPack(owner.cookie, p.id, v.id))).data;
+  await transition(owner.cookie, p.id, "PUBLISHED");
+  await packState(owner.cookie, p.id, pack.id, "ACTIVE");
+  const body = {
+    packId: pack.id,
+    partnerId: partner.id,
+    mode: "PRICED",
+    unitPriceToman: "1234567",
+    validFrom: new Date(Date.now() - 60000).toISOString(),
+    validUntil: new Date(Date.now() + 3600000).toISOString(),
+    reason: "قیمت کاملاً مصنوعی آزمون",
+    requestId: randomUUID(),
+  };
+  return { owner, reviewer, buyer, partner, p, v, pack, body };
+}
+async function newOffer(
+  f: Awaited<ReturnType<typeof wholesaleFixture>>,
+  extra: Record<string, unknown> = {},
+) {
+  return offersCreate(
+    request(
+      "/api/admin/products/" + f.p.id + "/offers",
+      "POST",
+      f.owner.cookie,
+      { ...f.body, ...extra },
+    ),
+    context(f.p.id),
+  );
+}
+async function offerState(
+  f: Awaited<ReturnType<typeof wholesaleFixture>>,
+  offerId: string,
+  status = "PUBLISHED",
+  version = 1,
+  cookie = f.reviewer.cookie,
+) {
+  return offersStatus(
+    request(
+      "/api/admin/products/" + f.p.id + "/offers/" + offerId + "/status",
+      "PATCH",
+      cookie,
+      { status, version, reason: "تصمیم قیمت آزمون مستقل" },
+    ),
+    { params: Promise.resolve({ id: f.p.id, offerId }) },
+  );
+}
+async function publishedOffer(
+  f: Awaited<ReturnType<typeof wholesaleFixture>>,
+  extra: Record<string, unknown> = {},
+) {
+  const response = await newOffer(f, extra);
+  expect(response.status).toBe(201);
+  const offer = (await payload(response)).data;
+  expect((await offerState(f, offer.id)).status).toBe(200);
+  return offer;
+}
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -1920,5 +1999,423 @@ describe("real PostgreSQL backend", () => {
     expect(
       (await packState(owner.cookie, p.id, pack.id, "ACTIVE")).status,
     ).toBe(200);
+  });
+  it("publishes a partner-scoped exact wholesale price only after independent approval", async () => {
+    const f = await wholesaleFixture();
+    const offer = (await payload(await newOffer(f))).data;
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+    expect((await offerState(f, offer.id)).status).toBe(200);
+    const response = await wholesaleRead(
+      request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("vary")).toBe("Cookie");
+    const data = (await payload(response)).data;
+    expect(data.minPacks).toBe(1);
+    expect(data.orderReady).toBe(false);
+    expect(data.items[0].unitPriceToman).toBe("1234567");
+    expect(data.items[0].packPriceToman).toBe("7407402");
+    expect(JSON.stringify(data)).not.toMatch(
+      /"stock"|"reserved"|"sku"|"createdBy"|"partnerId"/,
+    );
+  });
+  it("never leaks private wholesale prices to anonymous, staff, other partners or public DTOs", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    expect(
+      (await wholesaleRead(request("/api/wholesale/catalog"))).status,
+    ).toBe(401);
+    expect(
+      (
+        await wholesaleRead(
+          request("/api/wholesale/catalog", "GET", f.owner.cookie),
+        )
+      ).status,
+    ).toBe(403);
+    const other = await customer();
+    expect(
+      (
+        await wholesaleRead(
+          request("/api/wholesale/catalog", "GET", other.cookie),
+        )
+      ).status,
+    ).toBe(403);
+    await db().partnerAccount.create({
+      data: {
+        userId: other.id,
+        businessName: "همکار دیگر",
+        city: "تهران",
+        note: "داده تست",
+        status: "APPROVED",
+      },
+    });
+    const otherResponse = await wholesaleRead(
+      request(
+        "/api/wholesale/catalog?partnerId=" + f.partner.id,
+        "GET",
+        other.cookie,
+      ),
+    );
+    expect((await payload(otherResponse)).data.items).toHaveLength(0);
+    expect(
+      JSON.stringify((await payload(await catalogApi())).data),
+    ).not.toContain("1234567");
+    expect(JSON.stringify(await publicProduct(f.p.id))).not.toContain(
+      "1234567",
+    );
+  });
+  it("denies suspended, rejected and pending partners on every private price read", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    for (const status of ["SUSPENDED", "REJECTED", "PENDING"]) {
+      await db().partnerAccount.update({
+        where: { id: f.partner.id },
+        data: { status },
+      });
+      const response = await wholesaleRead(
+        request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+      );
+      expect(response.status).toBe(403);
+      expect(JSON.stringify(await payload(response))).not.toContain("1234567");
+    }
+  });
+  it("enforces partner expiration and audited optimistic validity renewal", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    const change = (expiresAt: string | null, version: number) =>
+      validityApi(
+        request(
+          "/api/admin/partners/" + f.partner.id + "/validity",
+          "PUT",
+          f.owner.cookie,
+          { expiresAt, version, reason: "تنظیم اعتبار همکار آزمون" },
+        ),
+        context(f.partner.id),
+      );
+    expect(
+      (await change(new Date(Date.now() - 1000).toISOString(), 1)).status,
+    ).toBe(200);
+    expect(
+      (
+        await wholesaleRead(
+          request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+        )
+      ).status,
+    ).toBe(403);
+    expect((await change(null, 1)).status).toBe(409);
+    expect((await change(null, 2)).status).toBe(200);
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(1);
+  });
+  it("prevents price self-approval even by an owner and at the database constraint", async () => {
+    const f = await wholesaleFixture();
+    const offer = (await payload(await newOffer(f))).data;
+    expect(
+      (await offerState(f, offer.id, "PUBLISHED", 1, f.owner.cookie)).status,
+    ).toBe(403);
+    await expect(
+      db().wholesaleOffer.update({
+        where: { id: offer.id },
+        data: {
+          status: "PUBLISHED",
+          reviewerId: f.owner.user.id,
+          version: { increment: 1 },
+        },
+      }),
+    ).rejects.toThrow();
+    expect(
+      await db().auditLog.count({
+        where: { action: "wholesale:price:status" },
+      }),
+    ).toBe(0);
+  });
+  it("makes parallel price-creation retries idempotent and rejects key payload collisions", async () => {
+    const f = await wholesaleFixture();
+    const [a, b] = await Promise.all([newOffer(f), newOffer(f)]);
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(201);
+    expect((await payload(a)).data.id).toBe((await payload(b)).data.id);
+    expect(await db().wholesaleOffer.count()).toBe(1);
+    expect(
+      await db().auditLog.count({
+        where: { action: "wholesale:price:create" },
+      }),
+    ).toBe(1);
+    expect((await newOffer(f, { unitPriceToman: "9876543" })).status).toBe(409);
+  });
+  it("separates wholesale price permissions from ordinary product visibility and MFA", async () => {
+    const f = await wholesaleFixture(),
+      content = await staff("CONTENT"),
+      pending = await staff("OWNER", false);
+    const offer = (await payload(await newOffer(f))).data;
+    expect(
+      (
+        await offersRead(
+          request(
+            "/api/admin/products/" + f.p.id + "/offers",
+            "GET",
+            content.cookie,
+          ),
+          context(f.p.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await offersCreate(
+          request(
+            "/api/admin/products/" + f.p.id + "/offers",
+            "POST",
+            content.cookie,
+            f.body,
+          ),
+          context(f.p.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (await offerState(f, offer.id, "PUBLISHED", 1, content.cookie)).status,
+    ).toBe(403);
+    expect(
+      (
+        await offersRead(
+          request(
+            "/api/admin/products/" + f.p.id + "/offers",
+            "GET",
+            pending.cookie,
+          ),
+          context(f.p.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      JSON.stringify(
+        (
+          await payload(
+            await admin(request("/api/admin/products", "GET", content.cookie), {
+              params: Promise.resolve({ module: "products" }),
+            }),
+          )
+        ).data,
+      ),
+    ).not.toContain("1234567");
+  });
+  it("enforces one published price per partner/pack and immutable archive-replacement history", async () => {
+    const f = await wholesaleFixture();
+    const first = await publishedOffer(f);
+    const second = (
+      await payload(
+        await newOffer(f, {
+          requestId: randomUUID(),
+          unitPriceToman: "7654321",
+        }),
+      )
+    ).data;
+    expect((await offerState(f, second.id)).status).toBe(409);
+    await expect(
+      db().wholesaleOffer.update({
+        where: { id: first.id },
+        data: { unitPriceToman: "1", version: { increment: 1 } },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().wholesaleOffer.delete({ where: { id: first.id } }),
+    ).rejects.toThrow();
+    expect((await offerState(f, first.id, "ARCHIVED", 2)).status).toBe(200);
+    expect((await offerState(f, second.id)).status).toBe(200);
+    expect((await offerState(f, first.id, "PUBLISHED", 3)).status).toBe(409);
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items[0].unitPriceToman,
+    ).toBe("7654321");
+  });
+  it("returns inquiry without wholesale numeric fields, never a zero-price fallback", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f, { mode: "INQUIRY", unitPriceToman: null });
+    const item = (
+      await payload(
+        await wholesaleRead(
+          request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+        ),
+      )
+    ).data.items[0];
+    expect(item.pricing).toBe("INQUIRY");
+    expect(item).not.toHaveProperty("unitPriceToman");
+    expect(item).not.toHaveProperty("packPriceToman");
+    expect(
+      (
+        await newOffer(f, {
+          requestId: randomUUID(),
+          mode: "INQUIRY",
+          unitPriceToman: "1",
+        })
+      ).status,
+    ).toBe(422);
+  });
+  it("rejects invalid money, injected status, expired ranges and pack-price overflow", async () => {
+    const f = await wholesaleFixture();
+    for (const extra of [
+      { unitPriceToman: "0" },
+      { unitPriceToman: "1.25" },
+      { unitPriceToman: 25 },
+      { status: "PUBLISHED" },
+      { unitPriceToman: "99999999999999" },
+      { validUntil: new Date(Date.now() - 100000).toISOString() },
+    ])
+      expect(
+        (await newOffer(f, { requestId: randomUUID(), ...extra })).status,
+      ).toBe(422);
+    expect(await db().wholesaleOffer.count()).toBe(0);
+  });
+  it("hides scheduled and expired prices and never falls back to another partner offer", async () => {
+    const f = await wholesaleFixture();
+    const offer = await publishedOffer(f, {
+      validFrom: new Date(Date.now() + 60000).toISOString(),
+    });
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+    await offerState(f, offer.id, "ARCHIVED", 2);
+    await db().wholesaleOffer.create({
+      data: {
+        productId: f.p.id,
+        packId: f.pack.id,
+        partnerId: f.partner.id,
+        packVersion: 2,
+        mode: "PRICED",
+        unitPriceToman: "1111111",
+        validFrom: new Date(Date.now() - 120000),
+        validUntil: new Date(Date.now() - 60000),
+        status: "PUBLISHED",
+        createdBy: f.owner.user.id,
+        reviewerId: f.reviewer.user.id,
+        reason: "قیمت منقضی تست",
+        requestId: randomUUID(),
+      },
+    });
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+  });
+  it("rechecks product and pack publication and refuses stale BOM prices", async () => {
+    const f = await wholesaleFixture();
+    const offer = await publishedOffer(f);
+    await transition(f.owner.cookie, f.p.id, "ARCHIVED");
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+    await transition(f.owner.cookie, f.p.id, "DRAFT");
+    await transition(f.owner.cookie, f.p.id, "PUBLISHED");
+    const draft = (
+      await payload(await newOffer(f, { requestId: randomUUID() }))
+    ).data;
+    await packState(f.owner.cookie, f.p.id, f.pack.id, "ARCHIVED", 2);
+    expect(
+      (
+        await payload(
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+    expect((await offerState(f, draft.id)).status).toBe(409);
+    expect(offer.id).toBeTruthy();
+  });
+  it("requires real customer phone verification in live mode and rejects demo sessions", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    process.env.APP_MODE = "live";
+    try {
+      expect(
+        (
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          )
+        ).status,
+      ).toBe(401);
+      await db().user.update({
+        where: { id: f.buyer.id },
+        data: { isDemo: false },
+      });
+      expect(
+        (
+          await wholesaleRead(
+            request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+          )
+        ).status,
+      ).toBe(403);
+      await db().user.update({
+        where: { id: f.buyer.id },
+        data: { phoneVerifiedAt: new Date() },
+      });
+      expect(
+        (
+          await payload(
+            await wholesaleRead(
+              request("/api/wholesale/catalog", "GET", f.buyer.cookie),
+            ),
+          )
+        ).data.items,
+      ).toHaveLength(1);
+    } finally {
+      process.env.APP_MODE = "demo";
+    }
+  });
+  it("serializes concurrent independent price approvals without duplicate audit events", async () => {
+    const f = await wholesaleFixture();
+    const offer = (await payload(await newOffer(f))).data;
+    const results = await Promise.all([
+      offerState(f, offer.id),
+      offerState(f, offer.id),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(
+      await db().auditLog.count({
+        where: { action: "wholesale:price:status" },
+      }),
+    ).toBe(1);
+    expect(
+      (await db().wholesaleOffer.findUniqueOrThrow({ where: { id: offer.id } }))
+        .version,
+    ).toBe(2);
   });
 });

@@ -357,7 +357,9 @@ test("real owner console creates staff and roles, revokes access, and rotates ow
 
 test("owner manages a real photo, SKU, stock and public catalog lifecycle", async ({
   page,
+  browser,
 }) => {
+  test.setTimeout(90000);
   if (process.env.APP_MODE !== "demo" || !process.env.DATABASE_URL)
     throw new Error("Local demo fixture only");
   const url = new URL(process.env.DATABASE_URL);
@@ -375,7 +377,15 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
     name = "کیف آزمون مرورگر " + suffix;
   let ownerId: string | undefined,
     productId: string | undefined,
-    mediaId: string | undefined;
+    mediaId: string | undefined,
+    reviewerId: string | undefined,
+    buyerId: string | undefined;
+  const reviewerContext = await browser.newContext({
+      baseURL: "http://127.0.0.1:3000",
+    }),
+    buyerContext = await browser.newContext({
+      baseURL: "http://127.0.0.1:3000",
+    });
   try {
     const actor = await client.query(
       'INSERT INTO "User"(kind,"displayName",handle,"passwordHash","isDemo") VALUES(\'STAFF\',\'مدیر موقت کاتالوگ\',$1,$2,true) RETURNING id',
@@ -526,6 +536,182 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
       .getByRole("button", { name: "ثبت وضعیت جین", exact: true })
       .click();
     await expect(packRecord.getByRole("heading")).toContainText("فعال");
+
+    const buyerPage = await buyerContext.newPage();
+    await buyerPage.goto("/account");
+    await buyerPage
+      .getByRole("button", { name: "ورود آزمایشی", exact: true })
+      .click();
+    await expect(
+      buyerPage.getByRole("button", { name: "خروج از حساب", exact: true }),
+    ).toBeVisible();
+    buyerId = (await (await buyerPage.request.get("/api/auth/me")).json()).data
+      .user.id;
+    const businessName = "همکار قیمت آزمون " + suffix;
+    const application = await buyerPage.request.post("/api/partner", {
+      headers: { Origin: "http://127.0.0.1:3000" },
+      data: { businessName, city: "تهران", note: "درخواست مصنوعی تست قیمت" },
+    });
+    expect(application.status()).toBe(201);
+    const partnerId = (await application.json()).data.id;
+    expect(
+      (
+        await page.request.patch("/api/admin/partners/" + partnerId, {
+          headers: { Origin: "http://127.0.0.1:3000" },
+          data: {
+            status: "APPROVED",
+            version: 1,
+            reason: "همکار مصنوعی آزمون قیمت",
+          },
+        })
+      ).status(),
+    ).toBe(200);
+    const prices = editor.locator(".wholesale-price-manager");
+    await prices
+      .getByRole("button", { name: "تازه‌سازی قیمت‌ها و همکارها" })
+      .click();
+    const packId = (
+      await client.query(
+        'SELECT id FROM "PackDefinition" WHERE "productId"=$1',
+        [productId],
+      )
+    ).rows[0].id;
+    await prices
+      .getByRole("combobox", { name: "جین فعال", exact: true })
+      .selectOption(packId);
+    await prices.getByLabel("همکار دریافت‌کنندهٔ قیمت").selectOption(partnerId);
+    await prices
+      .getByLabel("قیمت عمدهٔ هر واحد (تومان)", { exact: true })
+      .fill("1234567");
+    await prices
+      .getByLabel("شروع اعتبار (زمان محلی دستگاه)")
+      .fill(new Date(Date.now() - 60000).toISOString().slice(0, 16));
+    await prices
+      .getByLabel("دلیل ثبت قیمت", { exact: true })
+      .fill("داده مصنوعی قیمت آزمون مرورگر");
+    await prices
+      .getByRole("button", { name: "ثبت پیش‌نویس قیمت خصوصی" })
+      .click();
+    await expect(
+      prices.getByText(
+        "پیش‌نویس قیمت ثبت شد؛ برای انتشار، تأیید پرسنل دیگری لازم است.",
+      ),
+    ).toBeVisible();
+    await expect(
+      prices.getByRole("option", { name: "تأیید مستقل و انتشار قیمت" }),
+    ).toHaveCount(0);
+    const reviewerHandle = "price_" + suffix,
+      reviewerPassword = randomBytes(24).toString("hex"),
+      reviewerSalt = randomBytes(16).toString("hex");
+    reviewerId = (
+      await client.query(
+        'INSERT INTO "User"(kind,"displayName",handle,"passwordHash","isDemo") VALUES(\'STAFF\',\'بازبین موقت قیمت\',$1,$2,true) RETURNING id',
+        [
+          reviewerHandle,
+          reviewerSalt +
+            ":" +
+            scryptSync(reviewerPassword, reviewerSalt, 64, {
+              N: 32768,
+              maxmem: 64 * 1024 * 1024,
+            }).toString("hex"),
+        ],
+      )
+    ).rows[0].id;
+    await client.query(
+      'INSERT INTO "UserRole"("userId","roleId") SELECT $1,id FROM "Role" WHERE key=\'OWNER\'',
+      [reviewerId],
+    );
+    const reviewerPage = await reviewerContext.newPage();
+    await reviewerPage.goto("/admin");
+    await reviewerPage.getByLabel("شناسهٔ پرسنلی").fill(reviewerHandle);
+    await reviewerPage
+      .getByLabel("رمز عبور", { exact: true })
+      .fill(reviewerPassword);
+    await reviewerPage.getByRole("button", { name: "ادامهٔ ورود امن" }).click();
+    await reviewerPage
+      .getByRole("button", { name: "تنظیم تأیید دومرحله‌ای" })
+      .click();
+    const secondSecret = await reviewerPage
+      .locator(".admin-secret")
+      .textContent();
+    await reviewerPage
+      .getByLabel("کد تأیید یا بازیابی")
+      .fill(totp(secondSecret!));
+    await reviewerPage
+      .getByRole("button", { name: "تأیید و ورود به مدیریت" })
+      .click();
+    await reviewerPage
+      .getByRole("button", { name: "کدها را امن ذخیره کردم" })
+      .click();
+    await reviewerPage
+      .getByRole("navigation", { name: "ناوبری مدیریت" })
+      .getByRole("button", { name: "کاتالوگ", exact: true })
+      .click();
+    const reviewRecord = reviewerPage.locator("article.admin-record").filter({
+      has: reviewerPage.getByRole("heading", { name, exact: true }),
+    });
+    await reviewRecord.locator("details.product-workbench>summary").click();
+    const reviewPrice = reviewRecord.locator(
+      ".wholesale-price-manager .pack-record",
+    );
+    await reviewPrice.getByLabel("عملیات قیمت").selectOption("PUBLISHED");
+    await reviewPrice
+      .getByLabel("دلیل تصمیم قیمت")
+      .fill("بازبینی مستقل داده مصنوعی قیمت");
+    await reviewPrice.getByRole("button", { name: "ثبت تصمیم قیمت" }).click();
+    await expect(reviewPrice.getByText(/منتشرشده/)).toBeVisible();
+    for (const width of [360, 390, 768, 1440]) {
+      await reviewerPage.setViewportSize({ width, height: 1000 });
+      expect(
+        await reviewerPage.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        "price editor overflow " + width,
+      ).toBe(true);
+    }
+    await buyerPage.goto("/wholesale");
+    await expect(buyerPage.locator(".private-price-card")).toHaveCount(1);
+    await expect(buyerPage.locator(".private-price-card")).toContainText(
+      new Intl.NumberFormat("fa-IR").format(1234567),
+    );
+    for (const path of ["/", "/p/" + productId, "/api/catalog"]) {
+      const publicText = await (
+        await page.request.get(path, { headers: { Cookie: "" } })
+      ).text();
+      expect(publicText).not.toContain("1234567");
+      expect(publicText).not.toContain(
+        new Intl.NumberFormat("fa-IR").format(1234567),
+      );
+    }
+    expect(
+      (
+        await page.request.get("/api/wholesale/catalog", {
+          headers: { Cookie: "" },
+        })
+      ).status(),
+    ).toBe(401);
+    expect(
+      (
+        await page.request.put(
+          "/api/admin/partners/" + partnerId + "/validity",
+          {
+            headers: { Origin: "http://127.0.0.1:3000" },
+            data: {
+              expiresAt: new Date(Date.now() - 1000).toISOString(),
+              version: 2,
+              reason: "انقضای دسترسی آزمون قیمت",
+            },
+          },
+        )
+      ).status(),
+    ).toBe(200);
+    await buyerPage
+      .getByRole("button", { name: "بررسی دوبارهٔ دسترسی و قیمت‌ها" })
+      .click();
+    await expect(buyerPage.locator(".private-price-card")).toHaveCount(0);
+    await expect(
+      buyerPage.locator(".private-wholesale").getByRole("alert"),
+    ).toBeVisible();
     await page.goto("/p/" + productId);
     await expect(
       page
@@ -567,6 +753,10 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
           [productId, ownerId],
         );
         await client.query(
+          'DELETE FROM "WholesaleOffer" o USING "AuditLog" a WHERE o."productId"=$1 AND a."resourceId"=$1 AND a."actorId"=$2 AND a.action=\'product:draft_create\'',
+          [productId, ownerId],
+        );
+        await client.query(
           'DELETE FROM "PackComponent" c USING "PackDefinition" b,"AuditLog" a WHERE c."packId"=b.id AND b."productId"=$1 AND a."resourceId"=$1 AND a."actorId"=$2 AND a.action=\'product:draft_create\'',
           [productId, ownerId],
         );
@@ -600,8 +790,18 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
         );
       }
     }
+    if (buyerId) {
+      await client.query('DELETE FROM "PartnerAccount" WHERE "userId"=$1', [
+        buyerId,
+      ]);
+      await client.query('DELETE FROM "User" WHERE id=$1', [buyerId]);
+    }
+    if (reviewerId)
+      await client.query('DELETE FROM "User" WHERE id=$1', [reviewerId]);
     if (ownerId)
       await client.query('DELETE FROM "User" WHERE id=$1', [ownerId]);
     await client.end();
+    await reviewerContext.close().catch(() => {});
+    await buyerContext.close().catch(() => {});
   }
 });

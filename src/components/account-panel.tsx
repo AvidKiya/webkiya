@@ -101,6 +101,7 @@ type Partner = {
   note: string;
   status: string;
   reason: string | null;
+  expiresAt: string | null;
   version: number;
 };
 const statuses: Record<string, string> = {
@@ -156,8 +157,9 @@ export function PartnerPanel({ showLogin = true }: { showLogin?: boolean }) {
   return (
     <div className="backend-partner">
       <p className="demo-callout">
-        درخواست در پایگاه داده ثبت می‌شود. قیمت‌گذاری و سفارش عمده هنوز فعال
-        نیست؛ حداقل همکاری یک جین است، بدون حداقل مبلغ.
+        درخواست در پایگاه داده ثبت می‌شود. قیمت خصوصی فقط برای همکاری معتبر و
+        تخصیص قیمت تأییدشده نمایش داده می‌شود؛ سفارش عمده هنوز فعال نیست. حداقل
+        یک جین است.
       </p>
       {account.user.isDemo ? (
         <p className="micro">
@@ -173,9 +175,17 @@ export function PartnerPanel({ showLogin = true }: { showLogin?: boolean }) {
           </p>
           {application.reason ? <p>{application.reason}</p> : null}
           <small>
-            حتی پس از تأیید، تا اتصال لیست قیمت اختصاصی، قیمت عمده‌ای نمایش داده
-            نمی‌شود.
+            اعتبار:{" "}
+            {application.expiresAt
+              ? new Date(application.expiresAt).toLocaleString("fa-IR")
+              : "بدون تاریخ انقضا"}
+            . فقط قیمت معتبرِ تخصیص‌یافته به همین حساب نمایش داده می‌شود.
           </small>
+          {application.status === "APPROVED" ? (
+            <Link href="/wholesale" className="text-link">
+              بررسی قیمت‌های اختصاصی من
+            </Link>
+          ) : null}
         </div>
       ) : application === null ? (
         <form className="backend-form" onSubmit={submit}>

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { db } from "./db";
+import { reauthorize } from "./product-workflow";
 import { ApiError } from "./http";
 import { requireUser, requireStaff, limit } from "./auth";
 export const partnerInput = z
@@ -70,6 +71,7 @@ export async function reviewPartner(
   const current = await requireStaff(request, permission);
   return db().$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "PartnerAccount" WHERE "id"=${id}::uuid FOR UPDATE`;
+    await reauthorize(tx, current, permission);
     const p = await tx.partnerAccount.findUnique({ where: { id } });
     if (!p) throw new ApiError(404, "NOT_FOUND", "درخواست پیدا نشد.");
     if (p.userId === current.user.id)

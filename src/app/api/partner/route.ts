@@ -15,12 +15,16 @@ export async function GET(request: Request) {
         note: true,
         reason: true,
         version: true,
+        expiresAt: true,
         updatedAt: true,
       },
     });
     return ok({
       application: p,
+      // Legacy checkout-readiness flag; private price display is separate.
       pricingReady: false,
+      privatePricingAvailable: true,
+      orderReady: false,
       minPacks: 1,
       minAmountToman: "0",
     });

@@ -1058,3 +1058,16 @@
 .pack-manager .backend-form {
   margin-top: 16px;
 }
+.wholesale-price-manager select,
+.product-workbench select {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.wholesale-price-manager label {
+  min-width: 0;
+}
+.wholesale-price-manager small {
+  line-height: 2;
+  overflow-wrap: anywhere;
+}
