@@ -2750,7 +2750,7 @@ button:hover:not(:disabled) {
   margin: 12px 0;
 }
 .private-price-card {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
   padding: 20px 0;
   overflow-wrap: anywhere;
 }
@@ -2761,4 +2761,21 @@ button:hover:not(:disabled) {
   font-size: 13px;
   line-height: 2;
   margin: 8px 0;
+}
+
+.server-add {
+  min-width: 0;
+}
+.server-add p {
+  font-size: 11px;
+  line-height: 2;
+  max-width: 300px;
+  overflow-wrap: anywhere;
+}
+.server-add p a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+.private-price-card .server-add {
+  margin: 14px 0;
 }

@@ -19,6 +19,7 @@ export async function proxy(request: NextRequest) {
     parts.length === 1 &&
     parts[0] !== "admin" &&
     parts[0] !== "progress" &&
+    parts[0] !== "basket" &&
     !STORE_SECTIONS.some((s) => s === parts[0])
   )
     return missing();

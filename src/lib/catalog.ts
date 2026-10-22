@@ -8,7 +8,7 @@ export type Product = {
   price: string;
   previous?: string;
   description: string;
-  colors: { name: string; hex: string; available?: boolean }[];
+  colors: { id?: string; name: string; hex: string; available?: boolean }[];
   isDemo?: boolean;
   packSize: number;
   tag: string;

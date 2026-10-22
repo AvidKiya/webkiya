@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { CartAddButton } from "./server-basket";
 import { api, useAccount } from "@/lib/api";
 import { faNumber, money } from "@/lib/catalog";
 type Item = {
@@ -11,6 +12,7 @@ type Item = {
     isDemo: boolean;
   };
   pack: {
+    id: string;
     label: string;
     unitsPerPack: number;
     components: { name: string; units: number }[];
@@ -144,6 +146,13 @@ export function WholesaleCatalog() {
           ) : (
             <p>قیمت این جین فقط با استعلام ارائه می‌شود.</p>
           )}
+          {i.pricing === "PRICED" && !i.product.isDemo ? (
+            <CartAddButton
+              mode="WHOLESALE"
+              itemId={i.pack.id}
+              disabled={!i.available}
+            />
+          ) : null}
           <small>
             اعتبار قیمت:{" "}
             {i.validUntil

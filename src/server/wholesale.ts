@@ -63,7 +63,7 @@ function eligible(
 ) {
   return p.status === "APPROVED" && (!p.expiresAt || p.expiresAt > now);
 }
-async function partnerLock(tx: Transaction, id: string) {
+export async function partnerLock(tx: Transaction, id: string) {
   await tx.$queryRaw`SELECT "id" FROM "PartnerAccount" WHERE "id"=${id}::uuid FOR SHARE`;
   const p = await tx.partnerAccount.findUnique({
     where: { id },
@@ -382,7 +382,7 @@ export async function setPartnerValidity(
     return { id, expiresAt: updated.expiresAt, version: updated.version };
   });
 }
-async function freshCustomer(tx: Transaction, current: AuthSession) {
+export async function freshCustomer(tx: Transaction, current: AuthSession) {
   const s = await tx.session.findUnique({
     where: { id: current.id },
     include: { user: true },
@@ -396,6 +396,11 @@ async function freshCustomer(tx: Transaction, current: AuthSession) {
     (s.user.isDemo && process.env.APP_MODE !== "demo")
   )
     throw new ApiError(401, "AUTH_REQUIRED", "نشست معتبر نیست.");
+  if (
+    !s.user.phoneVerifiedAt &&
+    !(s.user.isDemo && process.env.APP_MODE === "demo")
+  )
+    throw new ApiError(403, "PHONE_REQUIRED", "تأیید شمارهٔ مشتری لازم است.");
   if (s.user.kind !== "CUSTOMER")
     throw new ApiError(
       403,

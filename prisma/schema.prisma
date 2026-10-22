@@ -25,6 +25,7 @@ model User {
   roles             UserRole[]
   comments          Comment[]
   partner           PartnerAccount?
+  carts ServerCart[]
 }
 model Role {
   id          String @id @default(uuid()) @db.Uuid
@@ -154,6 +155,7 @@ model ProductVariant {
  product Product @relation(fields:[productId],references:[id],onDelete:Restrict)
  movements InventoryMovement[]
  packComponents PackComponent[]
+ cartLines ServerCartLine[]
  @@unique([id,productId])
  @@unique([productId,name])
  @@index([productId,isActive])
@@ -185,6 +187,7 @@ model PackDefinition {
  product Product @relation(fields:[productId],references:[id],onDelete:Restrict)
  components PackComponent[]
  offers WholesaleOffer[]
+ cartLines ServerCartLine[]
  @@unique([id,productId])
  @@index([productId,status])
 }
@@ -220,4 +223,40 @@ model WholesaleOffer {
  partner PartnerAccount @relation(fields:[partnerId],references:[id],onDelete:Restrict)
  @@index([productId,createdAt])
  @@index([partnerId,status])
+}
+
+model ServerCart {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ mode String @db.VarChar(12)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ updatedAt DateTime @updatedAt @db.Timestamptz(3)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ lines ServerCartLine[]
+ operations CartOperation[]
+ @@unique([userId,mode])
+ @@unique([id,mode])
+}
+model ServerCartLine {
+ id String @id @default(uuid()) @db.Uuid
+ cartId String @db.Uuid
+ mode String @db.VarChar(12)
+ variantId String? @db.Uuid
+ packId String? @db.Uuid
+ quantity Int
+ cart ServerCart @relation(fields:[cartId,mode],references:[id,mode],onDelete:Restrict,onUpdate:NoAction)
+ variant ProductVariant? @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ pack PackDefinition? @relation(fields:[packId],references:[id],onDelete:Restrict)
+ @@unique([cartId,variantId])
+ @@unique([cartId,packId])
+}
+model CartOperation {
+ requestId String @id @db.Uuid
+ cartId String @db.Uuid
+ digest String @db.VarChar(64)
+ result Json
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
+ @@index([cartId])
 }

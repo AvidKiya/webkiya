@@ -49,6 +49,12 @@ import {
 import { PATCH as offersStatus } from "@/app/api/admin/products/[id]/offers/[offerId]/status/route";
 import { GET as wholesaleRead } from "@/app/api/wholesale/catalog/route";
 import { PUT as validityApi } from "@/app/api/admin/partners/[id]/validity/route";
+import {
+  GET as cartRead,
+  POST as cartAdd,
+  PATCH as cartSet,
+} from "@/app/api/cart/route";
+import { POST as cartQuote } from "@/app/api/cart/quote/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -351,9 +357,41 @@ async function publishedOffer(
   expect((await offerState(f, offer.id)).status).toBe(200);
   return offer;
 }
+
+async function retailCartFixture() {
+  const owner = await staff(),
+    buyer = await customer();
+  const { p, v } = await prepared(owner);
+  await transition(owner.cookie, p.id, "PUBLISHED");
+  await move(owner.cookie, v.id, 20);
+  return { owner, buyer, p, v };
+}
+async function cartAddItem(
+  cookie: string,
+  itemId: string,
+  quantity = 1,
+  mode = "RETAIL",
+  requestId = randomUUID(),
+) {
+  return cartAdd(
+    request("/api/cart", "POST", cookie, { mode, itemId, quantity, requestId }),
+  );
+}
+async function readBasket(cookie: string, mode = "RETAIL") {
+  const response = await cartRead(
+    request("/api/cart?mode=" + mode, "GET", cookie),
+  );
+  expect(response.status).toBe(200);
+  return (await payload(response)).data;
+}
+async function calculate(cookie: string, version: number, mode = "RETAIL") {
+  return cartQuote(
+    request("/api/cart/quote", "POST", cookie, { mode, version }),
+  );
+}
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -2417,5 +2455,336 @@ describe("real PostgreSQL backend", () => {
       (await db().wholesaleOffer.findUniqueOrThrow({ where: { id: offer.id } }))
         .version,
     ).toBe(2);
+  });
+  it("requires customer identity and rejects staff, unverified customers and demo products in server carts", async () => {
+    const f = await retailCartFixture();
+    expect((await cartAddItem("", f.v.id)).status).toBe(401);
+    expect((await cartAddItem(f.owner.cookie, f.v.id)).status).toBe(403);
+    const sample = await db().productVariant.findFirstOrThrow({
+      where: { productId: "everyday-bag" },
+    });
+    expect((await cartAddItem(f.buyer.cookie, sample.id)).status).toBe(409);
+    await db().user.update({
+      where: { id: f.buyer.id },
+      data: { isDemo: false },
+    });
+    expect((await cartAddItem(f.buyer.cookie, f.v.id)).status).toBe(403);
+    expect(await db().serverCart.count()).toBe(0);
+  });
+  it("idempotently merges parallel cart additions once and rejects mutation-key collisions", async () => {
+    const f = await retailCartFixture(),
+      key = randomUUID();
+    const [a, b] = await Promise.all([
+      cartAddItem(f.buyer.cookie, f.v.id, 2, "RETAIL", key),
+      cartAddItem(f.buyer.cookie, f.v.id, 2, "RETAIL", key),
+    ]);
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    expect((await payload(a)).data).toEqual((await payload(b)).data);
+    expect((await readBasket(f.buyer.cookie)).lines[0].quantity).toBe(2);
+    expect(await db().cartOperation.count()).toBe(1);
+    expect(
+      (await cartAddItem(f.buyer.cookie, f.v.id, 3, "RETAIL", key)).status,
+    ).toBe(409);
+    expect((await cartAddItem(f.buyer.cookie, f.v.id)).status).toBe(200);
+    expect((await readBasket(f.buyer.cookie)).lines[0].quantity).toBe(3);
+  });
+  it("keeps retail and wholesale baskets separate without accepting client-supplied money", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    await move(f.owner.cookie, f.v.id, 30);
+    expect((await cartAddItem(f.buyer.cookie, f.v.id, 2)).status).toBe(200);
+    expect(
+      (await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE")).status,
+    ).toBe(200);
+    const retail = await readBasket(f.buyer.cookie),
+      wholesale = await readBasket(f.buyer.cookie, "WHOLESALE");
+    expect(retail.cart.id).not.toBe(wholesale.cart.id);
+    expect(retail.lines).toHaveLength(1);
+    expect(wholesale.lines).toHaveLength(1);
+    expect(retail.lines[0].quantity).toBe(2);
+    expect(wholesale.lines[0].quantity).toBe(1);
+    expect(JSON.stringify(wholesale)).not.toContain("1234567");
+    expect(
+      (
+        await cartAdd(
+          request("/api/cart", "POST", f.buyer.cookie, {
+            mode: "RETAIL",
+            itemId: f.v.id,
+            quantity: 1,
+            requestId: randomUUID(),
+            price: "1",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+  });
+  it("calculates retail totals from current server prices without reserving stock or creating a payment amount", async () => {
+    const f = await retailCartFixture();
+    await cartAddItem(f.buyer.cookie, f.v.id, 2);
+    const cart = await readBasket(f.buyer.cookie);
+    const response = await calculate(f.buyer.cookie, cart.cart.version);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    const quote = (await payload(response)).data;
+    expect(quote.subtotalToman).toBe("500000");
+    expect(quote.payableToman).toBeNull();
+    expect(quote.shippingToman).toBeNull();
+    expect(quote.taxToman).toBeNull();
+    expect(quote.reserved).toBe(false);
+    expect(quote.requiresRevalidation).toBe(true);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
+    expect((await readBasket(f.buyer.cookie)).cart.version).toBe(
+      cart.cart.version,
+    );
+    expect(await db().inventoryMovement.count()).toBe(1);
+  });
+  it("calculates exact wholesale BOM totals and bounds quote expiry by partner validity", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    await move(f.owner.cookie, f.v.id, 30);
+    const expiresAt = new Date(Date.now() + 60000);
+    await db().partnerAccount.update({
+      where: { id: f.partner.id },
+      data: { expiresAt },
+    });
+    await cartAddItem(f.buyer.cookie, f.pack.id, 2, "WHOLESALE");
+    const cart = await readBasket(f.buyer.cookie, "WHOLESALE");
+    const response = await calculate(
+      f.buyer.cookie,
+      cart.cart.version,
+      "WHOLESALE",
+    );
+    expect(response.status).toBe(200);
+    const quote = (await payload(response)).data;
+    expect(quote.subtotalToman).toBe("14814804");
+    expect(quote.lines[0].totalUnits).toBe(12);
+    expect(quote.lines[0].unitsPerSelection).toBe(6);
+    expect(new Date(quote.validUntil).getTime()).toBe(expiresAt.getTime());
+    expect(quote.minSelections).toBe(1);
+    expect(JSON.stringify(quote)).not.toMatch(/"stock"|"reserved":\d|"sku"/);
+  });
+  it("aggregates shared SKU demand across distinct packs before checking wholesale stock", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    await move(f.owner.cookie, f.v.id, 10);
+    await transition(f.owner.cookie, f.p.id, "ARCHIVED");
+    await transition(f.owner.cookie, f.p.id, "DRAFT");
+    const second = (
+      await payload(await addPack(f.owner.cookie, f.p.id, f.v.id))
+    ).data;
+    await transition(f.owner.cookie, f.p.id, "PUBLISHED");
+    await packState(f.owner.cookie, f.p.id, second.id, "ACTIVE");
+    await publishedOffer(f, { packId: second.id, requestId: randomUUID() });
+    await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE");
+    await cartAddItem(f.buyer.cookie, second.id, 1, "WHOLESALE");
+    const cart = await readBasket(f.buyer.cookie, "WHOLESALE");
+    const response = await calculate(
+      f.buyer.cookie,
+      cart.cart.version,
+      "WHOLESALE",
+    );
+    expect(response.status).toBe(409);
+    expect((await payload(response)).error.code).toBe("INSUFFICIENT_STOCK");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
+  });
+  it("enforces cart ownership and optimistic quantity changes", async () => {
+    const f = await retailCartFixture();
+    await cartAddItem(f.buyer.cookie, f.v.id);
+    const other = await customer();
+    await cartAddItem(other.cookie, f.v.id);
+    const own = await readBasket(f.buyer.cookie),
+      foreign = await readBasket(other.cookie);
+    const edit = (lineId: string, version: number, quantity: number) =>
+      cartSet(
+        request("/api/cart", "PATCH", f.buyer.cookie, {
+          mode: "RETAIL",
+          lineId,
+          version,
+          quantity,
+          requestId: randomUUID(),
+        }),
+      );
+    expect((await edit(foreign.lines[0].id, own.cart.version, 4)).status).toBe(
+      404,
+    );
+    expect((await edit(own.lines[0].id, own.cart.version, 4)).status).toBe(200);
+    expect((await edit(own.lines[0].id, own.cart.version, 5)).status).toBe(409);
+    expect((await readBasket(f.buyer.cookie)).lines[0].quantity).toBe(4);
+  });
+  it("lets a suspended partner remove cart intent but denies price calculation without leaking old prices", async () => {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE");
+    const cart = await readBasket(f.buyer.cookie, "WHOLESALE");
+    await db().partnerAccount.update({
+      where: { id: f.partner.id },
+      data: { status: "SUSPENDED" },
+    });
+    const response = await calculate(
+      f.buyer.cookie,
+      cart.cart.version,
+      "WHOLESALE",
+    );
+    expect(response.status).toBe(403);
+    expect(JSON.stringify(await payload(response))).not.toContain("1234567");
+    expect(
+      (
+        await cartSet(
+          request("/api/cart", "PATCH", f.buyer.cookie, {
+            mode: "WHOLESALE",
+            lineId: cart.lines[0].id,
+            version: cart.cart.version,
+            quantity: 0,
+            requestId: randomUUID(),
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect((await readBasket(f.buyer.cookie, "WHOLESALE")).lines).toHaveLength(
+      0,
+    );
+  });
+  it("recomputes a changed retail price instead of trusting a previous displayed quote", async () => {
+    const f = await retailCartFixture();
+    await cartAddItem(f.buyer.cookie, f.v.id, 2);
+    const cart = await readBasket(f.buyer.cookie);
+    expect(
+      (await payload(await calculate(f.buyer.cookie, cart.cart.version))).data
+        .subtotalToman,
+    ).toBe("500000");
+    await transition(f.owner.cookie, f.p.id, "ARCHIVED");
+    await transition(f.owner.cookie, f.p.id, "DRAFT");
+    const product = await db().product.findUniqueOrThrow({
+      where: { id: f.p.id },
+    });
+    expect(
+      (
+        await editProduct(
+          request("/api/admin/products/" + f.p.id, "PATCH", f.owner.cookie, {
+            name: product.name,
+            price: "333333",
+            version: product.version,
+          }),
+          context(f.p.id),
+        )
+      ).status,
+    ).toBe(200);
+    await transition(f.owner.cookie, f.p.id, "PUBLISHED");
+    expect(
+      (await payload(await calculate(f.buyer.cookie, cart.cart.version))).data
+        .subtotalToman,
+    ).toBe("666666");
+  });
+  it("rechecks physical availability and rejects stale cart versions on quote", async () => {
+    const f = await retailCartFixture();
+    await cartAddItem(f.buyer.cookie, f.v.id, 2);
+    const cart = await readBasket(f.buyer.cookie);
+    expect(
+      (await calculate(f.buyer.cookie, cart.cart.version - 1)).status,
+    ).toBe(409);
+    await move(f.owner.cookie, f.v.id, -19, 2);
+    expect((await calculate(f.buyer.cookie, cart.cart.version)).status).toBe(
+      409,
+    );
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(1);
+  });
+  it("requires a current own priced offer at calculation time and never accepts inquiry as free", async () => {
+    const f = await wholesaleFixture();
+    const offer = await publishedOffer(f);
+    await move(f.owner.cookie, f.v.id, 20);
+    await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE");
+    const cart = await readBasket(f.buyer.cookie, "WHOLESALE");
+    await offerState(f, offer.id, "ARCHIVED", 2);
+    const missing = await calculate(
+      f.buyer.cookie,
+      cart.cart.version,
+      "WHOLESALE",
+    );
+    expect(missing.status).toBe(409);
+    expect(JSON.stringify(await payload(missing))).not.toContain("1234567");
+    await publishedOffer(f, {
+      requestId: randomUUID(),
+      mode: "INQUIRY",
+      unitPriceToman: null,
+    });
+    expect(
+      (await calculate(f.buyer.cookie, cart.cart.version, "WHOLESALE")).status,
+    ).toBe(409);
+    expect(
+      (await cartAddItem(f.buyer.cookie, f.pack.id, 1, "WHOLESALE")).status,
+    ).toBe(409);
+  });
+  it("does not pretend independent quotes reserve shared inventory", async () => {
+    const f = await retailCartFixture(),
+      other = await customer();
+    await cartAddItem(f.buyer.cookie, f.v.id, 15);
+    await cartAddItem(other.cookie, f.v.id, 15);
+    const a = await readBasket(f.buyer.cookie),
+      b = await readBasket(other.cookie);
+    const results = await Promise.all([
+      calculate(f.buyer.cookie, a.cart.version),
+      calculate(other.cookie, b.cart.version),
+    ]);
+    expect(results.map((r) => r.status)).toEqual([200, 200]);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .reserved,
+    ).toBe(0);
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(20);
+  });
+  it("idempotently acknowledges deletion retries and protects operation history", async () => {
+    const f = await retailCartFixture();
+    await cartAddItem(f.buyer.cookie, f.v.id);
+    const cart = await readBasket(f.buyer.cookie),
+      key = randomUUID();
+    const remove = () =>
+      cartSet(
+        request("/api/cart", "PATCH", f.buyer.cookie, {
+          mode: "RETAIL",
+          lineId: cart.lines[0].id,
+          version: cart.cart.version,
+          quantity: 0,
+          requestId: key,
+        }),
+      );
+    const a = await remove(),
+      b = await remove();
+    expect(a.status).toBe(200);
+    expect((await payload(a)).data).toEqual((await payload(b)).data);
+    expect((await readBasket(f.buyer.cookie)).lines).toHaveLength(0);
+    await expect(
+      db().cartOperation.delete({ where: { requestId: key } }),
+    ).rejects.toThrow();
+  });
+  it("keeps cart row shape and quantity constraints in PostgreSQL", async () => {
+    const f = await retailCartFixture();
+    await cartAddItem(f.buyer.cookie, f.v.id);
+    const cart = await readBasket(f.buyer.cookie);
+    await expect(
+      db().serverCartLine.update({
+        where: { id: cart.lines[0].id },
+        data: { quantity: -1 },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().serverCartLine.update({
+        where: { id: cart.lines[0].id },
+        data: { mode: "WHOLESALE" },
+      }),
+    ).rejects.toThrow();
+    expect((await cartAddItem(f.buyer.cookie, f.v.id, 1001)).status).toBe(422);
   });
 });

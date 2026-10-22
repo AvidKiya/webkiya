@@ -17,7 +17,7 @@ const select = {
   variants: {
     where: { isActive: true },
     orderBy: { createdAt: "asc" as const },
-    select: { name: true, hex: true, stock: true, reserved: true },
+    select: { id: true, name: true, hex: true, stock: true, reserved: true },
   },
 } as const;
 function dto(p: Awaited<ReturnType<typeof rows>>[number]): Product {
@@ -37,6 +37,7 @@ function dto(p: Awaited<ReturnType<typeof rows>>[number]): Product {
     collection: p.collection,
     isDemo: p.isDemo,
     colors: p.variants.map((v) => ({
+      id: v.id,
       name: v.name,
       hex: v.hex,
       available: p.isDemo || v.stock > v.reserved,

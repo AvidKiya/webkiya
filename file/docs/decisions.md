@@ -130,3 +130,10 @@
 - تصمیم: creator نمی‌تواند PUBLISHED کند حتی OWNER؛ reviewer مجاز و MFA شخصی مستقل لازم است. هر partner/pack فقط یک PUBLISHED، status/version و audit اتمیک، ایجاد با UUID retry، validity همکار با version/reason و guard خواندن.
 - تصمیم: قیمت خصوصی فقط API client-authenticated با private/no-store/Vary Cookie؛ SSR/RSC/DTO عمومی فقط خرده. همکاری APPROVED به‌تنهایی بدون تخصیص/اعتبار کافی نیست. session و شماره/APP_MODE و Product/Pack دوباره کنترل می‌شوند.
 - پیامد: نمایش قیمت‌ها و انقضا اجرایی‌اند؛ quote/place باید همهٔ این کنترل‌ها را دوباره زیر lock اجرا کنند. مشاهدهٔ مجاز گذشته قابل پس‌گرفتن نیست؛ UI تازه‌سازی/انقضا دارد، نه تضمین حذف از حافظهٔ گیرنده. گروه/tier/قیمت متفاوت اجزا و سفارش/پرداخت بازند.
+
+
+### ADR-018 — سبد قصد خرید و محاسبهٔ گذرا، نه رزرو یا تعهد مالی
+- وضعیت: اجراشده در0.8.0، migration009؛ SQLهای اعمال‌شده تغییر نکردند.
+- تصمیم: ServerCart مستقل RETAIL/WHOLESALE، مالکیت سروری، mutation UUID/digest و تاریخچهٔ immutable، optimistic version برای SET؛ مبلغ ارسالی مشتری ممنوع.
+- quote با lock مرتب محصول و SKU و guard جاری همکار/قیمت/BOM، محاسبهٔ BigInt و موجودی تجمیعی اجرا می‌شود. اعتبار نمایش حداکثر۱۲۰ثانیه و محدود به انقضای همکار/قیمت است. shipping/tax/payable=null؛ reserved/orderReady/paymentReady=false.
+- پیامد: quote نه ذخیرهٔ مالی پایدار است نه authorization آینده؛ دو مشتری می‌توانند یک stock را هم‌زمان quote کنند. place/payment آینده باید دوباره همهٔ قیود را اتمیک کنترل و snapshot/رزرو بسازد. سبد نمونهٔ محلی به سفارش تبدیل نمی‌شود.

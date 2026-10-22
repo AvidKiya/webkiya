@@ -674,6 +674,71 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
     await expect(buyerPage.locator(".private-price-card")).toContainText(
       new Intl.NumberFormat("fa-IR").format(1234567),
     );
+    await buyerPage
+      .getByRole("button", { name: "افزودن یک جین به سبد سروری", exact: true })
+      .click();
+    await buyerPage
+      .getByRole("link", { name: "دیدن سبد سروری", exact: true })
+      .click();
+    await buyerPage
+      .getByRole("button", { name: "سبد عمده", exact: true })
+      .click();
+    await expect(buyerPage.locator(".server-cart-line")).toHaveCount(1);
+    await buyerPage
+      .getByRole("button", { name: "بررسی موجودی و محاسبهٔ سروری" })
+      .click();
+    await expect(
+      buyerPage.getByRole("region", { name: "نتیجه محاسبه سروری" }),
+    ).toContainText(new Intl.NumberFormat("fa-IR").format(7407402));
+    await buyerPage.getByLabel("تعداد انتخاب (صفر برای حذف)").fill("2");
+    await buyerPage.getByRole("button", { name: "ثبت تعداد در سرور" }).click();
+    await expect(buyerPage.locator(".server-cart-line")).toContainText(
+      "تعداد ثبت‌شده: ۲",
+    );
+    await buyerPage
+      .getByRole("button", { name: "بررسی موجودی و محاسبهٔ سروری" })
+      .click();
+    await expect(buyerPage.locator("main").getByRole("alert")).toContainText(
+      "موجودی کل ترکیب سبد کافی نیست",
+    );
+    await expect(
+      buyerPage.getByRole("region", { name: "نتیجه محاسبه سروری" }),
+    ).toHaveCount(0);
+    await buyerPage.goto("/p/" + productId);
+    await buyerPage
+      .getByRole("dialog")
+      .getByRole("button", { name: "افزودن به سبد سروری", exact: true })
+      .click();
+    await buyerPage
+      .getByRole("dialog")
+      .getByRole("link", { name: "دیدن سبد سروری", exact: true })
+      .click();
+    await expect(buyerPage.locator(".server-cart-line")).toHaveCount(1);
+    await buyerPage.getByLabel("تعداد انتخاب (صفر برای حذف)").fill("2");
+    await buyerPage.getByRole("button", { name: "ثبت تعداد در سرور" }).click();
+    await expect(buyerPage.locator(".server-cart-line")).toContainText(
+      "تعداد ثبت‌شده: ۲",
+    );
+    await buyerPage.reload();
+    await expect(buyerPage.locator(".server-cart-line")).toContainText(
+      "تعداد ثبت‌شده: ۲",
+    );
+    await buyerPage
+      .getByRole("button", { name: "بررسی موجودی و محاسبهٔ سروری" })
+      .click();
+    await expect(
+      buyerPage.getByRole("region", { name: "نتیجه محاسبه سروری" }),
+    ).toContainText(new Intl.NumberFormat("fa-IR").format(500000));
+    for (const width of [360, 390, 768, 1440]) {
+      await buyerPage.setViewportSize({ width, height: 900 });
+      expect(
+        await buyerPage.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        "basket overflow " + width,
+      ).toBe(true);
+    }
+    await buyerPage.goto("/wholesale");
     for (const path of ["/", "/p/" + productId, "/api/catalog"]) {
       const publicText = await (
         await page.request.get(path, { headers: { Cookie: "" } })
@@ -748,6 +813,21 @@ test("owner manages a real photo, SKU, stock and public catalog lifecycle", asyn
       await client.query("BEGIN");
       try {
         await client.query("SET LOCAL session_replication_role = 'replica'");
+        if (buyerId) {
+          await client.query(
+            'DELETE FROM "CartOperation" o USING "ServerCart" c,"User" u WHERE o."cartId"=c.id AND c."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
+            [buyerId],
+          );
+          await client.query(
+            'DELETE FROM "ServerCartLine" l USING "ServerCart" c,"User" u WHERE l."cartId"=c.id AND c."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
+            [buyerId],
+          );
+          await client.query(
+            'DELETE FROM "ServerCart" c USING "User" u WHERE c."userId"=u.id AND u.id=$1 AND u."isDemo"=true AND u.kind=\'CUSTOMER\'',
+            [buyerId],
+          );
+        }
+
         await client.query(
           'DELETE FROM "InventoryMovement" m USING "ProductVariant" v,"Product" p WHERE m."variantId"=v.id AND v."productId"=p.id AND p.id=$1 AND EXISTS(SELECT 1 FROM "AuditLog" a WHERE a."resourceId"=p.id AND a."actorId"=$2 AND a.action=\'product:draft_create\')',
           [productId, ownerId],

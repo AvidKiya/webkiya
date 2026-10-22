@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ServerComments } from "./server-comments";
 import { WholesaleCatalog } from "./wholesale-catalog";
+import { CartAddButton } from "./server-basket";
 import { AccountPanel, PartnerPanel } from "./account-panel";
 import { usePreviewStore, usePreviewTheme } from "@/lib/preview-store";
 import Link from "next/link";
@@ -362,6 +363,9 @@ export default function Store({
   );
   const cartContents = (full = false) => (
     <>
+      <Link href="/basket" className="text-link">
+        سبد سروری مشتری (جدا از سبد نمونه)
+      </Link>
       {data.cart.length ? (
         data.cart.map((item, index) => {
           const p = products.find((p) => p.id === item.productId)!;
@@ -944,29 +948,54 @@ export default function Store({
                           {colorPicker(p)}
                           <div className="buy-row">
                             {priceBlock(p)}
-                            <button
-                              className="primary"
-                              disabled={
-                                offline ||
-                                (mode === "retail" &&
-                                  p.colors.every((c) => c.available === false))
-                              }
-                              onClick={() => addCart(p)}
-                            >
-                              {mode === "retail" ? (
-                                <>
-                                  <ShoppingBag size={16} />
-                                  {p.colors.every((c) => c.available === false)
-                                    ? "ناموجود"
-                                    : "افزودن به سبد"}
-                                </>
-                              ) : (
-                                <>
-                                  <MessageCircle size={16} />
-                                  استعلام عمده
-                                </>
-                              )}
-                            </button>
+                            {mode === "retail" && !p.isDemo ? (
+                              <CartAddButton
+                                mode="RETAIL"
+                                itemId={
+                                  p.colors.find(
+                                    (c) =>
+                                      c.name ===
+                                      (colorById[p.id] ||
+                                        p.colors.find(
+                                          (c) => c.available !== false,
+                                        )?.name ||
+                                        p.colors[0].name),
+                                  )?.id
+                                }
+                                disabled={
+                                  offline ||
+                                  p.colors.every((c) => c.available === false)
+                                }
+                              />
+                            ) : (
+                              <button
+                                className="primary"
+                                disabled={
+                                  offline ||
+                                  (mode === "retail" &&
+                                    p.colors.every(
+                                      (c) => c.available === false,
+                                    ))
+                                }
+                                onClick={() => addCart(p)}
+                              >
+                                {mode === "retail" ? (
+                                  <>
+                                    <ShoppingBag size={16} />
+                                    {p.colors.every(
+                                      (c) => c.available === false,
+                                    )
+                                      ? "ناموجود"
+                                      : "افزودن به سبد"}
+                                  </>
+                                ) : (
+                                  <>
+                                    <MessageCircle size={16} />
+                                    استعلام عمده
+                                  </>
+                                )}
+                              </button>
+                            )}
                           </div>
                         </div>
                         <div className="post-footer">
@@ -1271,22 +1300,42 @@ export default function Store({
                   )}
                   <div className="buy-row">
                     {priceBlock(p)}
-                    <button
-                      className="primary"
-                      disabled={
-                        offline ||
-                        (mode === "retail" &&
-                          p.colors.every((c) => c.available === false))
-                      }
-                      onClick={() => addCart(p)}
-                    >
-                      {mode === "retail"
-                        ? p.colors.every((c) => c.available === false)
-                          ? "ناموجود"
-                          : "افزودن به سبد"
-                        : "درخواست همکاری"}
-                      <ShoppingBag size={16} />
-                    </button>
+                    {mode === "retail" && !p.isDemo ? (
+                      <CartAddButton
+                        mode="RETAIL"
+                        itemId={
+                          p.colors.find(
+                            (c) =>
+                              c.name ===
+                              (colorById[p.id] ||
+                                p.colors.find((c) => c.available !== false)
+                                  ?.name ||
+                                p.colors[0].name),
+                          )?.id
+                        }
+                        disabled={
+                          offline ||
+                          p.colors.every((c) => c.available === false)
+                        }
+                      />
+                    ) : (
+                      <button
+                        className="primary"
+                        disabled={
+                          offline ||
+                          (mode === "retail" &&
+                            p.colors.every((c) => c.available === false))
+                        }
+                        onClick={() => addCart(p)}
+                      >
+                        {mode === "retail"
+                          ? p.colors.every((c) => c.available === false)
+                            ? "ناموجود"
+                            : "افزودن به سبد"
+                          : "درخواست همکاری"}
+                        <ShoppingBag size={16} />
+                      </button>
+                    )}
                   </div>
                   <details>
                     <summary>
