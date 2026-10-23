@@ -8,7 +8,10 @@
     "build": "npm --prefix frontend run build && npm --prefix backend run build",
     "test:template": "node scripts/verify-template.mjs",
     "preview:build": "node scripts/dev.mjs --built",
-    "test:unit": "npm --prefix backend test && node --experimental-strip-types --test frontend/tests/catalog.test.mjs",
-    "test:backend": "npm --prefix backend run db:test:create && npm --prefix backend run db:migrate:test && npm --prefix backend run db:seed -- --test && npm --prefix backend run test:backend"
+    "test:unit": "npm --prefix backend test && node --experimental-strip-types --test frontend/tests/catalog.test.mjs frontend/tests/wholesale.test.mjs",
+    "test:backend": "npm --prefix backend run db:test:create && npm --prefix backend run db:migrate:test && npm --prefix backend run db:seed -- --test && npm --prefix backend run test:backend",
+    "test:wholesale:prepare": "node scripts/prepare-wholesale-ui.mjs",
+    "dev:ui-test": "node scripts/ui-test.mjs",
+    "test:wholesale:browser": "node --experimental-strip-types frontend/tests/wholesale-browser.mjs"
   }
 }

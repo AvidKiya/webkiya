@@ -25,7 +25,7 @@ import { PATCH as editRole } from "@/app/api/admin/roles/[id]/route";
 import { POST as createStaff } from "@/app/api/admin/staff/route";
 import { PATCH as editStaff } from "@/app/api/admin/staff/[id]/route";
 import sharp from "sharp";
-import { rm } from "node:fs/promises";
+import { rm, mkdir, writeFile } from "node:fs/promises";
 import { GET as catalogApi } from "@/app/api/catalog/route";
 import { publicProduct } from "@/server/catalog";
 import { POST as uploadApi } from "@/app/api/admin/media/route";
@@ -457,13 +457,106 @@ beforeEach(async () => {
   await db().role.deleteMany({ where: { key: { startsWith: "CUSTOM_" } } });
 });
 afterAll(async () => {
-  await rm(process.cwd() + "/.data/test-media", {
-    recursive: true,
-    force: true,
-  });
+  // Opt-in synthetic browser fixtures, confined by setup.ts to the isolated kiya_test DB.
+  if (process.env.KIYA_EXPORT_WHOLESALE_UI === "true") {
+    const f = await wholesaleFixture();
+    await publishedOffer(f);
+    expect((await move(f.owner.cookie, f.v.id, 30)).status).toBe(201);
+    const users: Record<string, unknown> = {
+      approved: { cookie: f.buyer.cookie, partnerId: f.partner.id },
+      outsider: await customer(),
+    };
+    for (const status of [
+      "PENDING",
+      "SUSPENDED",
+      "REJECTED",
+      "EXPIRED",
+      "INQUIRY",
+    ]) {
+      const user = await customer();
+      const app = await db().partnerAccount.create({
+        data: {
+          userId: user.id,
+          businessName: "پرونده مصنوعی " + status,
+          city: "شهر آزمون",
+          note: "داده مصنوعی آزمون مرورگر",
+          status:
+            status === "EXPIRED" || status === "INQUIRY" ? "APPROVED" : status,
+          reviewerId: status === "PENDING" ? null : f.owner.user.id,
+          ...(status === "EXPIRED"
+            ? { expiresAt: new Date(Date.now() - 60000) }
+            : {}),
+        },
+      });
+      users[status.toLowerCase()] = { cookie: user.cookie, partnerId: app.id };
+      if (status === "INQUIRY")
+        await publishedOffer(
+          { ...f, partner: app, buyer: user },
+          {
+            mode: "INQUIRY",
+            unitPriceToman: null,
+            partnerId: app.id,
+            requestId: randomUUID(),
+          },
+        );
+    }
+    await mkdir(".data", { recursive: true });
+    await writeFile(
+      ".data/wholesale-ui-fixture.json",
+      JSON.stringify({
+        users,
+        reviewerCookie: f.reviewer.cookie,
+        productId: f.p.id,
+        variantId: f.v.id,
+        packId: f.pack.id,
+        unitPrice: "1234567",
+        units: f.pack.unitsPerPack,
+      }),
+      { mode: 0o600 },
+    );
+  } else
+    await rm(process.cwd() + "/.data/test-media", {
+      recursive: true,
+      force: true,
+    });
   await db().$disconnect();
 });
 describe("real PostgreSQL backend", () => {
+  it("limits partner status to the authenticated customer and never returns private pricing", async () => {
+    expect((await partnerMe(request("/api/partner"))).status).toBe(401);
+    const a = await customer(),
+      b = await customer(),
+      owner = await staff();
+    expect(
+      (await partnerMe(request("/api/partner", "GET", owner.cookie))).status,
+    ).toBe(403);
+    expect(
+      (
+        await apply(
+          request("/api/partner", "POST", a.cookie, {
+            businessName: "فروشگاه مصنوعی",
+            city: "شهر آزمون",
+            note: "توضیح همکاری مصنوعی",
+          }),
+        )
+      ).status,
+    ).toBe(201);
+    const response = await partnerMe(request("/api/partner", "GET", a.cookie));
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("vary")).toBe("Cookie");
+    const data = (await payload(response)).data;
+    expect(data.application.status).toBe("PENDING");
+    expect(data.application.businessName).toBe("فروشگاه مصنوعی");
+    expect(data.minPacks).toBe(1);
+    expect(data.minAmountToman).toBe("0");
+    expect(JSON.stringify(data)).not.toMatch(
+      /unitPriceToman|packPriceToman|passwordHash|reviewerId|phone/,
+    );
+    expect(
+      (await payload(await partnerMe(request("/api/partner", "GET", b.cookie))))
+        .data.application,
+    ).toBeNull();
+  });
   it("runs on PostgreSQL and keeps migrated constraints", async () => {
     const [version] = await db().$queryRaw<
       { version: string }[]

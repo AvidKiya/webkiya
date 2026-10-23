@@ -1,55 +1,239 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Layers,
-  CheckCircle2,
-  Clock,
-  Lock,
-  ShieldCheck,
   Building2,
   Send,
-  AlertCircle,
+  Lock,
   Minus,
   Plus,
+  CheckCircle2,
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
-import { formatPrice, formatNumber } from "../../utils/format";
-
+import { api } from "../../services/catalog";
+import {
+  accessExpired,
+  offerExpired,
+  formatToman,
+  parseWholesaleCatalog,
+  type PartnerApplicationDTO,
+  type CustomerIdentity,
+  type WholesaleCatalog,
+  type WholesaleOffer,
+} from "../../services/wholesale";
+import { formatNumber } from "../../utils/format";
+type State = {
+  user: CustomerIdentity | null;
+  application: PartnerApplicationDTO | null;
+};
+function statusLabel(app: PartnerApplicationDTO) {
+  if (accessExpired(app)) return "اعتبار همکاری پایان یافته";
+  return (
+    {
+      PENDING: "در انتظار بررسی پشتیبانی",
+      APPROVED: "همکار تأییدشده",
+      REJECTED: "درخواست رد شده",
+      SUSPENDED: "دسترسی تعلیق‌شده",
+    }[app.status] || "نامشخص"
+  );
+}
 export function WholesaleView() {
-  const {
-    customer,
-    isApprovedPartner,
-    setSalesMode,
-    products,
-    addToWholesaleCart,
-    submitPartnerApplication,
-    setRoute,
-  } = useStore();
-
-  const [packCounts, setPackCounts] = useState<Record<string, number>>({});
-  const [applicantName, setApplicantName] = useState(customer.name);
-  const [phone, setPhone] = useState(customer.phone);
-  const [businessName, setBusinessName] = useState(customer.businessName || "");
-  const [city, setCity] = useState("تهران");
-  const [channelOrPage, setChannelOrPage] = useState("");
-  const [note, setNote] = useState("");
-
-  const getPackQty = (id: string) => packCounts[id] || 1;
-  const setPackQty = (id: string, val: number) =>
-    setPackCounts((prev) => ({ ...prev, [id]: Math.max(1, Math.round(val)) }));
-
-  const handleSubmitApp = (e: React.FormEvent) => {
+  const { setRoute, openServerCart, showToast } = useStore();
+  const [state, setState] = useState<State | null>(null),
+    [catalog, setCatalog] = useState<WholesaleCatalog | null>(null),
+    [error, setError] = useState(""),
+    [notice, setNotice] = useState(""),
+    [pending, setPending] = useState(false),
+    [counts, setCounts] = useState<Record<string, number>>({}),
+    [businessName, setBusinessName] = useState(""),
+    [city, setCity] = useState(""),
+    [note, setNote] = useState("");
+  const generation = useRef(0),
+    mounted = useRef(true),
+    mutation = useRef(false),
+    attempts = useRef(
+      new Map<string, { quantity: number; requestId: string }>(),
+    );
+  const load = useCallback(async () => {
+    const ticket = ++generation.current;
+    setCatalog(null);
+    setState(null);
+    setError("");
+    const fresh = () => mounted.current && ticket === generation.current;
+    try {
+      const me = await api<{ user: CustomerIdentity | null }>("/api/auth/me");
+      if (!fresh()) return;
+      if (!me.user) {
+        setState({ user: null, application: null });
+        return;
+      }
+      if (me.user.kind !== "CUSTOMER") {
+        setState({ user: me.user, application: null });
+        setError(
+          "این بخش مخصوص حساب مشتری است؛ حساب کارکنان مجوز خرید همکار ندارد.",
+        );
+        return;
+      }
+      const own = await api<{ application: PartnerApplicationDTO | null }>(
+        "/api/partner",
+      );
+      if (!fresh()) return;
+      setState({ user: me.user, application: own.application });
+      if (
+        own.application?.status === "APPROVED" &&
+        !accessExpired(own.application)
+      ) {
+        const response = await api<unknown>("/api/wholesale/catalog");
+        if (!fresh()) return;
+        const parsed = parseWholesaleCatalog(response);
+        if (accessExpired({ expiresAt: parsed.accessExpiresAt }))
+          throw new Error("اعتبار همکاری پایان یافته است.");
+        setCatalog({
+          ...parsed,
+          items: parsed.items.filter((o) => !offerExpired(o)),
+        });
+      }
+    } catch (e) {
+      if (fresh()) {
+        setCatalog(null);
+        setError(e instanceof Error ? e.message : "ارتباط با سرور ناموفق بود.");
+      }
+    }
+  }, []);
+  useEffect(() => {
+    mounted.current = true;
+    void load();
+    let scheduled: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      clearTimeout(scheduled);
+      scheduled = setTimeout(() => {
+        if (document.visibilityState === "visible" && !mutation.current)
+          void load();
+      }, 40);
+    };
+    const visibility = () => {
+      if (document.hidden) {
+        generation.current++;
+        setCatalog(null);
+        setState(null);
+      } else refresh();
+    };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("kiya-session-changed", refresh);
+    document.addEventListener("visibilitychange", visibility);
+    const poll = setInterval(refresh, 15000);
+    return () => {
+      mounted.current = false;
+      generation.current++;
+      clearTimeout(scheduled);
+      clearInterval(poll);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("kiya-session-changed", refresh);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [load]);
+  useEffect(() => {
+    if (!catalog) return;
+    const dates = [
+      catalog.accessExpiresAt,
+      ...catalog.items.map((o) => o.validUntil),
+    ]
+      .filter((v): v is string => !!v)
+      .map(Date.parse);
+    if (!dates.length) return;
+    const timer = setTimeout(
+      () => {
+        if (accessExpired({ expiresAt: catalog.accessExpiresAt })) {
+          setCatalog(null);
+          setError("اعتبار همکاری پایان یافت؛ قیمت‌های خصوصی پنهان شدند.");
+        } else {
+          setCatalog((prev) =>
+            prev
+              ? { ...prev, items: prev.items.filter((o) => !offerExpired(o)) }
+              : null,
+          );
+        }
+      },
+      Math.max(0, Math.min(...dates) - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [catalog]);
+  async function apply(e: React.FormEvent) {
     e.preventDefault();
-    if (!businessName.trim() || !phone.trim()) return;
-    submitPartnerApplication({
-      applicantName,
-      phone,
-      businessName,
-      city,
-      channelOrPage,
-      note,
-    });
-  };
-
+    if (mutation.current) return;
+    mutation.current = true;
+    setPending(true);
+    setError("");
+    setNotice("");
+    try {
+      await api("/api/partner", {
+        businessName: businessName.trim(),
+        city: city.trim(),
+        note: note.trim(),
+      });
+      if (mounted.current) {
+        setNotice("درخواست در سرور ثبت شد؛ تأیید مستقل پشتیبانی لازم است.");
+        await load();
+      }
+    } catch (e) {
+      if (mounted.current)
+        setError(e instanceof Error ? e.message : "ثبت درخواست ناموفق بود.");
+    } finally {
+      mutation.current = false;
+      if (mounted.current) setPending(false);
+    }
+  }
+  async function add(offer: WholesaleOffer) {
+    if (mutation.current) return;
+    if (
+      !catalog ||
+      accessExpired({ expiresAt: catalog.accessExpiresAt }) ||
+      offerExpired(offer)
+    ) {
+      await load();
+      return;
+    }
+    const quantity = counts[offer.offerId] || 1;
+    mutation.current = true;
+    setPending(true);
+    setError("");
+    const previous = attempts.current.get(offer.offerId);
+    const attempt =
+      previous?.quantity === quantity
+        ? previous
+        : { quantity, requestId: crypto.randomUUID() };
+    attempts.current.set(offer.offerId, attempt);
+    try {
+      await api("/api/cart", {
+        mode: "WHOLESALE",
+        itemId: offer.pack.id,
+        quantity,
+        requestId: attempt.requestId,
+      });
+      attempts.current.delete(offer.offerId);
+      if (mounted.current) {
+        showToast(
+          "جین واقعی در سبد سروری ثبت شد؛ هنوز پرداخت یا رزرو نشده است.",
+          "success",
+        );
+        openServerCart("WHOLESALE");
+      }
+    } catch (e) {
+      if (mounted.current)
+        setError(
+          e instanceof Error
+            ? e.message
+            : "افزودن ناموفق بود؛ برای تکرار امن همان تعداد را دوباره ارسال کنید.",
+        );
+    } finally {
+      mutation.current = false;
+      if (mounted.current) setPending(false);
+    }
+  }
+  const quantity = (id: string, delta: number) =>
+    setCounts((prev) => ({
+      ...prev,
+      [id]: Math.min(1000, Math.max(1, (prev[id] || 1) + delta)),
+    }));
   return (
     <div className="w-full max-w-[960px] mx-auto space-y-5">
       {/* Policy Hero Card */}
@@ -71,13 +255,13 @@ export function WholesaleView() {
 
           <span className="px-3 py-1.5 rounded-xl bg-white/15 text-xs font-extrabold border border-white/20">
             وضعیت حساب شما:{" "}
-            {customer.partnerStatus === "APPROVED"
-              ? "همکار تأییدشده ✓"
-              : customer.partnerStatus === "PENDING"
-                ? "در انتظار بررسی پشتیبانی"
-                : customer.partnerStatus === "SUSPENDED"
-                  ? "تعلیق‌شده"
-                  : "مشتری عادی"}
+            {state?.application
+              ? statusLabel(state.application)
+              : state?.user
+                ? "بدون پرونده همکاری"
+                : state
+                  ? "وارد نشده"
+                  : "در حال بررسی سرور"}
           </span>
         </div>
 
@@ -111,345 +295,289 @@ export function WholesaleView() {
         </div>
       </div>
 
-      {/* Approved Partner View -> Full Wholesale Jini Catalog */}
-      {isApprovedPartner ? (
-        <div className="space-y-4">
-          <div className="bg-success-light border border-success/30 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 text-sm font-bold text-ink-900">
-              <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
-              <span>
-                خوش آمدید {customer.businessName || customer.name}! لیست قیمت
-                اختصاصی همکاران و خرید جینی برای شما فعال است.
-              </span>
-            </div>
-            <button
-              onClick={() => setSalesMode("WHOLESALE")}
-              className="px-4 py-2 rounded-xl bg-buy text-buy-fg text-xs font-extrabold"
-            >
-              تغییر حالت کل سایت به عمده
-            </button>
+      <div className="flex flex-wrap gap-3 items-center">
+        <button
+          disabled={pending}
+          onClick={() => void load()}
+          className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold"
+        >
+          دریافت وضعیت و قیمت جاری
+        </button>
+        {state?.user?.kind === "CUSTOMER" && (
+          <button
+            onClick={() => openServerCart("WHOLESALE")}
+            className="px-4 py-2 rounded-xl bg-brand-50 text-brand-600 text-xs font-bold"
+          >
+            مشاهدهٔ سبد عمده
+          </button>
+        )}
+      </div>
+      {error && (
+        <p
+          role="alert"
+          className="p-4 rounded-xl border border-danger text-danger text-sm"
+        >
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p
+          role="status"
+          className="p-4 rounded-xl border border-success text-sm"
+        >
+          {notice}
+        </p>
+      )}
+      {!state && !error && (
+        <p role="status">در حال خواندن وضعیت همکاری از سرور…</p>
+      )}
+      {state && !state.user && (
+        <section className="bg-surface border border-border rounded-2xl p-5 space-y-3">
+          <h2 className="font-extrabold">
+            برای ثبت درخواست همکاری وارد حساب شوید
+          </h2>
+          <p className="text-sm text-ink-600">
+            قیمت خصوصی فقط با نشست مشتری و تأیید مستقل پشتیبانی از سرور دریافت
+            می‌شود.
+          </p>
+          <button
+            onClick={() => setRoute("account")}
+            className="bg-buy text-buy-fg rounded-xl px-4 py-2"
+          >
+            ورود به حساب مشتری
+          </button>
+        </section>
+      )}
+      {state?.user?.isDemo && (
+        <p className="text-sm text-warning">
+          حساب شما آزمایشی است؛ ورود آزمایشی تأیید شمارهٔ واقعی نیست و کالاهای
+          نمونه قابل خرید نیستند.
+        </p>
+      )}
+      {state?.application && (
+        <section
+          className="bg-surface rounded-2xl border border-border p-5 space-y-3"
+          aria-label="وضعیت پرونده همکاری"
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-brand-500" />
+            <h2 className="font-extrabold">{statusLabel(state.application)}</h2>
           </div>
-
+          <p>
+            {state.application.businessName} · {state.application.city}
+          </p>
+          {state.application.reason && (
+            <p className="text-sm text-ink-600">
+              نتیجهٔ بررسی: {state.application.reason}
+            </p>
+          )}
+          {state.application.expiresAt && (
+            <p className="text-xs">
+              پایان اعتبار:{" "}
+              <bdi>
+                {new Date(state.application.expiresAt).toLocaleString("fa-IR")}
+              </bdi>
+            </p>
+          )}
+          <p className="text-xs text-ink-500">
+            تأیید/تمدید فقط در پنل امن توسط مسئول دارای مجوز انجام می‌شود؛ دکمهٔ
+            خودتأییدی وجود ندارد.
+          </p>
+        </section>
+      )}
+      {state?.user?.kind === "CUSTOMER" && !state.application && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <section className="lg:col-span-7 bg-surface rounded-2xl border border-border p-5 shadow-e1 space-y-4">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-brand-500" />
+              <h2 className="font-extrabold">
+                ثبت درخواست حساب همکار (خرید عمده جینی)
+              </h2>
+            </div>
+            <p className="text-xs text-ink-600">
+              هویت و تأیید شماره از نشست سرور بررسی می‌شوند؛ این فرم شماره‌ای را
+              تأیید نمی‌کند. توضیحات شما برای بررسی پشتیبانی ذخیره می‌شود.
+            </p>
+            <form onSubmit={apply} className="space-y-3 text-xs">
+              <label className="block font-bold">
+                نام فروشگاه / گالری / پیج
+                <input
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  className="block w-full mt-1 h-10 px-3 rounded-xl bg-canvas-sunken border border-border"
+                />
+              </label>
+              <label className="block font-bold">
+                شهر محل فعالیت
+                <input
+                  required
+                  minLength={2}
+                  maxLength={80}
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="block w-full mt-1 h-10 px-3 rounded-xl bg-canvas-sunken border border-border"
+                />
+              </label>
+              <label className="block font-bold">
+                توضیحات همکاری و نشانی فروشگاه یا پیج
+                <textarea
+                  required
+                  minLength={5}
+                  maxLength={500}
+                  rows={3}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="block w-full mt-1 p-3 rounded-xl bg-canvas-sunken border border-border"
+                />
+              </label>
+              <button
+                disabled={pending}
+                className="w-full py-3 rounded-xl bg-buy text-buy-fg font-extrabold flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                {pending
+                  ? "در حال ارسال…"
+                  : "ارسال درخواست به واحد امور همکاران"}
+              </button>
+            </form>
+          </section>
+          <aside className="lg:col-span-5 bg-surface rounded-2xl border border-border p-5 space-y-3">
+            <Lock className="w-5 h-5 text-brand-500" />
+            <h3 className="font-extrabold">محرمانگی نرخ همکار</h3>
+            <p className="text-sm text-ink-600">
+              هیچ نرخ یا ترکیب جین فرضی نمایش داده نمی‌شود. بسته و قیمت اختصاصی
+              پس از تأیید از سرور خوانده می‌شوند. حداقل سفارش یک جین و بدون
+              حداقل مبلغ اضافه است.
+            </p>
+          </aside>
+        </div>
+      )}
+      {catalog && (
+        <section aria-label="قیمت اختصاصی همکار" className="space-y-4">
+          <p className="text-xs text-ink-600">
+            نرخ‌ها مخصوص همین حساب‌اند. موجودی و اعتبار قیمت در زمان محاسبه و
+            ثبت رزرو دوباره بررسی می‌شوند. پرداخت فعال نیست.
+          </p>
+          {catalog.items.length === 0 && (
+            <p role="status">
+              پیشنهاد معتبر و منتشرشده‌ای برای حساب شما وجود ندارد؛ از مسئول
+              همکاری بخواهید قیمت اختصاص دهد.
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {products.map((product) => {
-              const pack = product.packDefinition;
-              const maxPacks = Math.floor(product.stock / pack.unitsPerPack);
-              const qty = getPackQty(product.id);
-              const packPrice =
-                pack.wholesaleUnitPriceToman * pack.unitsPerPack;
-
-              return (
-                <div
-                  key={product.id}
-                  className="bg-surface rounded-2xl border border-border p-4 shadow-e1 flex flex-col justify-between space-y-3"
-                >
-                  <div className="flex gap-3">
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-20 h-20 rounded-xl object-cover shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-mono text-ink-400">
-                        <bdi>{product.sku}</bdi>
-                      </span>
-                      <h3 className="font-extrabold text-sm text-ink-900 leading-snug">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs font-bold text-brand-600 mt-1">
-                        {pack.label} ({formatNumber(pack.unitsPerPack)} واحدی)
-                      </p>
-                    </div>
+            {catalog.items.map((offer) => (
+              <article
+                key={offer.offerId}
+                className="bg-surface rounded-2xl border border-border p-4 shadow-e1 space-y-3"
+              >
+                <div className="flex gap-3">
+                  <img
+                    src={offer.product.image}
+                    alt={offer.product.name}
+                    className="w-20 h-20 rounded-xl object-cover shrink-0"
+                  />
+                  <div>
+                    <h3 className="font-extrabold text-sm">
+                      {offer.product.name}
+                    </h3>
+                    <p className="text-xs font-bold text-brand-600 mt-1">
+                      {offer.pack.label} (
+                      {formatNumber(offer.pack.unitsPerPack)} واحدی)
+                    </p>
                   </div>
-
-                  {/* BOM Components */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {pack.components.map((comp) => (
-                      <span
-                        key={comp.variantLabel}
-                        className="text-[11px] bg-canvas-sunken px-2 py-0.5 rounded-md border border-border text-ink-700"
-                      >
-                        {formatNumber(comp.units)}× {comp.variantLabel}
-                      </span>
-                    ))}
-                  </div>
-
-                  {pack.priceMode === "FIXED" ? (
-                    <>
-                      <div className="grid grid-cols-3 gap-2 text-center bg-canvas-sunken p-2.5 rounded-xl">
-                        <div>
-                          <span className="text-[10px] text-ink-500 block">
-                            واحد عمده
-                          </span>
-                          <span className="text-xs font-extrabold text-brand-600">
-                            {formatPrice(pack.wholesaleUnitPriceToman)}
-                          </span>
-                        </div>
-                        <div className="border-x border-border">
-                          <span className="text-[10px] text-ink-500 block">
-                            قیمت ۱ جین
-                          </span>
-                          <span className="text-xs font-black text-ink-900">
-                            {formatPrice(packPrice)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-ink-500 block">
-                            تکی سایت
-                          </span>
-                          <span className="text-xs font-semibold text-ink-600">
-                            {formatPrice(product.price)}
-                          </span>
-                        </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {offer.pack.components.map((c, i) => (
+                    <span
+                      key={i}
+                      className="text-[11px] bg-canvas-sunken px-2 py-0.5 rounded-md border border-border"
+                    >
+                      {formatNumber(c.units)}× {c.name}
+                    </span>
+                  ))}
+                </div>
+                {offer.pricing === "PRICED" ? (
+                  <>
+                    <div className="grid grid-cols-3 gap-2 text-center bg-canvas-sunken p-2.5 rounded-xl">
+                      <div>
+                        <span className="text-[10px] block">واحد عمده</span>
+                        <span className="text-xs font-extrabold text-brand-600">
+                          {formatToman(offer.unitPriceToman)}
+                        </span>
                       </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5 bg-canvas-sunken rounded-xl p-1 border border-border">
-                          <button
-                            onClick={() => setPackQty(product.id, qty - 1)}
-                            className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-xs font-extrabold px-2">
-                            {formatNumber(qty)} جین
-                          </span>
-                          <button
-                            onClick={() =>
-                              setPackQty(
-                                product.id,
-                                Math.min(Math.max(1, maxPacks), qty + 1),
-                              )
-                            }
-                            className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
+                      <div className="border-x border-border">
+                        <span className="text-[10px] block">قیمت ۱ جین</span>
+                        <span className="text-xs font-black">
+                          {formatToman(offer.packPriceToman)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] block">تکی سایت</span>
+                        <span className="text-xs">
+                          {formatToman(offer.product.retailPriceToman)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <div className="flex items-center gap-1.5 bg-canvas-sunken rounded-xl p-1 border border-border">
                         <button
-                          disabled={maxPacks < 1}
-                          onClick={() => addToWholesaleCart(product.id, qty)}
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover text-xs font-extrabold disabled:opacity-50"
+                          aria-label={"کاهش جین " + offer.pack.label}
+                          disabled={
+                            pending || (counts[offer.offerId] || 1) <= 1
+                          }
+                          onClick={() => quantity(offer.offerId, -1)}
+                          className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center disabled:opacity-40"
                         >
-                          {maxPacks >= 1
-                            ? `افزودن (${formatNumber(maxPacks)} جین موجود)`
-                            : "موجودی کمتر از ۱ جین"}
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="text-xs font-extrabold">
+                          {formatNumber(counts[offer.offerId] || 1)} جین
+                        </span>
+                        <button
+                          aria-label={"افزایش جین " + offer.pack.label}
+                          disabled={
+                            pending || (counts[offer.offerId] || 1) >= 1000
+                          }
+                          onClick={() => quantity(offer.offerId, 1)}
+                          className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center disabled:opacity-40"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-between bg-canvas-sunken p-3 rounded-xl text-xs">
-                      <span className="text-ink-700 font-semibold">
-                        نرخ عمده این مدل به صورت استعلام روز است (تکی:{" "}
-                        {formatPrice(product.price)})
-                      </span>
                       <button
-                        onClick={() => setRoute("inbox")}
-                        className="px-3 py-1.5 rounded-lg bg-buy text-buy-fg font-bold shrink-0"
+                        disabled={
+                          pending || !offer.available || offer.product.isDemo
+                        }
+                        onClick={() => void add(offer)}
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-buy text-buy-fg text-xs font-extrabold disabled:opacity-50"
                       >
-                        استعلام
+                        {offer.product.isDemo
+                          ? "کالای نمونه؛ غیرقابل خرید"
+                          : offer.available
+                            ? "افزودن جین به سبد عمده"
+                            : "موجودی کمتر از ۱ جین"}
                       </button>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  </>
+                ) : (
+                  <p className="p-3 bg-canvas-sunken rounded-xl text-sm">
+                    نرخ استعلامی است؛ قیمت قابل سفارش منتشر نشده. برای قیمت با
+                    مسئول همکاری تماس بگیرید.
+                  </p>
+                )}
+                {offer.validUntil && (
+                  <p className="text-[11px] text-ink-500">
+                    اعتبار نرخ تا{" "}
+                    {new Date(offer.validUntil).toLocaleString("fa-IR")}
+                  </p>
+                )}
+              </article>
+            ))}
           </div>
-        </div>
-      ) : (
-        /* Unapproved / Pending Partner View — Strictly ZERO Wholesale Price Leak (WH01)! */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Application Form or Pending Status */}
-          <div className="lg:col-span-7 bg-surface rounded-2xl border border-border p-5 shadow-e1 space-y-4">
-            {customer.partnerStatus === "PENDING" ? (
-              <div className="space-y-3 py-4">
-                <div className="w-12 h-12 rounded-2xl bg-warning-light text-warning flex items-center justify-center">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <h2 className="text-base font-extrabold text-ink-900">
-                  پرونده همکاری شما در صف بررسی واحد پشتیبانی است
-                </h2>
-                <p className="text-xs text-ink-600 leading-relaxed">
-                  درخواست همکاری شما با نام تجاری{" "}
-                  <strong>{customer.businessName || "فروشگاه همکار"}</strong>{" "}
-                  ثبت شده است. به محض تأیید توسط کارشناس دارای مجوز{" "}
-                  <bdi>partner:approve</bdi> در پنل مدیریت، قیمت‌های عمده جینی
-                  برایتان باز خواهد شد.
-                </p>
-                <p className="text-xs text-ink-600">
-                  تأیید همکاری فقط توسط مسئول دارای مجوز، در پنل مدیریت امن
-                  انجام می‌شود؛ دکمهٔ خودتأییدی وجود ندارد.
-                </p>
-              </div>
-            ) : customer.partnerStatus === "SUSPENDED" ? (
-              <div className="space-y-3 py-4">
-                <AlertCircle className="w-10 h-10 text-danger" />
-                <h2 className="text-base font-extrabold text-ink-900">
-                  دسترسی همکاری عمده شما موقتاً تعلیق شده است
-                </h2>
-                <p className="text-xs text-ink-600">
-                  سفارش‌های تسویه‌شده قبلی شما در تاریخچه سفارش‌ها محفوظ است.
-                  جهت بررسی مجدد با واحد امور همکاران در دایرکت مکاتبه فرمایید.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-brand-500" />
-                  <h2 className="font-extrabold text-base text-ink-900">
-                    ثبت درخواست حساب همکار (خرید عمده جینی)
-                  </h2>
-                </div>
-                <p className="text-xs text-ink-600 leading-relaxed">
-                  همکار گرامی، برای حفظ حاشیه سود فروشندگان، قیمت‌های عمده تنها
-                  پس از تأیید هویت صنفی نمایش داده می‌شوند. فرم زیر را تکمیل
-                  کنید تا در صف بررسی پشتیبانی قرار گیرد:
-                </p>
-
-                <form onSubmit={handleSubmitApp} className="space-y-3 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-bold text-ink-700 block mb-1">
-                        <span className="text-danger ml-1">*</span>نام و نام
-                        خانوادگی
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        value={applicantName}
-                        onChange={(e) => setApplicantName(e.target.value)}
-                        className="w-full h-10 px-3 rounded-xl bg-canvas-sunken border border-border outline-none focus:border-brand-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-ink-700 block mb-1">
-                        <span className="text-danger ml-1">*</span>شماره موبایل
-                        تأییدشده
-                      </label>
-                      <input
-                        required
-                        type="tel"
-                        dir="ltr"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full h-10 px-3 rounded-xl bg-canvas-sunken border border-border font-mono text-left outline-none focus:border-brand-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-bold text-ink-700 block mb-1">
-                        <span className="text-danger ml-1">*</span>نام فروشگاه /
-                        گالری / پیج
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="مثلاً: گالری چرم آفتاب"
-                        className="w-full h-10 px-3 rounded-xl bg-canvas-sunken border border-border outline-none focus:border-brand-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-ink-700 block mb-1">
-                        شهر محل فعالیت
-                      </label>
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="w-full h-10 px-3 rounded-xl bg-canvas-sunken border border-border outline-none focus:border-brand-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-ink-700 block mb-1">
-                      آدرس پیج اینستاگرام، کانال یا نشانی مغازه
-                    </label>
-                    <input
-                      type="text"
-                      value={channelOrPage}
-                      onChange={(e) => setChannelOrPage(e.target.value)}
-                      placeholder="@shop_example یا آدرس پاساژ..."
-                      className="w-full h-10 px-3 rounded-xl bg-canvas-sunken border border-border outline-none focus:border-brand-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-ink-700 block mb-1">
-                      دسته‌های مورد نیاز و توضیح کوتاه همکاری
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="مثلاً: خرید جینی هفتگی کیف پول، کمربند و لباس زیر..."
-                      className="w-full p-3 rounded-xl bg-canvas-sunken border border-border outline-none focus:border-brand-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover font-extrabold text-sm flex items-center justify-center gap-2 shadow-e1"
-                  >
-                    <Send className="w-4 h-4 -scale-x-100" />
-                    <span>ارسال درخواست به واحد امور همکاران</span>
-                  </button>
-                </form>
-              </>
-            )}
-          </div>
-
-          {/* Public Pack Structure Preview (NO Wholesale Prices!) */}
-          <div className="lg:col-span-5 bg-surface rounded-2xl border border-border p-5 shadow-e1 space-y-3">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-brand-500" />
-              <h3 className="font-extrabold text-sm text-ink-900">
-                پیش‌نمایش ساختار جین کالاها (قیمت عمده قفل است)
-              </h3>
-            </div>
-            <p className="text-xs text-ink-500">
-              مشتریان عادی فقط قیمت تکی را می‌بینند؛ ترکیب بسته‌بندی عمده هر
-              محصول به شکل زیر تعریف شده است:
-            </p>
-            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
-              {products.slice(0, 6).map((p) => (
-                <div
-                  key={p.id}
-                  className="p-3 rounded-xl bg-canvas-sunken border border-border flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-ink-900 truncate">
-                      {p.name}
-                    </p>
-                    <p className="text-[11px] text-ink-500">
-                      {p.packDefinition.label} (
-                      {formatNumber(p.packDefinition.unitsPerPack)} واحدی) ·
-                      تکی: {formatPrice(p.price)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setRoute("inbox")}
-                    className="px-2.5 py-1.5 rounded-lg bg-brand-50 text-brand-600 text-[11px] font-bold shrink-0"
-                  >
-                    پیام به پشتیبانی
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="pt-2 border-t border-border flex items-center gap-2 text-[11px] text-ink-500">
-              <ShieldCheck className="w-4 h-4 text-success shrink-0" />
-              <span>
-                همکار تأییدشده دسترسی پنل مدیریت ندارد؛ صرفاً ویترین عمده را
-                می‌بیند.
-              </span>
-            </div>
-          </div>
-        </div>
+        </section>
       )}
     </div>
   );

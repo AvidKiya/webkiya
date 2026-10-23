@@ -38,6 +38,8 @@ function KiyaAppContent() {
   const { isDark, toggleTheme } = useTheme();
   const {
     viewMode,
+    cartSheetOpen,
+    salesMode,
     route,
     setRoute,
     posts,
@@ -381,7 +383,7 @@ function KiyaAppContent() {
       {/* Overlays & Modals */}
       <StoryViewerModal />
       <PostModal />
-      <ServerCart />
+      <ServerCart key={`${salesMode}:${cartSheetOpen}`} />
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}

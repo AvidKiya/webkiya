@@ -19,21 +19,53 @@ export function ServerCart() {
     [busy, setBusy] = useState(false),
     [consent, setConsent] = useState(false);
   const attempt = useRef<string | null>(null);
+  const alive = useRef(true),
+    privacy = useRef(0),
+    reads = useRef(0);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      privacy.current++;
+      reads.current++;
+    };
+  }, []);
   const dialog = useRef<HTMLElement>(null);
   async function refresh() {
+    if (!alive.current) return;
+    const ticket = ++reads.current;
     setQuote(null);
     setConsent(false);
     attempt.current = null;
     setData(null);
-    setData(await api<Cart>("/api/cart?mode=" + salesMode));
+    const next = await api<Cart>("/api/cart?mode=" + salesMode);
+    if (alive.current && ticket === reads.current && !document.hidden)
+      setData(next);
   }
   useEffect(() => {
     if (!cartSheetOpen) return;
-    setData(null);
-    setError("");
-    setQuote(null);
-    setConsent(false);
-    refresh().catch((e) => setError(e.message));
+    const clear = () => {
+      privacy.current++;
+      reads.current++;
+      setData(null);
+      setError("");
+      setQuote(null);
+      setConsent(false);
+    };
+    const reload = () => {
+      clear();
+      if (!document.hidden)
+        refresh().catch((e) => {
+          if (alive.current && !document.hidden) setError(e.message);
+        });
+    };
+    reload();
+    window.addEventListener("focus", reload);
+    document.addEventListener("visibilitychange", reload);
+    return () => {
+      window.removeEventListener("focus", reload);
+      document.removeEventListener("visibilitychange", reload);
+    };
   }, [cartSheetOpen, salesMode]);
   useEffect(() => {
     if (!quote) return;
@@ -213,12 +245,17 @@ export function ServerCart() {
               run(async () => {
                 setConsent(false);
                 attempt.current = null;
-                setQuote(
-                  await api<Quote>("/api/cart/quote", {
-                    mode: salesMode,
-                    version: data.cart!.version,
-                  }),
-                );
+                const ticket = privacy.current;
+                const next = await api<Quote>("/api/cart/quote", {
+                  mode: salesMode,
+                  version: data.cart!.version,
+                });
+                if (
+                  alive.current &&
+                  ticket === privacy.current &&
+                  !document.hidden
+                )
+                  setQuote(next);
               })
             }
           >
@@ -254,8 +291,10 @@ export function ServerCart() {
                     fingerprint: quote.fingerprint,
                     requestId: attempt.current,
                   });
-                  setCartSheetOpen(false);
-                  setRoute("account");
+                  if (alive.current) {
+                    setCartSheetOpen(false);
+                    setRoute("account");
+                  }
                 })
               }
             >

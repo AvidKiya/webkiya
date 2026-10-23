@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
+const backend = process.env.KIYA_BACKEND_ORIGIN || "http://127.0.0.1:3101";
 export default defineConfig({
   preview: {
     host: "0.0.0.0",
@@ -15,9 +16,9 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: [".e2b.app"],
     proxy: {
-      "/admin": { target: "http://127.0.0.1:3101", changeOrigin: false },
-      "/_next": { target: "http://127.0.0.1:3101", changeOrigin: false },
-      "/api": { target: "http://127.0.0.1:3101", changeOrigin: false },
+      "/admin": { target: backend, changeOrigin: false },
+      "/_next": { target: backend, changeOrigin: false },
+      "/api": { target: backend, changeOrigin: false },
     },
   },
   server: {
@@ -26,13 +27,13 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: [".e2b.app"],
     proxy: {
-      "/admin": { target: "http://127.0.0.1:3101", changeOrigin: false },
+      "/admin": { target: backend, changeOrigin: false },
       "/_next": {
-        target: "http://127.0.0.1:3101",
+        target: backend,
         changeOrigin: false,
         ws: true,
       },
-      "/api": { target: "http://127.0.0.1:3101", changeOrigin: false },
+      "/api": { target: backend, changeOrigin: false },
     },
   },
   plugins: [react(), tailwindcss()],

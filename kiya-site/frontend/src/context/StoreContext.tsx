@@ -64,6 +64,7 @@ interface StoreContextValue {
   setActiveStoryId: (id: string | null) => void;
   cartSheetOpen: boolean;
   setCartSheetOpen: (open: boolean) => void;
+  openServerCart: (mode: SalesMode) => void;
   checkoutOpen: boolean;
   setCheckoutOpen: (open: boolean) => void;
   announcementBanner: string;
@@ -352,25 +353,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Enforce strict guard: non-approved users cannot stay in WHOLESALE salesMode
   useEffect(() => {
-    if (!isApprovedPartner && salesMode === "WHOLESALE") {
+    if (!isApprovedPartner && salesMode === "WHOLESALE" && !cartSheetOpen) {
       setSalesModeRaw("RETAIL");
     }
-  }, [isApprovedPartner, salesMode]);
+  }, [isApprovedPartner, salesMode, cartSheetOpen]);
 
+  // Wholesale rates are read only inside the private catalog, never merged into public products.
   const setSalesMode = useCallback(
     (mode: SalesMode) => {
-      if (mode === "WHOLESALE" && !isApprovedPartner) {
-        showToast(
-          "نمایش قیمت و خرید عمده جینی فقط برای حساب همکار تأییدشده فعال است.",
-          "warning",
-        );
-        setRoute("wholesale");
-        return;
-      }
-      setSalesModeRaw(mode);
+      setSalesModeRaw("RETAIL");
+      if (mode === "WHOLESALE") setRoute("wholesale");
     },
-    [isApprovedPartner, showToast],
+    [setRoute],
   );
+  const openServerCart = useCallback((mode: SalesMode) => {
+    setSalesModeRaw(mode);
+    setCartSheetOpen(true);
+  }, []);
 
   const switchDemoPersona = useCallback(
     (_preset: "guest" | "pending" | "approved") => {
@@ -605,68 +604,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Wholesale Cart (Strict WH01..WH11 rules: approved partner only, integer packs >= 1, shared SKU stock)
   const addToWholesaleCart = useCallback(
-    (productId: string, packCount: number) => {
-      if (!isApprovedPartner) {
-        showToast(
-          "خطای دسترسی (PARTNER_NOT_APPROVED): خرید عمده فقط برای همکاران تأییدشده مجاز است.",
-          "error",
-        );
-        return;
-      }
-      if (!Number.isInteger(packCount) || packCount < 1) {
-        showToast(
-          "حداقل خرید عمده ۱ جین کامل با گام عدد صحیح است (کسری جین مجاز نیست).",
-          "error",
-        );
-        return;
-      }
-      const product = products.find((p) => p.id === productId);
-      if (!product) return;
-      if (
-        product.packDefinition.priceMode === "INQUIRY" ||
-        product.packDefinition.wholesaleUnitPriceToman <= 0
-      ) {
-        showToast(
-          "این کالا استعلامی است؛ لطفاً از طریق دایرکت واحد همکاران استعلام بگیرید.",
-          "info",
-        );
-        setRoute("inbox");
-        return;
-      }
-      const maxAvailablePacks = Math.floor(
-        product.stock / product.packDefinition.unitsPerPack,
-      );
-      if (maxAvailablePacks < 1) {
-        showToast("موجودی انبار برای تشکیل ۱ جین کامل کافی نیست.", "warning");
-        return;
-      }
-      const key = `${productId}__${product.packDefinition.id}`;
-      setWholesaleCart((prev) => {
-        const existing = prev.find((i) => i.key === key);
-        const nextPacks = (existing ? existing.packCount : 0) + packCount;
-        if (nextPacks > maxAvailablePacks) {
-          showToast(
-            `حداکثر ${maxAvailablePacks} جین از این کالا قابل تأمین است.`,
-            "warning",
-          );
-          return prev;
-        }
-        if (existing) {
-          return prev.map((i) =>
-            i.key === key ? { ...i, packCount: nextPacks } : i,
-          );
-        }
-        return [
-          ...prev,
-          { key, productId, packId: product.packDefinition.id, packCount },
-        ];
-      });
+    (_productId: string, _packCount: number) => {
+      setRoute("wholesale");
       showToast(
-        `${packCount} جین از «${product.name}» به سبد عمده همکاران اضافه شد`,
-        "success",
+        "بستهٔ واقعی و قیمت اختصاصی را از فهرست همکاران انتخاب کنید.",
+        "info",
       );
     },
-    [isApprovedPartner, products, showToast],
+    [setRoute, showToast],
   );
 
   const updateWholesalePacks = useCallback(
@@ -1099,6 +1044,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setActiveStoryId,
     cartSheetOpen,
     setCartSheetOpen,
+    openServerCart,
     checkoutOpen,
     setCheckoutOpen,
     announcementBanner,
