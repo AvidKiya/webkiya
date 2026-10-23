@@ -1,3 +1,4 @@
+import { matchesBootstrapOwner } from "@/server/telegram-identity";
 import { POST as promote } from "@/app/api/admin/staff/promote/route";
 import { beforeEach, afterAll, describe, it, expect, vi } from "vitest";
 import { randomUUID } from "node:crypto";
@@ -858,6 +859,39 @@ describe("real PostgreSQL backend", () => {
       if (prior === undefined) delete process.env.KIYA_BOOTSTRAP_OWNER_PHONE;
       else process.env.KIYA_BOOTSTRAP_OWNER_PHONE = prior;
     }
+  });
+  it("pins first-owner bootstrap to an allowed phone AND the configured numeric Telegram ID, rejects malformed config and never trusts ID alone", () => {
+    const config = {
+      KIYA_BOOTSTRAP_OWNER_PHONES: "09999999999,+989999999998",
+      KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID: "111001",
+    };
+    expect(matchesBootstrapOwner("+989999999999", 111001n, config)).toBe(true);
+    expect(matchesBootstrapOwner("+989999999998", 111001n, config)).toBe(true);
+    expect(matchesBootstrapOwner("+989999999999", 222002n, config)).toBe(false);
+    expect(matchesBootstrapOwner("+989999999997", 111001n, config)).toBe(false);
+    expect(matchesBootstrapOwner("+989999999999", null, config)).toBe(false);
+    expect(
+      matchesBootstrapOwner("+989999999999", 111001n, {
+        KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID: "111001",
+      }),
+    ).toBe(false);
+    expect(
+      matchesBootstrapOwner("+989999999999", 111001n, {
+        ...config,
+        KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID: "not-an-id",
+      }),
+    ).toBe(false);
+    expect(
+      matchesBootstrapOwner("+989999999999", 111001n, {
+        ...config,
+        KIYA_BOOTSTRAP_OWNER_PHONES: "09999999999,invalid",
+      }),
+    ).toBe(false);
+    expect(
+      matchesBootstrapOwner("+989999999999", 111001n, {
+        KIYA_BOOTSTRAP_OWNER_PHONE: "09999999999",
+      }),
+    ).toBe(true);
   });
   it("bootstraps the first owner only from operator-configured phone and Telegram own-contact proof; keeps same account and requires MFA without a password", async () => {
     const prior = process.env.KIYA_BOOTSTRAP_OWNER_PHONE;

@@ -2,6 +2,33 @@ import "server-only";
 import { type Transaction } from "./db";
 import { normalizePhone } from "./identity";
 import { ApiError } from "./http";
+// Operator-only allowlist. Invalid configuration fails closed; identity still comes from verified Telegram contact.
+export function matchesBootstrapOwner(
+  phone: string,
+  telegramId: bigint | null,
+  env: Record<string, string | undefined> = process.env,
+) {
+  const raw =
+    env.KIYA_BOOTSTRAP_OWNER_PHONES ?? env.KIYA_BOOTSTRAP_OWNER_PHONE ?? "";
+  const entries = raw.split(",").map((v) => normalizePhone(v));
+  if (
+    !telegramId ||
+    telegramId < 0n ||
+    !raw.trim() ||
+    entries.length > 10 ||
+    entries.some((v) => !v) ||
+    !entries.includes(phone)
+  )
+    return false;
+  const expected = env.KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID;
+  if (
+    expected !== undefined &&
+    (!/^[1-9][0-9]{0,15}$/.test(expected.trim()) ||
+      BigInt(expected.trim()) !== telegramId)
+  )
+    return false;
+  return true;
+}
 export async function verifiedTelegramPhone(
   tx: Transaction,
   userId: string,
@@ -18,12 +45,8 @@ export async function verifiedTelegramPhone(
     where: { id: userId },
     data: { phone, phoneVerifiedAt: new Date() },
   });
-  const expected =
-    process.env.KIYA_BOOTSTRAP_OWNER_PHONE &&
-    normalizePhone(process.env.KIYA_BOOTSTRAP_OWNER_PHONE);
   if (
-    expected &&
-    expected === phone &&
+    matchesBootstrapOwner(phone, user.telegramId) &&
     user.telegramId !== null &&
     user.telegramVerifiedAt &&
     !user.isDemo

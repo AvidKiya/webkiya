@@ -10,3 +10,11 @@ process.env.APP_MODE = "demo";
 process.env.ALLOW_DEMO_LOGIN = "true";
 
 process.env.MEDIA_ROOT = process.cwd() + "/.data/test-media";
+
+// Real installation identity allowlists must never influence isolated synthetic tests.
+for (const key of [
+  "KIYA_BOOTSTRAP_OWNER_PHONE",
+  "KIYA_BOOTSTRAP_OWNER_PHONES",
+  "KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID",
+])
+  delete process.env[key];
