@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { ManualPaymentView } from "./ManualPaymentView";
+import { TelegramLogin } from "./TelegramLogin";
 import { api } from "../../services/catalog";
 type User = { id: string; name: string; kind: string; isDemo: boolean };
 type Session = {
   user: User | null;
   demoLoginAvailable: boolean;
   smsConfigured: boolean;
+  telegramLoginAvailable: boolean;
 };
 type Order = {
   id: string;
@@ -85,9 +88,8 @@ export function CustomerAccount() {
       ) : (
         session && (
           <>
-            <p>
-              برای خرید باید وارد حساب شوید. پیامک واقعی هنوز پیکربندی نشده است.
-            </p>
+            <p>برای خرید وارد حساب مشتری شوید.</p>
+            <TelegramLogin onLogin={load} />
             {session.demoLoginAvailable && (
               <button
                 disabled={busy}
@@ -123,8 +125,10 @@ export function CustomerAccount() {
               وضعیت: {order.status} — جمع کالا: {order.subtotalToman} تومان
             </p>
             <p>
-              پرداخت و ارسال فعال نیستند؛ رزرو به معنی خرید پرداخت‌شده نیست.
+              رزرو به معنی پرداخت‌شدن نیست؛ وضعیت و روش پرداخت را در بخش زیر
+              بررسی کنید.
             </p>
+            <ManualPaymentView orderId={order.id} onChanged={load} />
             {order.status === "RESERVED" && (
               <button
                 disabled={busy}

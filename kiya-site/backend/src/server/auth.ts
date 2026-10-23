@@ -7,6 +7,7 @@ import type { NextResponse } from "next/server";
 export const COOKIE = "kiya_session";
 export const PERMISSIONS = [
   "dashboard:read",
+  "payment:review",
   "comment:read",
   "comment:reply",
   "comment:moderate",

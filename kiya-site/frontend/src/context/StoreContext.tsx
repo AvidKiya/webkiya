@@ -240,7 +240,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (open) setCartSheetOpen(true);
   }, []);
   const [announcementBanner, setAnnouncementBanner] = useState(
-    "هر روز جدید، بدون واسطه · عمده از یک جین با تأیید پشتیبانی · پرداخت و ارسال هنوز فعال نیست",
+    "",
   );
   const [ordersPaused, setOrdersPaused] = useState(false);
 

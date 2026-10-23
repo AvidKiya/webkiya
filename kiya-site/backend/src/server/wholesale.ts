@@ -397,7 +397,7 @@ export async function freshCustomer(tx: Transaction, current: AuthSession) {
   )
     throw new ApiError(401, "AUTH_REQUIRED", "نشست معتبر نیست.");
   if (
-    !s.user.phoneVerifiedAt &&
+    !s.user.phoneVerifiedAt && !s.user.telegramVerifiedAt &&
     !(s.user.isDemo && process.env.APP_MODE === "demo")
   )
     throw new ApiError(403, "PHONE_REQUIRED", "تأیید شمارهٔ مشتری لازم است.");

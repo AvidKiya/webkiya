@@ -1,4 +1,4 @@
-import { beforeEach, afterAll, describe, it, expect } from "vitest";
+import { beforeEach, afterAll, describe, it, expect, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { db } from "@/server/db";
@@ -8,6 +8,7 @@ import {
   passwordMatches,
   totp,
   decrypt,
+  encrypt,
   hash,
 } from "@/server/crypto";
 import { GET as me, POST as auth } from "@/app/api/auth/[action]/route";
@@ -61,6 +62,24 @@ import {
 } from "@/app/api/orders/route";
 import { POST as orderCancel } from "@/app/api/orders/[id]/cancel/route";
 import { releaseExpiredOrders } from "@/server/orders";
+import {
+  GET as settingsGet,
+  PUT as settingsPut,
+} from "@/app/api/admin/settings/route";
+import { POST as telegramAuth } from "@/app/api/auth/telegram/route";
+import { POST as telegramHook } from "@/app/api/webhooks/telegram/route";
+import {
+  GET as manualGet,
+  POST as manualCreate,
+} from "@/app/api/payments/route";
+import {
+  POST as receiptPost,
+  GET as receiptGet,
+} from "@/app/api/payments/[id]/receipt/route";
+import { POST as paymentReview } from "@/app/api/admin/payments/[id]/route";
+import { POST as telegramHealth } from "@/app/api/admin/settings/telegram/route";
+import { GET as financeList } from "@/app/api/admin/payments/route";
+import { validCard } from "@/server/settings";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -444,7 +463,7 @@ async function expireFixture(id: string) {
 }
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -500,12 +519,45 @@ afterAll(async () => {
           },
         );
     }
+    const prefix = "999999123456789";
+    const cardDigit = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].find((i) =>
+      validCard(prefix + i),
+    );
+    await db().storeSettings.create({
+      data: {
+        telegramEnabled: true,
+        botUsername: "kiyaco24bot",
+        botTokenEncrypted: encrypt(
+          "123456789:" + "SYNTHETIC_TEST_CREDENTIAL_".repeat(2),
+        ),
+        webhookSecretEncrypted: encrypt(
+          "SYNTHETIC_WEBHOOK_TEST_SECRET_NOT_FOR_PRODUCTION",
+        ),
+        cardEnabled: true,
+        bankName: "بانک مصنوعی تست",
+        cardNumber: prefix + cardDigit,
+        cardHolder: "حساب مصنوعی تست",
+        shippingToman: "10000",
+        taxToman: "0",
+        transferMinutes: 60,
+      },
+    });
+    await db().role.create({
+      data: {
+        key: "CUSTOM_FINANCE_UI",
+        name: "مالی محدود مرورگر",
+        permissions: ["payment:review"],
+      },
+    });
+    const finance = await staff("CUSTOM_FINANCE_UI");
     await mkdir(".data", { recursive: true });
     await writeFile(
       ".data/wholesale-ui-fixture.json",
       JSON.stringify({
         users,
         reviewerCookie: f.reviewer.cookie,
+        financeCookie: finance.cookie,
+        telegramSecret: "SYNTHETIC_WEBHOOK_TEST_SECRET_NOT_FOR_PRODUCTION",
         productId: f.p.id,
         variantId: f.v.id,
         packId: f.pack.id,
@@ -522,6 +574,684 @@ afterAll(async () => {
   await db().$disconnect();
 });
 describe("real PostgreSQL backend", () => {
+  const syntheticToken = "123456789:" + "SYNTHETIC_TEST_CREDENTIAL_".repeat(2);
+  const syntheticSecret = "SYNTHETIC_WEBHOOK_TEST_SECRET_NOT_FOR_PRODUCTION";
+  async function configure(
+    owner: Awaited<ReturnType<typeof staff>>,
+    extra: Record<string, unknown> = {},
+  ) {
+    const meta = (
+      await payload(
+        await settingsGet(request("/api/admin/settings", "GET", owner.cookie)),
+      )
+    ).data;
+    const body = {
+      version: meta.version,
+      telegramEnabled: true,
+      botUsername: "kiyaco24bot",
+      botToken: syntheticToken,
+      webhookSecret: syntheticSecret,
+      cardEnabled: false,
+      bankName: "",
+      cardNumber: "",
+      cardHolder: "",
+      shippingToman: "10000",
+      taxToman: "0",
+      transferMinutes: 60,
+      ...extra,
+    };
+    const result = await settingsPut(
+      request("/api/admin/settings", "PUT", owner.cookie, body),
+    );
+    expect(result.status).toBe(200);
+    return body;
+  }
+  function card() {
+    const prefix = "999999123456789";
+    for (let i = 0; i < 10; i++) if (validCard(prefix + i)) return prefix + i;
+    throw Error("synthetic card generation failed");
+  }
+  async function telegramStart() {
+    const r = await telegramAuth(
+      request("/api/auth/telegram", "POST", "", { action: "start" }),
+    );
+    expect(r.status).toBe(201);
+    const data = (await payload(r)).data;
+    return {
+      ...data,
+      cookie: cookie(r),
+      selector: new URL(data.link).searchParams.get("start")!.slice(6),
+    };
+  }
+  async function bot(
+    update: Record<string, unknown>,
+    secret = syntheticSecret,
+  ) {
+    return telegramHook(
+      request("/api/webhooks/telegram", "POST", "", update, {
+        "x-telegram-bot-api-secret-token": secret,
+      }),
+    );
+  }
+  const startUpdate = (selector: string, id = 111001, update_id = 1) => ({
+    update_id,
+    message: {
+      from: { id, first_name: "مشتری مصنوعی" },
+      chat: { id, type: "private" },
+      text: "/start login_" + selector,
+    },
+  });
+  const confirmUpdate = (selector: string, id = 111001, update_id = 2) => ({
+    update_id,
+    callback_query: {
+      from: { id, first_name: "مشتری مصنوعی" },
+      message: { chat: { id, type: "private" } },
+      data: "confirm:" + selector,
+    },
+  });
+  it("tests the real-provider adapter with mocked transport without exposing credentials, and configures webhook/polling only for MFA owners", async () => {
+    const owner = await staff(),
+      support = await staff("SUPPORT");
+    await configure(owner);
+    const mocked = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({ ok: true, result: { username: "kiyaco24bot" } }),
+            { headers: { "content-type": "application/json" } },
+          ),
+      );
+    const prior = process.env.NEXT_PUBLIC_SITE_URL;
+    try {
+      expect(
+        (
+          await telegramHealth(
+            request("/api/admin/settings/telegram", "POST", support.cookie, {
+              action: "test",
+            }),
+          )
+        ).status,
+      ).toBe(403);
+      expect(mocked).not.toHaveBeenCalled();
+      const result = await telegramHealth(
+        request("/api/admin/settings/telegram", "POST", owner.cookie, {
+          action: "test",
+        }),
+      );
+      expect(result.status).toBe(200);
+      expect(JSON.stringify(await payload(result))).not.toContain(
+        syntheticToken,
+      );
+      process.env.NEXT_PUBLIC_SITE_URL = "https://store.example.invalid";
+      expect(
+        (
+          await telegramHealth(
+            request("/api/admin/settings/telegram", "POST", owner.cookie, {
+              action: "webhook",
+            }),
+          )
+        ).status,
+      ).toBe(200);
+      const webhookCall = mocked.mock.calls.find(([url]) =>
+        String(url).endsWith("/setWebhook"),
+      );
+      expect(webhookCall).toBeTruthy();
+      expect(JSON.parse(String(webhookCall![1]!.body))).toMatchObject({
+        url: "https://store.example.invalid/api/webhooks/telegram",
+        secret_token: syntheticSecret,
+        drop_pending_updates: false,
+      });
+      expect(
+        (
+          await telegramHealth(
+            request("/api/admin/settings/telegram", "POST", owner.cookie, {
+              action: "polling",
+            }),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        mocked.mock.calls.some(([url]) =>
+          String(url).endsWith("/deleteWebhook"),
+        ),
+      ).toBe(true);
+      mocked.mockResolvedValue(
+        new Response(
+          JSON.stringify({ ok: true, result: { username: "different_bot" } }),
+        ),
+      );
+      expect(
+        (
+          await telegramHealth(
+            request("/api/admin/settings/telegram", "POST", owner.cookie, {
+              action: "test",
+            }),
+          )
+        ).status,
+      ).toBe(409);
+      mocked.mockRejectedValue(new Error("synthetic transport failure"));
+      const failed = await telegramHealth(
+        request("/api/admin/settings/telegram", "POST", owner.cookie, {
+          action: "test",
+        }),
+      );
+      expect(failed.status).toBe(503);
+      expect(JSON.stringify(await payload(failed))).not.toContain(
+        syntheticToken,
+      );
+    } finally {
+      mocked.mockRestore();
+      if (prior === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+      else process.env.NEXT_PUBLIC_SITE_URL = prior;
+    }
+  });
+  it("lets a finance-only custom role review receipts but never read integration secrets or act after revocation", async () => {
+    const f = await paymentFixture();
+    const p = (await payload(await receiptFor(f))).data;
+    await db().role.create({
+      data: {
+        key: "CUSTOM_FINANCE",
+        name: "مالی محدود آزمون",
+        permissions: ["payment:review"],
+      },
+    });
+    const finance = await staff("CUSTOM_FINANCE");
+    expect(
+      (await settingsGet(request("/api/admin/settings", "GET", finance.cookie)))
+        .status,
+    ).toBe(403);
+    expect(
+      (await financeList(request("/api/admin/payments", "GET", finance.cookie)))
+        .status,
+    ).toBe(200);
+    expect(
+      (
+        await receiptGet(
+          request("/api/payments/" + p.id + "/receipt", "GET", finance.cookie),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await db().auditLog.count({
+        where: { actorId: finance.user.id, action: "payment:receipt_read" },
+      }),
+    ).toBe(1);
+    await db().user.update({
+      where: { id: finance.user.id },
+      data: { permissionVersion: { increment: 1 } },
+    });
+    expect(
+      (
+        await paymentReview(
+          request("/api/admin/payments/" + p.id, "POST", finance.cookie, {
+            version: p.version,
+            decision: "CONFIRM",
+            reason: "تطبیق مصنوعی پس از لغو دسترسی که نباید انجام شود",
+            bankReconciled: true,
+            bankReference: "2026-10-23:SYNTHETIC-BANK-ENTRY-001",
+          }),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(401);
+    expect(
+      (await db().manualPayment.findUniqueOrThrow({ where: { id: p.id } }))
+        .status,
+    ).toBe("UNDER_REVIEW");
+  });
+  it("protects write-only encrypted integration secrets with owner/MFA, versioning and sanitized audit", async () => {
+    const owner = await staff(),
+      support = await staff("SUPPORT"),
+      pending = await staff("OWNER", false);
+    expect((await settingsGet(request("/api/admin/settings"))).status).toBe(
+      401,
+    );
+    expect(
+      (await settingsGet(request("/api/admin/settings", "GET", support.cookie)))
+        .status,
+    ).toBe(403);
+    expect(
+      (await settingsGet(request("/api/admin/settings", "GET", pending.cookie)))
+        .status,
+    ).toBe(403);
+    const body = await configure(owner);
+    const meta = await payload(
+      await settingsGet(request("/api/admin/settings", "GET", owner.cookie)),
+    );
+    expect(meta.data.botTokenConfigured).toBe(true);
+    expect(JSON.stringify(meta)).not.toContain(syntheticToken);
+    expect(JSON.stringify(meta)).not.toContain(syntheticSecret);
+    const stored = await db().storeSettings.findUniqueOrThrow({
+      where: { id: 1 },
+    });
+    expect(stored.botTokenEncrypted).not.toContain(syntheticToken);
+    expect(decrypt(stored.botTokenEncrypted!)).toBe(syntheticToken);
+    expect(
+      (
+        await settingsPut(
+          request("/api/admin/settings", "PUT", owner.cookie, body),
+        )
+      ).status,
+    ).toBe(409);
+    expect(JSON.stringify(await db().auditLog.findMany())).not.toContain(
+      syntheticToken,
+    );
+  });
+  it("binds Telegram login to browser and private Telegram user, deduplicates updates and consumes once without granting staff or phone verification", async () => {
+    await configure(await staff());
+    const c = await telegramStart();
+    expect(c.link).toMatch(/^https:\/\/t.me\/kiyaco24bot\?start=login_/);
+    expect((await bot(startUpdate(c.selector), "incorrect")).status).toBe(403);
+    expect(await db().telegramUpdate.count()).toBe(0);
+    await bot(confirmUpdate(c.selector, 222002, 1));
+    expect(
+      (await db().telegramLogin.findUniqueOrThrow({ where: { id: c.id } }))
+        .approvedAt,
+    ).toBeNull();
+    await bot(startUpdate(c.selector, 111001, 2));
+    await bot(confirmUpdate(c.selector, 222002, 3));
+    expect(
+      (await db().telegramLogin.findUniqueOrThrow({ where: { id: c.id } }))
+        .approvedAt,
+    ).toBeNull();
+    await bot(confirmUpdate(c.selector, 111001, 4));
+    const count = await db().telegramOutbox.count();
+    await bot(confirmUpdate(c.selector, 111001, 4));
+    expect(await db().telegramOutbox.count()).toBe(count);
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", "", {
+            action: "finish",
+            id: c.id,
+          }),
+        )
+      ).status,
+    ).toBe(401);
+    const responses = await Promise.all(
+      [1, 2].map(() =>
+        telegramAuth(
+          request("/api/auth/telegram", "POST", c.cookie, {
+            action: "finish",
+            id: c.id,
+          }),
+        ),
+      ),
+    );
+    expect(responses.map((r) => r.status).sort()).toEqual([200, 410]);
+    const signed = responses.find((r) => r.status === 200)!;
+    const who = (
+      await payload(
+        await me(
+          request("/api/auth/me", "GET", cookie(signed)),
+          acontext("me"),
+        ),
+      )
+    ).data.user;
+    expect(who.kind).toBe("CUSTOMER");
+    expect(who.permissions).toEqual([]);
+    const user = await db().user.findUniqueOrThrow({ where: { id: who.id } });
+    expect(user.phoneVerifiedAt).toBeNull();
+    expect(user.telegramVerifiedAt).not.toBeNull();
+    expect(user.isDemo).toBe(false);
+    expect(await db().session.count({ where: { userId: user.id } })).toBe(1);
+    process.env.APP_MODE = "live";
+    try {
+      expect(
+        (
+          await apply(
+            request("/api/partner", "POST", cookie(signed), {
+              businessName: "فروشگاه آزمون تلگرام",
+              city: "شهر آزمون",
+              note: "درخواست مصنوعی بدون تأیید خودکار همکاری",
+            }),
+          )
+        ).status,
+      ).toBe(201);
+    } finally {
+      process.env.APP_MODE = "demo";
+    }
+  });
+  it("expires and disables Telegram challenges and rejects group/bot impersonation", async () => {
+    const owner = await staff();
+    await configure(owner);
+    const c = await telegramStart();
+    await bot({
+      update_id: 1,
+      message: {
+        from: { id: 111001 },
+        chat: { id: 111001, type: "group" },
+        text: "/start login_" + c.selector,
+      },
+    });
+    expect(
+      (await db().telegramLogin.findUniqueOrThrow({ where: { id: c.id } }))
+        .telegramId,
+    ).toBeNull();
+    await db().telegramLogin.update({
+      where: { id: c.id },
+      data: {
+        createdAt: new Date(Date.now() - 300000),
+        expiresAt: new Date(Date.now() - 1000),
+      },
+    });
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", c.cookie, {
+            action: "finish",
+            id: c.id,
+          }),
+        )
+      ).status,
+    ).toBe(410);
+    await configure(owner, { telegramEnabled: false });
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", "", { action: "start" }),
+        )
+      ).status,
+    ).toBe(503);
+  });
+  async function paymentFixture() {
+    const f = await orderFixture();
+    await configure(f.owner, {
+      cardEnabled: true,
+      bankName: "بانک مصنوعی تست",
+      cardNumber: card(),
+      cardHolder: "حساب مصنوعی تست",
+    });
+    const order = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    const body = {
+      orderId: order.id,
+      recipient: "گیرنده مصنوعی",
+      phone: "09999999999",
+      city: "شهر آزمون",
+      address: "نشانی مصنوعی فقط برای تست نرم‌افزار",
+      postalCode: "9999999999",
+    };
+    const response = await manualCreate(
+      request("/api/payments", "POST", f.buyer.cookie, body),
+    );
+    expect(response.status).toBe(200);
+    return { ...f, order, payment: (await payload(response)).data, body };
+  }
+  async function receiptFor(
+    f: Awaited<ReturnType<typeof paymentFixture>>,
+    bytes?: Buffer,
+  ) {
+    const form = new FormData();
+    form.set("version", String(f.payment.version));
+    form.set("reference", "SYNTHETIC-BANK-REFERENCE");
+    const image =
+      bytes ||
+      (await sharp({
+        create: { width: 300, height: 300, channels: 3, background: "#8a32a0" },
+      })
+        .png()
+        .toBuffer());
+    form.set(
+      "file",
+      new Blob([new Uint8Array(image)], { type: "image/png" }),
+      "synthetic.png",
+    );
+    return receiptPost(
+      new Request(origin + "/api/payments/" + f.payment.id + "/receipt", {
+        method: "POST",
+        headers: { origin, Cookie: f.buyer.cookie },
+        body: form,
+      }),
+      context(f.payment.id),
+    );
+  }
+  it("freezes server money, destination/address and extends a live hold idempotently; clients cannot set the amount", async () => {
+    const f = await paymentFixture();
+    expect(f.payment.amountToman).toBe(
+      (BigInt(f.order.subtotalToman) + 10000n).toString(),
+    );
+    expect(
+      (
+        await manualCreate(
+          request("/api/payments", "POST", f.buyer.cookie, {
+            ...f.body,
+            amountToman: "1",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    const again = (
+      await payload(
+        await manualCreate(
+          request("/api/payments", "POST", f.buyer.cookie, f.body),
+        ),
+      )
+    ).data;
+    expect(again.id).toBe(f.payment.id);
+    expect(await db().manualPayment.count()).toBe(1);
+    const ord = await db().purchaseOrder.findUniqueOrThrow({
+      where: { id: f.order.id },
+    });
+    expect(ord.reservedUntil.getTime()).toBeGreaterThan(
+      Date.now() + 50 * 60000,
+    );
+    await expect(
+      db().manualPayment.update({
+        where: { id: f.payment.id },
+        data: { amountToman: "1", version: { increment: 1 } },
+      }),
+    ).rejects.toThrow();
+    const other = await customer();
+    expect(
+      (
+        await manualGet(
+          request("/api/payments?orderId=" + f.order.id, "GET", other.cookie),
+        )
+      ).status,
+    ).toBe(404);
+  });
+  it("keeps receipts private and never treats an uploaded screenshot as paid; independently confirms exactly once with atomic stock and ledgers", async () => {
+    const f = await paymentFixture(),
+      support = await staff("SUPPORT");
+    const submitted = await receiptFor(f);
+    expect(submitted.status).toBe(200);
+    const p = (await payload(submitted)).data;
+    expect(p.status).toBe("UNDER_REVIEW");
+    expect(
+      (
+        await db().purchaseOrder.findUniqueOrThrow({
+          where: { id: f.order.id },
+        })
+      ).status,
+    ).toBe("RESERVED");
+    expect(
+      (
+        await receiptGet(
+          request("/api/payments/" + p.id + "/receipt"),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(401);
+    const other = await customer();
+    expect(
+      (
+        await receiptGet(
+          request("/api/payments/" + p.id + "/receipt", "GET", other.cookie),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await receiptGet(
+          request("/api/payments/" + p.id + "/receipt", "GET", f.buyer.cookie),
+          context(p.id),
+        )
+      ).headers.get("cache-control"),
+    ).toBe("private, no-store");
+    const body = {
+      version: p.version,
+      decision: "CONFIRM",
+      reason: "تطبیق مصنوعی گردش بانک در آزمون، نه واریز واقعی",
+      bankReconciled: true,
+      bankReference: "2026-10-23:SYNTHETIC-BANK-ENTRY-001",
+    };
+    expect(
+      (
+        await paymentReview(
+          request("/api/admin/payments/" + p.id, "POST", support.cookie, body),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await paymentReview(
+          request("/api/admin/payments/" + p.id, "POST", f.owner.cookie, {
+            ...body,
+            bankReconciled: false,
+          }),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(422);
+    const results = await Promise.all(
+      [1, 2].map(() =>
+        paymentReview(
+          request("/api/admin/payments/" + p.id, "POST", f.owner.cookie, body),
+          context(p.id),
+        ),
+      ),
+    );
+    expect(results.map((r) => r.status)).toEqual([200, 200]);
+    expect(
+      (
+        await db().purchaseOrder.findUniqueOrThrow({
+          where: { id: f.order.id },
+        })
+      ).status,
+    ).toBe("PAID");
+    const variant = await db().productVariant.findUniqueOrThrow({
+      where: { id: f.v.id },
+    });
+    expect(variant.stock).toBe(18);
+    expect(variant.reserved).toBe(0);
+    expect(
+      await db().inventoryMovement.count({
+        where: { variantId: f.v.id, delta: -2 },
+      }),
+    ).toBe(1);
+    expect((await cancel(f.buyer.cookie, f.order.id, 3)).status).toBe(200);
+    expect(
+      (
+        await db().purchaseOrder.findUniqueOrThrow({
+          where: { id: f.order.id },
+        })
+      ).status,
+    ).toBe("PAID");
+  });
+  it("never attributes the same verified bank-statement entry to two payments even with a different screenshot", async () => {
+    const first = await paymentFixture();
+    const p = (await payload(await receiptFor(first))).data;
+    const evidence = {
+      version: p.version,
+      decision: "CONFIRM",
+      reason: "تطبیق مصنوعی ردیف یکتای گردش بانک برای جلوگیری از مصرف دوباره",
+      bankReconciled: true,
+      bankReference: "2026-10-23:SYNTHETIC-UNIQUE-ENTRY-99",
+    };
+    expect(
+      (
+        await paymentReview(
+          request("/api/admin/payments/" + p.id, "POST", first.owner.cookie, {
+            ...evidence,
+            bankReference: undefined,
+          }),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await paymentReview(
+          request(
+            "/api/admin/payments/" + p.id,
+            "POST",
+            first.owner.cookie,
+            evidence,
+          ),
+          context(p.id),
+        )
+      ).status,
+    ).toBe(200);
+    const second = await paymentFixture();
+    const bytes = await sharp({
+      create: { width: 300, height: 300, channels: 3, background: "#112266" },
+    })
+      .png()
+      .toBuffer();
+    const q = (await payload(await receiptFor(second, bytes))).data;
+    expect(
+      (
+        await paymentReview(
+          request("/api/admin/payments/" + q.id, "POST", second.owner.cookie, {
+            ...evidence,
+            version: q.version,
+            bankReference: evidence.bankReference.toLowerCase(),
+          }),
+          context(q.id),
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (await db().manualPayment.findUniqueOrThrow({ where: { id: q.id } }))
+        .status,
+    ).toBe("UNDER_REVIEW");
+    expect(
+      (
+        await db().productVariant.findUniqueOrThrow({
+          where: { id: second.v.id },
+        })
+      ).stock,
+    ).toBe(20);
+  });
+  it("does not capture late bank funds against expired inventory and flags manual refund review", async () => {
+    const f = await paymentFixture();
+    const p = (await payload(await receiptFor(f))).data;
+    await expireFixture(f.order.id);
+    await releaseExpiredOrders();
+    const result = await paymentReview(
+      request("/api/admin/payments/" + p.id, "POST", f.owner.cookie, {
+        version: p.version,
+        decision: "CONFIRM",
+        reason: "تطبیق مصنوعی پس از پایان مهلت رزرو و نیاز استرداد",
+        bankReconciled: true,
+        bankReference: "2026-10-23:SYNTHETIC-BANK-ENTRY-001",
+      }),
+      context(p.id),
+    );
+    expect(result.status).toBe(200);
+    expect((await payload(result)).data.status).toBe("REFUND_REQUIRED");
+    await expect(
+      db().manualPayment.update({
+        where: { id: p.id },
+        data: { status: "AWAITING_TRANSFER", version: { increment: 1 } },
+      }),
+    ).rejects.toThrow();
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(20);
+    expect(
+      (
+        await db().purchaseOrder.findUniqueOrThrow({
+          where: { id: f.order.id },
+        })
+      ).status,
+    ).toBe("EXPIRED");
+  });
   it("limits partner status to the authenticated customer and never returns private pricing", async () => {
     expect((await partnerMe(request("/api/partner"))).status).toBe(401);
     const a = await customer(),

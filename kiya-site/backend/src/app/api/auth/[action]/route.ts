@@ -1,3 +1,4 @@
+import {telegramAvailable} from "@/server/settings";
 import { z } from "zod";
 import { staffIdentifier } from "@/server/identity";
 import { randomBytes } from "node:crypto";
@@ -39,6 +40,7 @@ export async function GET(request: Request, context: Context) {
         process.env.APP_MODE === "demo" &&
         process.env.ALLOW_DEMO_LOGIN === "true",
       smsConfigured: false,
+      telegramLoginAvailable:await telegramAvailable(),
     });
   });
 }

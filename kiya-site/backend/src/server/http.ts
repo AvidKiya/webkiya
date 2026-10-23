@@ -14,12 +14,13 @@ export class ApiError extends Error {
 export async function readBody<T>(
   request: Request,
   schema: z.ZodType<T>,
+  maxBytes = 16384,
 ): Promise<T> {
   if (!request.headers.get("content-type")?.includes("application/json"))
     throw new ApiError(415, "CONTENT_TYPE", "درخواست باید JSON باشد.");
   const tooLarge = () =>
     new ApiError(413, "BODY_TOO_LARGE", "حجم درخواست بیش از حد مجاز است.");
-  if (Number(request.headers.get("content-length") || 0) > 16384)
+  if (Number(request.headers.get("content-length") || 0) > maxBytes)
     throw tooLarge();
   const reader = request.body?.getReader();
   const chunks: Uint8Array[] = [];
@@ -29,7 +30,7 @@ export async function readBody<T>(
       const { value, done } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 16384) {
+      if (size > maxBytes) {
         await reader.cancel();
         throw tooLarge();
       }

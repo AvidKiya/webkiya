@@ -98,21 +98,6 @@ function KiyaAppContent() {
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
-      <div
-        role="note"
-        className="bg-warning text-white text-center text-xs px-3 py-2"
-      >
-        کاتالوگ، دیدگاه و سبد به سرور متصل‌اند؛ بخش‌های محتوایی هنوز در حال
-        تکمیل‌اند. پرداخت آنلاین و پیامک فعال نیست.
-      </div>
-      {/* Skip Link for Keyboard Accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-buy focus:text-buy-fg font-bold text-xs"
-      >
-        پرش به محتوای اصلی
-      </a>
-
       {/* Offline Banner */}
       {isOffline && (
         <div className="bg-danger text-white text-xs font-bold px-4 py-2 flex items-center justify-center gap-2">

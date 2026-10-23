@@ -12,6 +12,7 @@ const client = new Client({
 });
 await client.connect();
 const owner = [
+  "payment:review",
   "dashboard:read",
   "comment:read",
   "comment:reply",

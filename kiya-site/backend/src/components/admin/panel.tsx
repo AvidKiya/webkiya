@@ -525,6 +525,11 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
           </div>
         </header>
         <main className="admin-content">
+          {user?.permissions.includes("payment:review") && !preview && (
+            <a className="secondary" href="/admin/payments">
+              بررسی رسیدهای واریز و تطبیق بانک
+            </a>
+          )}
           <div className="admin-page-heading">
             <div>
               <span className="eyebrow">YOUR STORE, IN FOCUS</span>
@@ -695,7 +700,12 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
           {!preview &&
           visibleTab === "staff" &&
           user?.permissions.includes("staff:manage") ? (
-            <AccessManagement selfId={user.id} />
+            <div>
+              <a href="/admin/settings">
+                تنظیمات ربات و کارت‌به‌کارت / بررسی رسیدها
+              </a>
+              <AccessManagement selfId={user.id} />
+            </div>
           ) : null}
           {Array.isArray(data) &&
           !(

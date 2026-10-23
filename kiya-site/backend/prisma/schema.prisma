@@ -12,6 +12,8 @@ model User {
   handle            String?   @unique @db.VarChar(60)
   phone             String?   @unique @db.VarChar(20)
   phoneVerifiedAt   DateTime? @db.Timestamptz(3)
+  telegramId BigInt? @unique
+  telegramVerifiedAt DateTime? @db.Timestamptz(3)
   isDemo            Boolean   @default(false)
   passwordHash      String?
   mfaSecret         String?
@@ -310,4 +312,68 @@ model ReservationMovement {
  order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
  variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
  @@unique([orderId,variantId,kind])
+}
+
+model StoreSettings {
+ id Int @id @default(1)
+ version Int @default(1)
+ telegramEnabled Boolean @default(false)
+ botUsername String @default("kiyaco24bot") @db.VarChar(32)
+ botTokenEncrypted String?
+ webhookSecretEncrypted String?
+ cardEnabled Boolean @default(false)
+ bankName String @default("") @db.VarChar(80)
+ cardNumber String @default("") @db.VarChar(16)
+ cardHolder String @default("") @db.VarChar(100)
+ shippingToman Decimal @default(0) @db.Decimal(14,0)
+ taxToman Decimal @default(0) @db.Decimal(14,0)
+ transferMinutes Int @default(60)
+ updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+model TelegramLogin {
+ id String @id @default(uuid()) @db.Uuid
+ selectorHash String @unique @db.VarChar(64)
+ browserHash String @db.VarChar(64)
+ displayCode String @db.VarChar(8)
+ telegramId BigInt?
+ displayName String? @db.VarChar(80)
+ approvedAt DateTime? @db.Timestamptz(3)
+ consumedAt DateTime? @db.Timestamptz(3)
+ expiresAt DateTime @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ @@index([expiresAt])
+}
+model TelegramUpdate {
+ id BigInt @id
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+model TelegramOutbox {
+ id String @id @default(uuid()) @db.Uuid
+ chatId BigInt
+ text String @db.VarChar(1000)
+ callback String? @db.VarChar(64)
+ state String @default("PENDING") @db.VarChar(12)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
+model ManualPayment {
+ id String @id @default(uuid()) @db.Uuid
+ orderId String @unique @db.Uuid
+ userId String @db.Uuid
+ amountToman Decimal @db.Decimal(14,0)
+ shippingToman Decimal @db.Decimal(14,0)
+ taxToman Decimal @db.Decimal(14,0)
+ destination Json
+ shippingAddress Json
+ status String @default("AWAITING_TRANSFER") @db.VarChar(24)
+ version Int @default(1)
+ imageHash String? @unique @db.VarChar(64)
+ transferReference String? @db.VarChar(80)
+ bankVerifiedReference String? @db.VarChar(100)
+ bankProofKey String? @unique @db.VarChar(64)
+ submittedAt DateTime? @db.Timestamptz(3)
+ reviewerId String? @db.Uuid
+ reviewReason String? @db.VarChar(500)
+ reviewedAt DateTime? @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
 }
