@@ -50,6 +50,7 @@ try {
   await page
     .getByRole("heading", { name: "فید زنده کیا — هر روز جدید، بدون واسطه" })
     .waitFor();
+  await page.locator("main article").first().waitFor();
   assert(
     (await page.locator("main article").count()) > 0,
     "template posts render",
@@ -79,26 +80,97 @@ try {
     .getByText("کالایی با این عبارت یا فیلتر پیدا نشد", { exact: true })
     .waitFor();
   await search.fill("");
+  // Main template is now the real catalog; there is no separate server catalog page.
+  await page.goto("http://127.0.0.1:3100/#feed");
+  const catalog = await (
+    await page.request.get("http://127.0.0.1:3100/api/catalog")
+  ).json();
+  assert(catalog.data.items.length > 0);
   await page
-    .getByRole("button", {
-      name: "مشاهده کاتالوگ متصل به دیتابیس",
-      exact: true,
-    })
+    .getByRole("button", { name: catalog.data.items[0].name, exact: true })
+    .first()
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", {
+        name: "مشاهده کاتالوگ متصل به دیتابیس",
+        exact: true,
+      })
+      .count(),
+    0,
+  );
+  const text = "integration-comment-" + Date.now();
+  const input = page
+    .getByPlaceholder("پرسش یا دیدگاه درباره این کالا بنویسید...")
+    .first();
+  await input.fill(text);
+  const denied = page.waitForResponse(
+    (r) => r.url().includes("/comments") && r.request().method() === "POST",
+  );
+  await page.locator("main article").first().locator("form button").click();
+  assert.equal((await denied).status(), 401);
+  assert.equal(await input.inputValue(), text, "failed comment retains input");
+  await page.goto("http://127.0.0.1:3100/#account");
+  await page
+    .getByRole("button", { name: "ورود آزمایشی محلی؛ بدون تأیید شماره" })
     .click();
   await page
-    .getByRole("heading", { name: "کاتالوگ متصل به دیتابیس", exact: true })
+    .getByRole("button", { name: "خروج از حساب", exact: true })
     .waitFor();
-  await page.waitForFunction(() =>
-    document.querySelector(
-      'section[aria-label="کاتالوگ متصل به دیتابیس"] article',
-    ),
+  await page.goto("http://127.0.0.1:3100/#feed");
+  await page.locator("main article").first().waitFor();
+  const commentInput = page
+    .getByPlaceholder("پرسش یا دیدگاه درباره این کالا بنویسید...")
+    .first();
+  await commentInput.fill(text);
+  const accepted = page.waitForResponse(
+    (r) => r.url().includes("/comments") && r.request().method() === "POST",
   );
-  assert(
-    (await page
-      .locator('section[aria-label="کاتالوگ متصل به دیتابیس"] article')
-      .count()) > 0,
-    "real API catalog via proxy",
+  await page.locator("main article").first().locator("form button").click();
+  assert.equal((await accepted).status(), 201);
+  await page.getByText(text, { exact: true }).first().waitFor();
+  await page.reload();
+  await page
+    .getByRole("button", { name: catalog.data.items[0].name, exact: true })
+    .first()
+    .click();
+  await page.getByRole("dialog").getByText(text, { exact: true }).waitFor();
+  const rows = await (
+    await page.request.get(
+      "http://127.0.0.1:3100/api/posts/" +
+        catalog.data.items[0].id +
+        "/comments",
+    )
+  ).json();
+  const created = rows.data.items.find((c) => c.text === text);
+  assert(created);
+  assert.equal(
+    (
+      await page.request.delete(
+        "http://127.0.0.1:3100/api/comments/" + created.id,
+        { headers: { origin: "http://127.0.0.1:3100" } },
+      )
+    ).status(),
+    200,
   );
+  await page.goto("http://127.0.0.1:3100/#account");
+  await page.getByRole("button", { name: "خروج از حساب", exact: true }).click();
+  await page
+    .getByRole("button", { name: "ورود آزمایشی محلی؛ بدون تأیید شماره" })
+    .waitFor();
+  await page.getByRole("button", { name: "سبد خرید", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "سبد سروری", exact: true })
+    .getByRole("alert")
+    .waitFor();
+  await page.getByRole("button", { name: "بستن سبد", exact: true }).click();
+  await page.goto("http://127.0.0.1:3100/admin");
+  await page.waitForFunction(
+    () =>
+      document.body.innerText.includes("MFA") ||
+      document.body.innerText.includes("ورود"),
+  );
+  await page.goto("http://127.0.0.1:3100/#feed");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("http://127.0.0.1:3100/#feed");
   await page
@@ -114,7 +186,7 @@ try {
   );
   assert.deepEqual(errors, [], "browser runtime errors");
   console.log(
-    "PASS: exact-template feed, seven routes, reload, search empty state, real catalog API, mobile overflow and browser error checks.",
+    "PASS: exact-template feed, seven routes, reload, search empty state, main-feed database DTO, real demo session/logout, comment auth/persistence/deletion, secure admin, cart access, mobile overflow and browser error checks.",
   );
 } finally {
   await browser.close();

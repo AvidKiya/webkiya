@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Layers,
   CheckCircle2,
@@ -10,9 +10,9 @@ import {
   AlertCircle,
   Minus,
   Plus,
-} from 'lucide-react';
-import { useStore } from '../../context/StoreContext';
-import { formatPrice, formatNumber } from '../../utils/format';
+} from "lucide-react";
+import { useStore } from "../../context/StoreContext";
+import { formatPrice, formatNumber } from "../../utils/format";
 
 export function WholesaleView() {
   const {
@@ -22,17 +22,16 @@ export function WholesaleView() {
     products,
     addToWholesaleCart,
     submitPartnerApplication,
-    switchDemoPersona,
     setRoute,
   } = useStore();
 
   const [packCounts, setPackCounts] = useState<Record<string, number>>({});
   const [applicantName, setApplicantName] = useState(customer.name);
   const [phone, setPhone] = useState(customer.phone);
-  const [businessName, setBusinessName] = useState(customer.businessName || '');
-  const [city, setCity] = useState('تهران');
-  const [channelOrPage, setChannelOrPage] = useState('');
-  const [note, setNote] = useState('');
+  const [businessName, setBusinessName] = useState(customer.businessName || "");
+  const [city, setCity] = useState("تهران");
+  const [channelOrPage, setChannelOrPage] = useState("");
+  const [note, setNote] = useState("");
 
   const getPackQty = (id: string) => packCounts[id] || 1;
   const setPackQty = (id: string, val: number) =>
@@ -71,35 +70,42 @@ export function WholesaleView() {
           </div>
 
           <span className="px-3 py-1.5 rounded-xl bg-white/15 text-xs font-extrabold border border-white/20">
-            وضعیت حساب شما:{' '}
-            {customer.partnerStatus === 'APPROVED'
-              ? 'همکار تأییدشده ✓'
-              : customer.partnerStatus === 'PENDING'
-                ? 'در انتظار بررسی پشتیبانی'
-                : customer.partnerStatus === 'SUSPENDED'
-                  ? 'تعلیق‌شده'
-                  : 'مشتری عادی'}
+            وضعیت حساب شما:{" "}
+            {customer.partnerStatus === "APPROVED"
+              ? "همکار تأییدشده ✓"
+              : customer.partnerStatus === "PENDING"
+                ? "در انتظار بررسی پشتیبانی"
+                : customer.partnerStatus === "SUSPENDED"
+                  ? "تعلیق‌شده"
+                  : "مشتری عادی"}
           </span>
         </div>
 
         {/* Owner Confirmed Wholesale Rules */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
-            <p className="font-extrabold text-gold-300">حداقل خرید: فقط ۱ جین</p>
+            <p className="font-extrabold text-gold-300">
+              حداقل خرید: فقط ۱ جین
+            </p>
             <p className="text-white/80 mt-0.5">
-              گام افزایش ۱ جین کامل؛ بدون تحمیل حداقل مبلغ اضافه یا شرط دو و سه جین.
+              گام افزایش ۱ جین کامل؛ بدون تحمیل حداقل مبلغ اضافه یا شرط دو و سه
+              جین.
             </p>
           </div>
           <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
             <p className="font-extrabold text-gold-300">محرمانگی نرخ همکار</p>
             <p className="text-white/80 mt-0.5">
-              قیمت عمده هرگز در نمای عمومی، سئو یا کانال عمومی افشا نمی‌شود تا حاشیه سود همکار حفظ گردد.
+              قیمت عمده هرگز در نمای عمومی، سئو یا کانال عمومی افشا نمی‌شود تا
+              حاشیه سود همکار حفظ گردد.
             </p>
           </div>
           <div className="p-3 rounded-2xl bg-white/10 border border-white/15">
-            <p className="font-extrabold text-gold-300">ترکیب شفاف هر جین (BOM)</p>
+            <p className="font-extrabold text-gold-300">
+              ترکیب شفاف هر جین (BOM)
+            </p>
             <p className="text-white/80 mt-0.5">
-              تعداد واحد داخل هر بسته (۴، ۶، ۸، ۱۰ یا ۱۲ تایی) دقیقاً بر اساس مشخصات همان کالا محاسبه می‌شود.
+              تعداد واحد داخل هر بسته (۴، ۶، ۸، ۱۰ یا ۱۲ تایی) دقیقاً بر اساس
+              مشخصات همان کالا محاسبه می‌شود.
             </p>
           </div>
         </div>
@@ -112,11 +118,12 @@ export function WholesaleView() {
             <div className="flex items-center gap-2.5 text-sm font-bold text-ink-900">
               <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
               <span>
-                خوش آمدید {customer.businessName || customer.name}! لیست قیمت اختصاصی همکاران و خرید جینی برای شما فعال است.
+                خوش آمدید {customer.businessName || customer.name}! لیست قیمت
+                اختصاصی همکاران و خرید جینی برای شما فعال است.
               </span>
             </div>
             <button
-              onClick={() => setSalesMode('WHOLESALE')}
+              onClick={() => setSalesMode("WHOLESALE")}
               className="px-4 py-2 rounded-xl bg-buy text-buy-fg text-xs font-extrabold"
             >
               تغییر حالت کل سایت به عمده
@@ -128,7 +135,8 @@ export function WholesaleView() {
               const pack = product.packDefinition;
               const maxPacks = Math.floor(product.stock / pack.unitsPerPack);
               const qty = getPackQty(product.id);
-              const packPrice = pack.wholesaleUnitPriceToman * pack.unitsPerPack;
+              const packPrice =
+                pack.wholesaleUnitPriceToman * pack.unitsPerPack;
 
               return (
                 <div
@@ -166,23 +174,29 @@ export function WholesaleView() {
                     ))}
                   </div>
 
-                  {pack.priceMode === 'FIXED' ? (
+                  {pack.priceMode === "FIXED" ? (
                     <>
                       <div className="grid grid-cols-3 gap-2 text-center bg-canvas-sunken p-2.5 rounded-xl">
                         <div>
-                          <span className="text-[10px] text-ink-500 block">واحد عمده</span>
+                          <span className="text-[10px] text-ink-500 block">
+                            واحد عمده
+                          </span>
                           <span className="text-xs font-extrabold text-brand-600">
                             {formatPrice(pack.wholesaleUnitPriceToman)}
                           </span>
                         </div>
                         <div className="border-x border-border">
-                          <span className="text-[10px] text-ink-500 block">قیمت ۱ جین</span>
+                          <span className="text-[10px] text-ink-500 block">
+                            قیمت ۱ جین
+                          </span>
                           <span className="text-xs font-black text-ink-900">
                             {formatPrice(packPrice)}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-ink-500 block">تکی سایت</span>
+                          <span className="text-[10px] text-ink-500 block">
+                            تکی سایت
+                          </span>
                           <span className="text-xs font-semibold text-ink-600">
                             {formatPrice(product.price)}
                           </span>
@@ -202,7 +216,10 @@ export function WholesaleView() {
                           </span>
                           <button
                             onClick={() =>
-                              setPackQty(product.id, Math.min(Math.max(1, maxPacks), qty + 1))
+                              setPackQty(
+                                product.id,
+                                Math.min(Math.max(1, maxPacks), qty + 1),
+                              )
                             }
                             className="w-7 h-7 rounded-lg bg-surface flex items-center justify-center"
                           >
@@ -217,17 +234,18 @@ export function WholesaleView() {
                         >
                           {maxPacks >= 1
                             ? `افزودن (${formatNumber(maxPacks)} جین موجود)`
-                            : 'موجودی کمتر از ۱ جین'}
+                            : "موجودی کمتر از ۱ جین"}
                         </button>
                       </div>
                     </>
                   ) : (
                     <div className="flex items-center justify-between bg-canvas-sunken p-3 rounded-xl text-xs">
                       <span className="text-ink-700 font-semibold">
-                        نرخ عمده این مدل به صورت استعلام روز است (تکی: {formatPrice(product.price)})
+                        نرخ عمده این مدل به صورت استعلام روز است (تکی:{" "}
+                        {formatPrice(product.price)})
                       </span>
                       <button
-                        onClick={() => setRoute('inbox')}
+                        onClick={() => setRoute("inbox")}
                         className="px-3 py-1.5 rounded-lg bg-buy text-buy-fg font-bold shrink-0"
                       >
                         استعلام
@@ -244,7 +262,7 @@ export function WholesaleView() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Application Form or Pending Status */}
           <div className="lg:col-span-7 bg-surface rounded-2xl border border-border p-5 shadow-e1 space-y-4">
-            {customer.partnerStatus === 'PENDING' ? (
+            {customer.partnerStatus === "PENDING" ? (
               <div className="space-y-3 py-4">
                 <div className="w-12 h-12 rounded-2xl bg-warning-light text-warning flex items-center justify-center">
                   <Clock className="w-6 h-6" />
@@ -253,26 +271,26 @@ export function WholesaleView() {
                   پرونده همکاری شما در صف بررسی واحد پشتیبانی است
                 </h2>
                 <p className="text-xs text-ink-600 leading-relaxed">
-                  درخواست همکاری شما با نام تجاری <strong>{customer.businessName || 'فروشگاه همکار'}</strong> ثبت شده است. به محض تأیید توسط کارشناس دارای مجوز <bdi>partner:approve</bdi> در پنل مدیریت، قیمت‌های عمده جینی برایتان باز خواهد شد.
+                  درخواست همکاری شما با نام تجاری{" "}
+                  <strong>{customer.businessName || "فروشگاه همکار"}</strong>{" "}
+                  ثبت شده است. به محض تأیید توسط کارشناس دارای مجوز{" "}
+                  <bdi>partner:approve</bdi> در پنل مدیریت، قیمت‌های عمده جینی
+                  برایتان باز خواهد شد.
                 </p>
-                <div className="p-3 rounded-xl bg-brand-50 border border-brand-200 text-xs text-ink-800 flex items-center justify-between gap-2">
-                  <span>برای تست فوری در این پیش‌نمایش، می‌توانید وارد پنل مدیریت شوید و پرونده خود را تأیید کنید یا دکمه مقابل را بزنید:</span>
-                  <button
-                    onClick={() => switchDemoPersona('approved')}
-                    className="px-3 py-1.5 rounded-lg bg-buy text-buy-fg font-bold shrink-0"
-                  >
-                    تست نمای همکار تأییدشده
-                  </button>
-                </div>
+                <p className="text-xs text-ink-600">
+                  تأیید همکاری فقط توسط مسئول دارای مجوز، در پنل مدیریت امن
+                  انجام می‌شود؛ دکمهٔ خودتأییدی وجود ندارد.
+                </p>
               </div>
-            ) : customer.partnerStatus === 'SUSPENDED' ? (
+            ) : customer.partnerStatus === "SUSPENDED" ? (
               <div className="space-y-3 py-4">
                 <AlertCircle className="w-10 h-10 text-danger" />
                 <h2 className="text-base font-extrabold text-ink-900">
                   دسترسی همکاری عمده شما موقتاً تعلیق شده است
                 </h2>
                 <p className="text-xs text-ink-600">
-                  سفارش‌های تسویه‌شده قبلی شما در تاریخچه سفارش‌ها محفوظ است. جهت بررسی مجدد با واحد امور همکاران در دایرکت مکاتبه فرمایید.
+                  سفارش‌های تسویه‌شده قبلی شما در تاریخچه سفارش‌ها محفوظ است.
+                  جهت بررسی مجدد با واحد امور همکاران در دایرکت مکاتبه فرمایید.
                 </p>
               </div>
             ) : (
@@ -284,14 +302,17 @@ export function WholesaleView() {
                   </h2>
                 </div>
                 <p className="text-xs text-ink-600 leading-relaxed">
-                  همکار گرامی، برای حفظ حاشیه سود فروشندگان، قیمت‌های عمده تنها پس از تأیید هویت صنفی نمایش داده می‌شوند. فرم زیر را تکمیل کنید تا در صف بررسی پشتیبانی قرار گیرد:
+                  همکار گرامی، برای حفظ حاشیه سود فروشندگان، قیمت‌های عمده تنها
+                  پس از تأیید هویت صنفی نمایش داده می‌شوند. فرم زیر را تکمیل
+                  کنید تا در صف بررسی پشتیبانی قرار گیرد:
                 </p>
 
                 <form onSubmit={handleSubmitApp} className="space-y-3 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="font-bold text-ink-700 block mb-1">
-                        <span className="text-danger ml-1">*</span>نام و نام خانوادگی
+                        <span className="text-danger ml-1">*</span>نام و نام
+                        خانوادگی
                       </label>
                       <input
                         required
@@ -303,7 +324,8 @@ export function WholesaleView() {
                     </div>
                     <div>
                       <label className="font-bold text-ink-700 block mb-1">
-                        <span className="text-danger ml-1">*</span>شماره موبایل تأییدشده
+                        <span className="text-danger ml-1">*</span>شماره موبایل
+                        تأییدشده
                       </label>
                       <input
                         required
@@ -319,7 +341,8 @@ export function WholesaleView() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="font-bold text-ink-700 block mb-1">
-                        <span className="text-danger ml-1">*</span>نام فروشگاه / گالری / پیج
+                        <span className="text-danger ml-1">*</span>نام فروشگاه /
+                        گالری / پیج
                       </label>
                       <input
                         required
@@ -331,7 +354,9 @@ export function WholesaleView() {
                       />
                     </div>
                     <div>
-                      <label className="font-bold text-ink-700 block mb-1">شهر محل فعالیت</label>
+                      <label className="font-bold text-ink-700 block mb-1">
+                        شهر محل فعالیت
+                      </label>
                       <input
                         type="text"
                         value={city}
@@ -388,7 +413,8 @@ export function WholesaleView() {
               </h3>
             </div>
             <p className="text-xs text-ink-500">
-              مشتریان عادی فقط قیمت تکی را می‌بینند؛ ترکیب بسته‌بندی عمده هر محصول به شکل زیر تعریف شده است:
+              مشتریان عادی فقط قیمت تکی را می‌بینند؛ ترکیب بسته‌بندی عمده هر
+              محصول به شکل زیر تعریف شده است:
             </p>
             <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
               {products.slice(0, 6).map((p) => (
@@ -397,14 +423,17 @@ export function WholesaleView() {
                   className="p-3 rounded-xl bg-canvas-sunken border border-border flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-ink-900 truncate">{p.name}</p>
+                    <p className="text-xs font-bold text-ink-900 truncate">
+                      {p.name}
+                    </p>
                     <p className="text-[11px] text-ink-500">
-                      {p.packDefinition.label} ({formatNumber(p.packDefinition.unitsPerPack)} واحدی) · تکی:{' '}
-                      {formatPrice(p.price)}
+                      {p.packDefinition.label} (
+                      {formatNumber(p.packDefinition.unitsPerPack)} واحدی) ·
+                      تکی: {formatPrice(p.price)}
                     </p>
                   </div>
                   <button
-                    onClick={() => setRoute('inbox')}
+                    onClick={() => setRoute("inbox")}
                     className="px-2.5 py-1.5 rounded-lg bg-brand-50 text-brand-600 text-[11px] font-bold shrink-0"
                   >
                     پیام به پشتیبانی
@@ -414,7 +443,10 @@ export function WholesaleView() {
             </div>
             <div className="pt-2 border-t border-border flex items-center gap-2 text-[11px] text-ink-500">
               <ShieldCheck className="w-4 h-4 text-success shrink-0" />
-              <span>همکار تأییدشده دسترسی پنل مدیریت ندارد؛ صرفاً ویترین عمده را می‌بیند.</span>
+              <span>
+                همکار تأییدشده دسترسی پنل مدیریت ندارد؛ صرفاً ویترین عمده را
+                می‌بیند.
+              </span>
             </div>
           </div>
         </div>

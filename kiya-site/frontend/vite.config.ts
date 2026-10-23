@@ -9,7 +9,32 @@ const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
 export default defineConfig({
-  server: {host:'0.0.0.0',port:3100,strictPort:true,allowedHosts:['.e2b.app'],proxy:{'/api':{target:'http://127.0.0.1:3101',changeOrigin:false}}},
+  preview: {
+    host: "0.0.0.0",
+    port: 3100,
+    strictPort: true,
+    allowedHosts: [".e2b.app"],
+    proxy: {
+      "/admin": { target: "http://127.0.0.1:3101", changeOrigin: false },
+      "/_next": { target: "http://127.0.0.1:3101", changeOrigin: false },
+      "/api": { target: "http://127.0.0.1:3101", changeOrigin: false },
+    },
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 3100,
+    strictPort: true,
+    allowedHosts: [".e2b.app"],
+    proxy: {
+      "/admin": { target: "http://127.0.0.1:3101", changeOrigin: false },
+      "/_next": {
+        target: "http://127.0.0.1:3101",
+        changeOrigin: false,
+        ws: true,
+      },
+      "/api": { target: "http://127.0.0.1:3101", changeOrigin: false },
+    },
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   BadgeCheck,
   MessageCircle,
@@ -10,16 +10,18 @@ import {
   Clock,
   ShieldAlert,
   Send,
-} from 'lucide-react';
-import { useStore } from '../../context/StoreContext';
-import { brandProfile, logoDark } from '../shared/Logo';
-import { CATEGORIES } from '../../data/products';
-import { cn } from '../../utils/cn';
-import { formatNumber, formatPrice } from '../../utils/format';
+} from "lucide-react";
+import { useStore } from "../../context/StoreContext";
+import { brandProfile, logoDark } from "../shared/Logo";
+import { CATEGORIES } from "../../data/products";
+import { cn } from "../../utils/cn";
+import { formatNumber, formatPrice } from "../../utils/format";
 
 export function StoreProfileView() {
   const { posts, products, comments, setSelectedPostId, setRoute } = useStore();
-  const [tab, setTab] = useState<'posts' | 'products' | 'ugc' | 'about'>('posts');
+  const [tab, setTab] = useState<"posts" | "products" | "ugc" | "about">(
+    "posts",
+  );
 
   const verifiedComments = comments.filter((c) => c.author.isVerifiedBuyer);
 
@@ -39,11 +41,17 @@ export function StoreProfileView() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-10 relative z-10">
             <div className="flex items-end gap-3.5">
               <div className="w-22 h-22 md:w-24 md:h-24 rounded-full overflow-hidden ring-4 ring-surface bg-[#482780] shadow-e2 shrink-0">
-                <img src={brandProfile} alt="کیا" className="w-full h-full object-contain" />
+                <img
+                  src={brandProfile}
+                  alt="کیا"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div className="pb-1">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-lg md:text-xl font-black text-ink-900">کیا — KIYA</h1>
+                  <h1 className="text-lg md:text-xl font-black text-ink-900">
+                    کیا — KIYA
+                  </h1>
                   <BadgeCheck className="w-5 h-5 text-brand-500" />
                 </div>
                 <p className="text-xs text-ink-500 font-mono">
@@ -54,7 +62,7 @@ export function StoreProfileView() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setRoute('inbox')}
+                onClick={() => setRoute("inbox")}
                 className="px-4 py-2 rounded-xl bg-buy text-buy-fg text-xs font-extrabold flex items-center gap-1.5 shadow-e1"
               >
                 <MessageCircle className="w-4 h-4" />
@@ -73,7 +81,9 @@ export function StoreProfileView() {
           </div>
 
           <p className="text-xs md:text-sm text-ink-700 leading-relaxed mt-4 max-w-2xl">
-            هر روز جدید، بدون واسطه · عرضه تخصصی کیف و کیف پول، کفش، کمربند، لباس زیر زنانه و مردانه (پلمب بهداشتی)، اکسسوری شخصی، گارد موبایل و هدیه شخصی به صورت تکی و عمده جینی همکاران.
+            هر روز جدید، بدون واسطه · عرضه تخصصی کیف و کیف پول، کفش، کمربند،
+            لباس زیر زنانه و مردانه (پلمب بهداشتی)، اکسسوری شخصی، گارد موبایل و
+            هدیه شخصی به صورت تکی و عمده جینی همکاران.
           </p>
 
           {/* Stats */}
@@ -88,29 +98,33 @@ export function StoreProfileView() {
               <span className="text-sm md:text-base font-black text-ink-900 block">
                 {formatNumber(products.length)}
               </span>
-              <span className="text-[11px] text-ink-500">کد کالا (دمو)</span>
+              <span className="text-[11px] text-ink-500">کد کالای سرور</span>
             </div>
             <div>
-              <span className="text-sm md:text-base font-black text-ink-900 block">۴٫۸</span>
+              <span className="text-sm md:text-base font-black text-ink-900 block">
+                —
+              </span>
               <span className="text-[11px] text-ink-500">میانگین رضایت</span>
             </div>
             <div>
-              <span className="text-sm md:text-base font-black text-ink-900 block">۱ جین</span>
+              <span className="text-sm md:text-base font-black text-ink-900 block">
+                ۱ جین
+              </span>
               <span className="text-[11px] text-ink-500">حداقل عمده</span>
             </div>
           </div>
 
           {/* Highlights = Categories */}
           <div className="flex gap-3 overflow-x-auto no-scrollbar mt-4 pt-3 border-t border-border">
-            {CATEGORIES.filter((c) => c.slug !== 'all').map((cat) => (
+            {CATEGORIES.filter((c) => c.slug !== "all").map((cat) => (
               <button
                 key={cat.slug}
-                onClick={() => setRoute('explore')}
+                onClick={() => setRoute("explore")}
                 className="flex flex-col items-center gap-1 shrink-0 w-18 group"
               >
                 <div className="w-14 h-14 rounded-full p-0.5 story-ring">
                   <div className="w-full h-full rounded-full bg-surface flex items-center justify-center text-[11px] font-extrabold text-brand-600 px-1 text-center">
-                    {cat.nameFa.split(' ')[0]}
+                    {cat.nameFa.split(" ")[0]}
                   </div>
                 </div>
                 <span className="text-[10px] font-semibold text-ink-700 truncate w-full text-center">
@@ -125,10 +139,10 @@ export function StoreProfileView() {
       {/* Profile Tabs */}
       <div className="bg-surface rounded-2xl border border-border p-1.5 grid grid-cols-4 gap-1 text-xs font-extrabold">
         {[
-          { id: 'posts' as const, label: 'پست‌ها', icon: Grid3X3 },
-          { id: 'products' as const, label: 'محصولات', icon: ShoppingBag },
-          { id: 'ugc' as const, label: 'تجربه خریداران', icon: Users },
-          { id: 'about' as const, label: 'درباره و قوانین', icon: Info },
+          { id: "posts" as const, label: "پست‌ها", icon: Grid3X3 },
+          { id: "products" as const, label: "محصولات", icon: ShoppingBag },
+          { id: "ugc" as const, label: "تجربه خریداران", icon: Users },
+          { id: "about" as const, label: "درباره و قوانین", icon: Info },
         ].map((t) => {
           const Icon = t.icon;
           return (
@@ -136,8 +150,10 @@ export function StoreProfileView() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={cn(
-                'py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all',
-                tab === t.id ? 'bg-buy text-buy-fg shadow-e1' : 'text-ink-600 hover:bg-canvas-sunken'
+                "py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all",
+                tab === t.id
+                  ? "bg-buy text-buy-fg shadow-e1"
+                  : "text-ink-600 hover:bg-canvas-sunken",
               )}
             >
               <Icon className="w-4 h-4" />
@@ -148,7 +164,7 @@ export function StoreProfileView() {
       </div>
 
       {/* Tab Content */}
-      {tab === 'posts' && (
+      {tab === "posts" && (
         <div className="grid grid-cols-3 gap-2 md:gap-3">
           {posts.map((post) => {
             const prod = products.find((p) => p.id === post.productId);
@@ -173,7 +189,7 @@ export function StoreProfileView() {
         </div>
       )}
 
-      {tab === 'products' && (
+      {tab === "products" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {products.map((prod) => (
             <div
@@ -186,7 +202,9 @@ export function StoreProfileView() {
                 className="w-16 h-16 rounded-xl object-cover shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-extrabold text-ink-900 truncate">{prod.name}</p>
+                <p className="text-xs font-extrabold text-ink-900 truncate">
+                  {prod.name}
+                </p>
                 <p className="text-[11px] text-ink-500">{prod.categoryName}</p>
                 <p className="text-xs font-black text-brand-600 mt-1">
                   {formatPrice(prod.price)}
@@ -197,11 +215,13 @@ export function StoreProfileView() {
         </div>
       )}
 
-      {tab === 'ugc' && (
+      {tab === "ugc" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {verifiedComments.map((cm) => {
             const post = posts.find((p) => p.id === cm.postId);
-            const prod = post ? products.find((pr) => pr.id === post.productId) : null;
+            const prod = post
+              ? products.find((pr) => pr.id === post.productId)
+              : null;
             return (
               <div
                 key={cm.id}
@@ -216,14 +236,20 @@ export function StoreProfileView() {
                 )}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-extrabold text-ink-900">{cm.author.name}</span>
+                    <span className="text-xs font-extrabold text-ink-900">
+                      {cm.author.name}
+                    </span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-success-light text-success">
                       خریدار تأییدشده
                     </span>
                   </div>
-                  <p className="text-xs text-ink-700 leading-relaxed">«{cm.text}»</p>
+                  <p className="text-xs text-ink-700 leading-relaxed">
+                    «{cm.text}»
+                  </p>
                   {prod && (
-                    <p className="text-[11px] text-brand-500 font-semibold">کالا: {prod.name}</p>
+                    <p className="text-[11px] text-brand-500 font-semibold">
+                      کالا: {prod.name}
+                    </p>
                   )}
                 </div>
               </div>
@@ -232,12 +258,15 @@ export function StoreProfileView() {
         </div>
       )}
 
-      {tab === 'about' && (
+      {tab === "about" && (
         <div className="bg-surface rounded-2xl border border-border p-5 space-y-4 text-xs text-ink-700 leading-relaxed">
           <div className="p-3 rounded-xl bg-warning-light border border-warning/30 text-ink-900 flex items-start gap-2">
             <ShieldAlert className="w-4 h-4 text-warning shrink-0 mt-0.5" />
             <span>
-              <strong>برچسب پیش‌نویس حقوقی (DRAFT):</strong> متون قوانین، نشانی انبار و شرایط بازگشت پیش از اتصال نهایی درگاه تولید باید توسط مالک بررسی و تأیید حقوقی شوند. هیچ نماد اعتماد شبیه‌سازی‌شده‌ای تا زمان دریافت کد رسمی درج نمی‌گردد.
+              <strong>برچسب پیش‌نویس حقوقی (DRAFT):</strong> متون قوانین، نشانی
+              انبار و شرایط بازگشت پیش از اتصال نهایی درگاه تولید باید توسط مالک
+              بررسی و تأیید حقوقی شوند. هیچ نماد اعتماد شبیه‌سازی‌شده‌ای تا زمان
+              دریافت کد رسمی درج نمی‌گردد.
             </span>
           </div>
 
@@ -258,9 +287,14 @@ export function StoreProfileView() {
                 <Clock className="w-4 h-4 text-brand-500" />
                 ضوابط ارسال و مرجوعی کالا
               </h3>
-              <p>• مهلت تست و تعویض سایز کیف، کفش و کمربند: تا ۷ روز در صورت عدم استفاده بیرونی.</p>
               <p>
-                • ضوابط لباس زیر: به دلیل مسائل بهداشتی، بازگشت تنها پیش از بازشدن پلمب بهداشتی اولیه مجاز است؛ در صورت ایراد یا مغایرت کالا، حقوق قانونی مشتری کاملاً محفوظ است.
+                • مهلت تست و تعویض سایز کیف، کفش و کمربند: تا ۷ روز در صورت عدم
+                استفاده بیرونی.
+              </p>
+              <p>
+                • ضوابط لباس زیر: به دلیل مسائل بهداشتی، بازگشت تنها پیش از
+                بازشدن پلمب بهداشتی اولیه مجاز است؛ در صورت ایراد یا مغایرت
+                کالا، حقوق قانونی مشتری کاملاً محفوظ است.
               </p>
             </div>
           </div>

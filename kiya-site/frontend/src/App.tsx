@@ -1,4 +1,3 @@
-import { ServerCatalog } from "./components/integration/ServerCatalog";
 import { useState, useEffect, lazy, Suspense } from "react";
 import {
   Sparkles,
@@ -20,14 +19,13 @@ import { StoryViewerModal } from "./components/storefront/StoryViewerModal";
 import { PostCard } from "./components/storefront/PostCard";
 import { PostModal } from "./components/storefront/PostModal";
 import { RightRail } from "./components/storefront/RightRail";
-import { CartSheet } from "./components/storefront/CartSheet";
-import { CheckoutModal } from "./components/storefront/CheckoutModal";
+import { ServerCart } from "./components/integration/ServerCart";
 import { ExploreView } from "./components/storefront/ExploreView";
 import { WholesaleView } from "./components/storefront/WholesaleView";
 import { StoreProfileView } from "./components/storefront/StoreProfileView";
 import { DirectInboxView } from "./components/storefront/DirectInboxView";
 import { KiyaMagView } from "./components/storefront/KiyaMagView";
-import { AccountOrdersView } from "./components/storefront/AccountOrdersView";
+import { CustomerAccount } from "./components/integration/CustomerAccount";
 const AdminPanel = lazy(() =>
   import("./components/admin/AdminPanel").then((module) => ({
     default: module.AdminPanel,
@@ -47,10 +45,11 @@ function KiyaAppContent() {
     toast,
     hideToast,
     ordersPaused,
+    catalogState,
+    catalogError,
+    reloadCatalog,
   } = useStore();
 
-  const [serverCatalogOpen, setServerCatalogOpen] = useState(false);
-  useEffect(() => setServerCatalogOpen(false), [route]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isOffline, setIsOffline] = useState(
     typeof navigator !== "undefined" ? !navigator.onLine : false,
@@ -101,18 +100,8 @@ function KiyaAppContent() {
         role="note"
         className="bg-warning text-white text-center text-xs px-3 py-2"
       >
-        نسخهٔ مستقل بر پایهٔ عین قالب شما — در حال تکمیل؛ داده‌ها، نقش‌ها و
-        پیام‌ها نمونه‌اند. پرداخت و ورود واقعی از این رابط فعال نیست.
-      </div>
-      <div className="text-center py-2 text-xs bg-surface border-b border-border">
-        <button
-          onClick={() => setServerCatalogOpen((v) => !v)}
-          className="font-bold text-brand-500 underline"
-        >
-          {serverCatalogOpen
-            ? "بازگشت به خود قالب"
-            : "مشاهده کاتالوگ متصل به دیتابیس"}
-        </button>
+        کاتالوگ، دیدگاه و سبد به سرور متصل‌اند؛ بخش‌های محتوایی هنوز در حال
+        تکمیل‌اند. پرداخت آنلاین و پیامک فعال نیست.
       </div>
       {/* Skip Link for Keyboard Accessibility */}
       <a
@@ -155,8 +144,7 @@ function KiyaAppContent() {
 
           {/* Column 2 (Center): Dynamic Route Canvas */}
           <main id="main-content" className="flex-1 min-w-0">
-            {serverCatalogOpen && <ServerCatalog />}
-            {!serverCatalogOpen && route === "feed" && (
+            {route === "feed" && (
               <div className="w-full max-w-[630px] mx-auto space-y-4 md:space-y-6">
                 <div className="px-3 md:px-0">
                   <StoriesBar />
@@ -177,12 +165,26 @@ function KiyaAppContent() {
                   </div>
                 </div>
 
-                {visiblePosts.length === 0 && (
+                {catalogState === "loading" && (
+                  <p role="status" className="p-8 text-center">
+                    در حال دریافت کالاها از سرور…
+                  </p>
+                )}
+                {catalogState === "error" && (
+                  <div
+                    role="alert"
+                    className="p-8 text-center border border-danger rounded-xl"
+                  >
+                    <p>{catalogError}</p>
+                    <button onClick={reloadCatalog}>تلاش دوباره</button>
+                  </div>
+                )}
+                {catalogState === "ready" && visiblePosts.length === 0 && (
                   <div
                     role="status"
                     className="bg-surface border border-border rounded-2xl p-8 text-center"
                   >
-                    برای این جست‌وجو پستی پیدا نشد.
+                    کالایی برای نمایش پیدا نشد.
                   </div>
                 )}
                 {visiblePosts.map((post, idx) => (
@@ -314,7 +316,7 @@ function KiyaAppContent() {
               </div>
             )}
 
-            {!serverCatalogOpen && route === "explore" && (
+            {route === "explore" && (
               <div className="px-3 md:px-0">
                 <ExploreView
                   searchQuery={searchQuery}
@@ -323,33 +325,47 @@ function KiyaAppContent() {
               </div>
             )}
 
-            {!serverCatalogOpen && route === "wholesale" && (
+            {route === "wholesale" && (
               <div className="px-3 md:px-0">
                 <WholesaleView />
               </div>
             )}
 
-            {!serverCatalogOpen && route === "profile" && (
+            {route === "profile" && (
               <div className="px-3 md:px-0">
                 <StoreProfileView />
               </div>
             )}
 
-            {!serverCatalogOpen && route === "inbox" && (
+            {route === "inbox" && (
               <div className="px-3 md:px-0">
+                <p
+                  className="p-4 rounded-2xl border border-border bg-surface text-sm"
+                  role="status"
+                >
+                  پیام‌رسان پشتیبانی هنوز فعال نیست. هیچ پیام یا سابقهٔ آزمایشی
+                  به‌عنوان مکاتبهٔ واقعی نمایش داده نمی‌شود.
+                </p>
                 <DirectInboxView />
               </div>
             )}
 
-            {!serverCatalogOpen && route === "mag" && (
+            {route === "mag" && (
               <div className="px-3 md:px-0">
+                <p
+                  className="p-4 rounded-2xl border border-border bg-surface text-sm"
+                  role="status"
+                >
+                  مقاله‌ای از سامانهٔ مدیریت محتوا منتشر نشده است؛ مقالات نمونهٔ
+                  قالب حذف شده‌اند.
+                </p>
                 <KiyaMagView />
               </div>
             )}
 
-            {!serverCatalogOpen && route === "account" && (
+            {route === "account" && (
               <div className="px-3 md:px-0">
-                <AccountOrdersView />
+                <CustomerAccount />
               </div>
             )}
           </main>
@@ -365,8 +381,7 @@ function KiyaAppContent() {
       {/* Overlays & Modals */}
       <StoryViewerModal />
       <PostModal />
-      <CartSheet />
-      <CheckoutModal />
+      <ServerCart />
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}

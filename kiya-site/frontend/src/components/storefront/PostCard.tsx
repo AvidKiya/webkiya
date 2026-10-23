@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef } from "react";
 import {
   Heart,
   MessageCircle,
@@ -15,17 +15,17 @@ import {
   Plus,
   Send,
   ShieldAlert,
-} from 'lucide-react';
-import type { Post } from '../../types';
-import { useStore } from '../../context/StoreContext';
-import { brandProfile } from '../shared/Logo';
-import { cn } from '../../utils/cn';
+} from "lucide-react";
+import type { Post } from "../../types";
+import { useStore } from "../../context/StoreContext";
+import { brandProfile } from "../shared/Logo";
+import { cn } from "../../utils/cn";
 import {
   formatPrice,
   formatNumber,
   formatRelativeTime,
   discountPercent,
-} from '../../utils/format';
+} from "../../utils/format";
 
 interface PostCardProps {
   post: Post;
@@ -56,12 +56,13 @@ export function PostCard({ post }: PostCardProps) {
   const [packCount, setPackCount] = useState(1);
   const [expandedL1, setExpandedL1] = useState(false);
   const [showBigHeart, setShowBigHeart] = useState(false);
-  const [quickComment, setQuickComment] = useState('');
+  const [quickComment, setQuickComment] = useState("");
+  const [commentPending, setCommentPending] = useState(false);
   const lastClickTime = useRef(0);
 
   const postComments = comments.filter((c) => c.postId === post.id);
   const discount = discountPercent(product.price, product.comparePrice);
-  const isWholesaleView = salesMode === 'WHOLESALE' && isApprovedPartner;
+  const isWholesaleView = salesMode === "WHOLESALE" && isApprovedPartner;
   const pack = product.packDefinition;
   const maxPacks = Math.floor(product.stock / pack.unitsPerPack);
   const packTotalPrice = pack.wholesaleUnitPriceToman * pack.unitsPerPack;
@@ -83,7 +84,7 @@ export function PostCard({ post }: PostCardProps) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareUrl).catch(() => {});
     }
-    showToast('لینک مستقیم پست کپی شد', 'info');
+    showToast("لینک مستقیم پست کپی شد", "info");
   };
 
   return (
@@ -91,11 +92,15 @@ export function PostCard({ post }: PostCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
-          onClick={() => setRoute('profile')}
+          onClick={() => setRoute("profile")}
           className="flex items-center gap-2.5 text-right group"
         >
           <div className="w-10 h-10 rounded-full overflow-hidden bg-[#482780] border border-gold-500/40 shrink-0">
-            <img src={brandProfile} alt="کیا — KIYA" className="w-full h-full object-contain" />
+            <img
+              src={brandProfile}
+              alt="کیا — KIYA"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
@@ -161,7 +166,10 @@ export function PostCard({ post }: PostCardProps) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setImgIdx((prev) => (prev - 1 + product.images.length) % product.images.length);
+                setImgIdx(
+                  (prev) =>
+                    (prev - 1 + product.images.length) % product.images.length,
+                );
               }}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-85 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
               aria-label="تصویر قبلی"
@@ -184,8 +192,8 @@ export function PostCard({ post }: PostCardProps) {
                 <span
                   key={idx}
                   className={cn(
-                    'h-1.5 rounded-full transition-all',
-                    idx === imgIdx ? 'w-4 bg-white' : 'w-1.5 bg-white/55'
+                    "h-1.5 rounded-full transition-all",
+                    idx === imgIdx ? "w-4 bg-white" : "w-1.5 bg-white/55",
                   )}
                 />
               ))}
@@ -206,11 +214,13 @@ export function PostCard({ post }: PostCardProps) {
             >
               <Heart
                 className={cn(
-                  'w-5 h-5 transition-transform',
-                  post.isLiked && 'fill-danger text-danger heart-pop'
+                  "w-5 h-5 transition-transform",
+                  post.isLiked && "fill-danger text-danger heart-pop",
                 )}
               />
-              <span>{formatNumber(post.likes)}</span>
+              <span>
+                {product.serverManaged ? "پسند محلی" : formatNumber(post.likes)}
+              </span>
             </button>
 
             <button
@@ -237,7 +247,10 @@ export function PostCard({ post }: PostCardProps) {
             aria-label="ذخیره پست"
           >
             <Bookmark
-              className={cn('w-5 h-5', post.isSaved && 'fill-brand-500 text-brand-500')}
+              className={cn(
+                "w-5 h-5",
+                post.isSaved && "fill-brand-500 text-brand-500",
+              )}
             />
           </button>
         </div>
@@ -253,12 +266,18 @@ export function PostCard({ post }: PostCardProps) {
             </button>
             <div className="flex items-center gap-1 shrink-0 bg-warning-light text-warning px-2 py-0.5 rounded-full">
               <Star className="w-3.5 h-3.5 fill-current" />
-              <span className="text-xs font-extrabold">{formatNumber(product.rating)}</span>
+              <span className="text-xs font-extrabold">
+                {product.serverManaged
+                  ? "بدون امتیاز ثبت‌شده"
+                  : formatNumber(product.rating)}
+              </span>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-ink-500">
             <span className="text-success font-semibold">
-              {formatNumber(product.soldCount)} فروش موفق
+              {product.serverManaged
+                ? "آمار فروش منتشر نشده"
+                : formatNumber(product.soldCount) + " فروش موفق"}
             </span>
             <span>·</span>
             <span>موجودی انبار: {formatNumber(product.stock)} واحد</span>
@@ -269,15 +288,17 @@ export function PostCard({ post }: PostCardProps) {
 
         {/* Progressive Disclosure L0 -> L1 -> L2 */}
         <div className="text-sm text-ink-700 leading-relaxed">
-          <p className={cn(!expandedL1 && 'line-clamp-2')}>{post.caption}</p>
+          <p className={cn(!expandedL1 && "line-clamp-2")}>{post.caption}</p>
 
           {expandedL1 && (
             <div className="mt-2.5 p-3 rounded-xl bg-canvas-sunken border border-border space-y-2 text-xs text-ink-700">
-              <p className="font-semibold text-ink-900">{product.shortDescription}</p>
+              <p className="font-semibold text-ink-900">
+                {product.shortDescription}
+              </p>
               <ul className="space-y-1">
                 {product.specs.slice(0, 3).map((s) => (
                   <li key={s.label}>
-                    <span className="text-ink-500">{s.label}:</span>{' '}
+                    <span className="text-ink-500">{s.label}:</span>{" "}
                     <span className="font-semibold">{s.value}</span>
                   </li>
                 ))}
@@ -298,7 +319,7 @@ export function PostCard({ post }: PostCardProps) {
               onClick={() => setExpandedL1((v) => !v)}
               className="text-xs font-extrabold text-brand-500 hover:underline"
             >
-              {expandedL1 ? 'کمتر' : 'بیشتر...'}
+              {expandedL1 ? "کمتر" : "بیشتر..."}
             </button>
             <button
               type="button"
@@ -336,7 +357,7 @@ export function PostCard({ post }: PostCardProps) {
               ))}
             </div>
 
-            {pack.priceMode === 'FIXED' ? (
+            {pack.priceMode === "FIXED" ? (
               <>
                 <div className="grid grid-cols-3 gap-2 text-center bg-surface p-2.5 rounded-xl border border-border">
                   <div>
@@ -372,7 +393,11 @@ export function PostCard({ post }: PostCardProps) {
                       {formatNumber(packCount)} جین
                     </span>
                     <button
-                      onClick={() => setPackCount((c) => Math.min(Math.max(1, maxPacks), c + 1))}
+                      onClick={() =>
+                        setPackCount((c) =>
+                          Math.min(Math.max(1, maxPacks), c + 1),
+                        )
+                      }
                       className="w-7 h-7 rounded-lg bg-canvas-sunken flex items-center justify-center font-bold"
                       aria-label="افزایش تعداد جین"
                     >
@@ -388,7 +413,7 @@ export function PostCard({ post }: PostCardProps) {
                     <Layers className="w-4 h-4" />
                     {maxPacks >= 1
                       ? `افزودن ${formatNumber(packCount)} جین به سبد عمده`
-                      : 'موجودی کمتر از ۱ جین'}
+                      : "موجودی کمتر از ۱ جین"}
                   </button>
                 </div>
               </>
@@ -396,13 +421,15 @@ export function PostCard({ post }: PostCardProps) {
               /* WH10: Inquiry-only wholesale item -> never show 0 Toman */
               <div className="flex items-center justify-between gap-3 bg-surface p-3 rounded-xl border border-border">
                 <div>
-                  <p className="text-xs font-bold text-ink-900">فروش عمده استعلامی کارگاه</p>
+                  <p className="text-xs font-bold text-ink-900">
+                    فروش عمده استعلامی کارگاه
+                  </p>
                   <p className="text-[11px] text-ink-500">
                     قیمت تک‌فروشی مرجع: {formatPrice(product.price)}
                   </p>
                 </div>
                 <button
-                  onClick={() => setRoute('inbox')}
+                  onClick={() => setRoute("inbox")}
                   className="px-3.5 py-2 rounded-xl bg-buy text-buy-fg text-xs font-bold"
                 >
                   استعلام از پشتیبانی
@@ -421,10 +448,10 @@ export function PostCard({ post }: PostCardProps) {
                     key={color}
                     onClick={() => setSelectedColor(color)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all',
+                      "px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all",
                       selectedColor === color
-                        ? 'border-brand-500 bg-brand-50 text-brand-600'
-                        : 'border-border text-ink-600 hover:border-ink-300'
+                        ? "border-brand-500 bg-brand-50 text-brand-600"
+                        : "border-border text-ink-600 hover:border-ink-300",
                     )}
                   >
                     {color}
@@ -433,16 +460,18 @@ export function PostCard({ post }: PostCardProps) {
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs text-ink-500 ml-1">{product.sizeLabel || 'سایز'}:</span>
+                <span className="text-xs text-ink-500 ml-1">
+                  {product.sizeLabel || "سایز"}:
+                </span>
                 {product.sizes.map((sz) => (
                   <button
                     key={sz}
                     onClick={() => setSelectedSize(sz)}
                     className={cn(
-                      'px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all',
+                      "px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all",
                       selectedSize === sz
-                        ? 'border-brand-500 bg-brand-50 text-brand-600'
-                        : 'border-border text-ink-600 hover:border-ink-300'
+                        ? "border-brand-500 bg-brand-50 text-brand-600"
+                        : "border-border text-ink-600 hover:border-ink-300",
                     )}
                   >
                     <bdi className="font-sans">{sz}</bdi>
@@ -466,26 +495,39 @@ export function PostCard({ post }: PostCardProps) {
               <button
                 onClick={() =>
                   product.stock > 0
-                    ? addToRetailCart(product.id, selectedColor, selectedSize, 1)
-                    : showToast('درخواست اطلاع از شارژ موجودی برای شما ثبت شد.', 'info')
+                    ? addToRetailCart(
+                        product.id,
+                        selectedColor,
+                        selectedSize,
+                        1,
+                      )
+                    : showToast(
+                        "درخواست اطلاع از شارژ موجودی برای شما ثبت شد.",
+                        "info",
+                      )
                 }
                 className={cn(
-                  'px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all active:scale-95',
+                  "px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all active:scale-95",
                   product.stock > 0
-                    ? 'bg-buy text-buy-fg hover:bg-buy-hover shadow-e1'
-                    : 'bg-surface border border-border text-ink-700'
+                    ? "bg-buy text-buy-fg hover:bg-buy-hover shadow-e1"
+                    : "bg-surface border border-border text-ink-700",
                 )}
               >
                 <ShoppingBag className="w-4 h-4" />
-                <span>{product.stock > 0 ? 'افزودن به سبد' : 'اطلاع از موجودی'}</span>
+                <span>
+                  {product.stock > 0 ? "افزودن به سبد" : "اطلاع از موجودی"}
+                </span>
               </button>
             </div>
 
             {!isApprovedPartner && (
               <div className="flex items-center justify-between text-[11px] text-ink-500 px-1">
-                <span>خرید عمده جینی (حداقل ۱ جین): برای مشاهده قیمت عمده حساب همکار نیاز است.</span>
+                <span>
+                  خرید عمده جینی (حداقل ۱ جین): برای مشاهده قیمت عمده حساب همکار
+                  نیاز است.
+                </span>
                 <button
-                  onClick={() => setRoute('wholesale')}
+                  onClick={() => setRoute("wholesale")}
                   className="text-brand-500 font-bold hover:underline shrink-0 mr-2"
                 >
                   درخواست همکاری
@@ -499,7 +541,9 @@ export function PostCard({ post }: PostCardProps) {
         <div className="pt-2.5 border-t border-border space-y-2">
           {postComments.slice(0, 2).map((cm) => (
             <div key={cm.id} className="text-xs leading-relaxed">
-              <span className="font-bold text-ink-900 ml-1.5">{cm.author.name}</span>
+              <span className="font-bold text-ink-900 ml-1.5">
+                {cm.author.name}
+              </span>
               {cm.author.isVerifiedBuyer && (
                 <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-success bg-success-light px-1.5 py-0.5 rounded ml-1.5">
                   خرید تأییدشده
@@ -514,16 +558,22 @@ export function PostCard({ post }: PostCardProps) {
               onClick={() => setSelectedPostId(post.id)}
               className="text-xs font-semibold text-ink-500 hover:text-brand-500"
             >
-              مشاهده همه {formatNumber(postComments.length)} دیدگاه و پاسخ‌های فروشگاه...
+              مشاهده همه {formatNumber(postComments.length)} دیدگاه و پاسخ‌های
+              فروشگاه...
             </button>
           )}
 
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              if (!quickComment.trim()) return;
-              addComment(post.id, quickComment);
-              setQuickComment('');
+              if (!quickComment.trim() || commentPending) return;
+              setCommentPending(true);
+              try {
+                if (await addComment(post.id, quickComment))
+                  setQuickComment("");
+              } finally {
+                setCommentPending(false);
+              }
             }}
             className="flex items-center gap-2 pt-1"
           >

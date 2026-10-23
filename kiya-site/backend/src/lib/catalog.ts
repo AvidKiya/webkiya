@@ -6,6 +6,7 @@ export type Product = {
   category: string;
   image: string;
   price: string;
+  availableUnits?: number;
   previous?: string;
   description: string;
   colors: { id?: string; name: string; hex: string; available?: boolean }[];

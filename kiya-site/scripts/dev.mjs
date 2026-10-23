@@ -1,6 +1,20 @@
 import { spawn } from "node:child_process";
+const built = process.argv.includes("--built");
 const children = ["backend", "frontend"].map((name) =>
-  spawn("npm", ["--prefix", name, "run", "dev"], { stdio: "inherit" }),
+  spawn(
+    "npm",
+    [
+      "--prefix",
+      name,
+      "run",
+      ...(built
+        ? name === "backend"
+          ? ["start", "--", "--port", "3101"]
+          : ["preview", "--", "--host", "0.0.0.0", "--port", "3100"]
+        : ["dev"]),
+    ],
+    { stdio: "inherit" },
+  ),
 );
 let stopping = false;
 function stop() {

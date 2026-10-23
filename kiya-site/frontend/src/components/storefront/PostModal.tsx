@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   X,
   Heart,
@@ -15,19 +15,19 @@ import {
   Layers,
   CornerDownLeft,
   ShieldAlert,
-} from 'lucide-react';
-import { useStore } from '../../context/StoreContext';
-import { brandProfile } from '../shared/Logo';
-import type { QuickReaction } from '../../types';
-import { cn } from '../../utils/cn';
+} from "lucide-react";
+import { useStore } from "../../context/StoreContext";
+import { brandProfile } from "../shared/Logo";
+import type { QuickReaction } from "../../types";
+import { cn } from "../../utils/cn";
 import {
   formatPrice,
   formatNumber,
   formatRelativeTime,
   discountPercent,
-} from '../../utils/format';
+} from "../../utils/format";
 
-const QUICK_REACTIONS: QuickReaction[] = ['♥', '👍', '🔥', '❓'];
+const QUICK_REACTIONS: QuickReaction[] = ["♥", "👍", "🔥", "❓"];
 
 export function PostModal() {
   const {
@@ -51,12 +51,18 @@ export function PostModal() {
   const product = post ? products.find((pr) => pr.id === post.productId) : null;
 
   const [imgIdx, setImgIdx] = useState(0);
-  const [selectedColor, setSelectedColor] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
   const [packCount, setPackCount] = useState(1);
-  const [activeTab, setActiveTab] = useState<'specs' | 'size' | 'hygiene' | 'faq'>('specs');
-  const [commentText, setCommentText] = useState('');
-  const [replyTarget, setReplyTarget] = useState<{ id: string; authorName: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "specs" | "size" | "hygiene" | "faq"
+  >("specs");
+  const [commentText, setCommentText] = useState("");
+  const [commentPending, setCommentPending] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<{
+    id: string;
+    authorName: string;
+  } | null>(null);
 
   useEffect(() => {
     if (product) {
@@ -70,13 +76,13 @@ export function PostModal() {
   useEffect(() => {
     if (!post) return;
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedPostId(null);
+      if (e.key === "Escape") setSelectedPostId(null);
     };
-    window.addEventListener('keydown', onEsc);
-    document.body.style.overflow = 'hidden';
+    window.addEventListener("keydown", onEsc);
+    document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener('keydown', onEsc);
-      document.body.style.overflow = '';
+      window.removeEventListener("keydown", onEsc);
+      document.body.style.overflow = "";
     };
   }, [post, setSelectedPostId]);
 
@@ -84,16 +90,22 @@ export function PostModal() {
 
   const postComments = comments.filter((c) => c.postId === post.id);
   const discount = discountPercent(product.price, product.comparePrice);
-  const isWholesaleView = salesMode === 'WHOLESALE' && isApprovedPartner;
+  const isWholesaleView = salesMode === "WHOLESALE" && isApprovedPartner;
   const pack = product.packDefinition;
   const maxPacks = Math.floor(product.stock / pack.unitsPerPack);
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
-    addComment(post.id, commentText, replyTarget?.id);
-    setCommentText('');
-    setReplyTarget(null);
+    if (!commentText.trim() || commentPending) return;
+    setCommentPending(true);
+    try {
+      if (await addComment(post.id, commentText, replyTarget?.id)) {
+        setCommentText("");
+        setReplyTarget(null);
+      }
+    } finally {
+      setCommentPending(false);
+    }
   };
 
   return (
@@ -117,7 +129,10 @@ export function PostModal() {
             <>
               <button
                 onClick={() =>
-                  setImgIdx((p) => (p - 1 + product.images.length) % product.images.length)
+                  setImgIdx(
+                    (p) =>
+                      (p - 1 + product.images.length) % product.images.length,
+                  )
                 }
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center"
                 aria-label="قبلی"
@@ -125,7 +140,9 @@ export function PostModal() {
                 <ChevronRight className="w-5 h-5" />
               </button>
               <button
-                onClick={() => setImgIdx((p) => (p + 1) % product.images.length)}
+                onClick={() =>
+                  setImgIdx((p) => (p + 1) % product.images.length)
+                }
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center"
                 aria-label="بعدی"
               >
@@ -137,11 +154,17 @@ export function PostModal() {
                     key={i}
                     onClick={() => setImgIdx(i)}
                     className={cn(
-                      'w-10 h-10 rounded-lg overflow-hidden border-2 transition-all',
-                      i === imgIdx ? 'border-gold-400 scale-105' : 'border-transparent opacity-60'
+                      "w-10 h-10 rounded-lg overflow-hidden border-2 transition-all",
+                      i === imgIdx
+                        ? "border-gold-400 scale-105"
+                        : "border-transparent opacity-60",
                     )}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={img}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))}
               </div>
@@ -189,13 +212,24 @@ export function PostModal() {
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div>
-              <h2 className="text-lg font-extrabold text-ink-900 leading-snug">{product.name}</h2>
+              <h2 className="text-lg font-extrabold text-ink-900 leading-snug">
+                {product.name}
+              </h2>
               <div className="flex flex-wrap items-center gap-2.5 mt-1.5 text-xs text-ink-500">
                 <span className="inline-flex items-center gap-1 bg-warning-light text-warning px-2 py-0.5 rounded-full font-bold">
                   <Star className="w-3.5 h-3.5 fill-current" />
-                  {formatNumber(product.rating)} ({formatNumber(product.reviewCount)} نظر)
+                  {product.serverManaged
+                    ? "امتیاز ثبت نشده"
+                    : formatNumber(product.rating) +
+                      " (" +
+                      formatNumber(product.reviewCount) +
+                      " نظر)"}
                 </span>
-                <span>{formatNumber(product.soldCount)} خرید ثبت‌شده</span>
+                <span>
+                  {product.serverManaged
+                    ? "آمار خرید منتشر نشده"
+                    : formatNumber(product.soldCount) + " خرید ثبت‌شده"}
+                </span>
                 <span>·</span>
                 <span>موجودی: {formatNumber(product.stock)} عدد</span>
               </div>
@@ -225,14 +259,18 @@ export function PostModal() {
                     </span>
                   ))}
                 </div>
-                {pack.priceMode === 'FIXED' ? (
+                {pack.priceMode === "FIXED" ? (
                   <div className="flex items-center justify-between pt-1">
                     <div>
                       <span className="text-[11px] text-ink-500 block">
-                        هر واحد عمده: {formatPrice(pack.wholesaleUnitPriceToman)}
+                        هر واحد عمده:{" "}
+                        {formatPrice(pack.wholesaleUnitPriceToman)}
                       </span>
                       <span className="text-base font-black text-ink-900">
-                        هر جین: {formatPrice(pack.wholesaleUnitPriceToman * pack.unitsPerPack)}
+                        هر جین:{" "}
+                        {formatPrice(
+                          pack.wholesaleUnitPriceToman * pack.unitsPerPack,
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -246,7 +284,11 @@ export function PostModal() {
                         {formatNumber(packCount)} جین
                       </span>
                       <button
-                        onClick={() => setPackCount((c) => Math.min(Math.max(1, maxPacks), c + 1))}
+                        onClick={() =>
+                          setPackCount((c) =>
+                            Math.min(Math.max(1, maxPacks), c + 1),
+                          )
+                        }
                         className="w-8 h-8 rounded-lg bg-surface border border-border font-bold"
                       >
                         +
@@ -255,11 +297,13 @@ export function PostModal() {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-ink-600">فروش عمده این مدل به صورت استعلامی است.</span>
+                    <span className="text-ink-600">
+                      فروش عمده این مدل به صورت استعلامی است.
+                    </span>
                     <button
                       onClick={() => {
                         setSelectedPostId(null);
-                        setRoute('inbox');
+                        setRoute("inbox");
                       }}
                       className="text-brand-600 font-extrabold underline"
                     >
@@ -280,10 +324,10 @@ export function PostModal() {
                         key={c}
                         onClick={() => setSelectedColor(c)}
                         className={cn(
-                          'px-2.5 py-1 rounded-lg text-xs font-semibold border',
+                          "px-2.5 py-1 rounded-lg text-xs font-semibold border",
                           selectedColor === c
-                            ? 'bg-buy text-buy-fg border-buy'
-                            : 'bg-surface border-border text-ink-700'
+                            ? "bg-buy text-buy-fg border-buy"
+                            : "bg-surface border-border text-ink-700",
                         )}
                       >
                         {c}
@@ -293,7 +337,8 @@ export function PostModal() {
                 </div>
                 <div>
                   <span className="text-xs font-bold text-ink-700 block mb-1.5">
-                    {product.sizeLabel || 'سایز'}: <bdi className="font-sans">{selectedSize}</bdi>
+                    {product.sizeLabel || "سایز"}:{" "}
+                    <bdi className="font-sans">{selectedSize}</bdi>
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {product.sizes.map((s) => (
@@ -301,10 +346,10 @@ export function PostModal() {
                         key={s}
                         onClick={() => setSelectedSize(s)}
                         className={cn(
-                          'px-2.5 py-1 rounded-lg text-xs font-semibold border',
+                          "px-2.5 py-1 rounded-lg text-xs font-semibold border",
                           selectedSize === s
-                            ? 'bg-buy text-buy-fg border-buy'
-                            : 'bg-surface border-border text-ink-700'
+                            ? "bg-buy text-buy-fg border-buy"
+                            : "bg-surface border-border text-ink-700",
                         )}
                       >
                         <bdi className="font-sans">{s}</bdi>
@@ -319,19 +364,19 @@ export function PostModal() {
             <div>
               <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-canvas-sunken border border-border text-xs font-bold">
                 {[
-                  { id: 'specs' as const, label: 'مشخصات' },
-                  { id: 'size' as const, label: 'راهنمای سایز' },
-                  { id: 'hygiene' as const, label: 'ارسال و مرجوعی' },
-                  { id: 'faq' as const, label: 'پرسش‌ها' },
+                  { id: "specs" as const, label: "مشخصات" },
+                  { id: "size" as const, label: "راهنمای سایز" },
+                  { id: "hygiene" as const, label: "ارسال و مرجوعی" },
+                  { id: "faq" as const, label: "پرسش‌ها" },
                 ].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id)}
                     className={cn(
-                      'py-2 rounded-lg transition-all',
+                      "py-2 rounded-lg transition-all",
                       activeTab === t.id
-                        ? 'bg-surface text-brand-500 shadow-e1'
-                        : 'text-ink-500 hover:text-ink-800'
+                        ? "bg-surface text-brand-500 shadow-e1"
+                        : "text-ink-500 hover:text-ink-800",
                     )}
                   >
                     {t.label}
@@ -340,7 +385,7 @@ export function PostModal() {
               </div>
 
               <div className="mt-2.5 p-3.5 rounded-2xl bg-canvas-sunken/60 border border-border text-xs text-ink-700 space-y-2 leading-relaxed">
-                {activeTab === 'specs' && (
+                {activeTab === "specs" && (
                   <div className="space-y-2">
                     {product.specs.map((sp) => (
                       <div
@@ -348,19 +393,24 @@ export function PostModal() {
                         className="flex items-start justify-between gap-3 py-1 border-b border-border/60 last:border-none"
                       >
                         <span className="text-ink-500">{sp.label}</span>
-                        <span className="font-bold text-ink-900 text-left">{sp.value}</span>
+                        <span className="font-bold text-ink-900 text-left">
+                          {sp.value}
+                        </span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {activeTab === 'size' && <p>{product.sizeGuideNote}</p>}
+                {activeTab === "size" && <p>{product.sizeGuideNote}</p>}
 
-                {activeTab === 'hygiene' && (
+                {activeTab === "hygiene" && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 font-bold text-ink-900">
                       <Truck className="w-4 h-4 text-brand-500" />
-                      <span>ارسال از انبار تهران (پیک روزانه تهران / پست پیشتاز ۲ تا ۴ روزه)</span>
+                      <span>
+                        ارسال از انبار تهران (پیک روزانه تهران / پست پیشتاز ۲ تا
+                        ۴ روزه)
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 font-bold text-ink-900">
                       <RotateCcw className="w-4 h-4 text-success" />
@@ -375,11 +425,12 @@ export function PostModal() {
                   </div>
                 )}
 
-                {activeTab === 'faq' && (
+                {activeTab === "faq" && (
                   <div className="space-y-2.5">
                     {product.faqs.length === 0 ? (
                       <p className="text-ink-500">
-                        می‌توانید پرسش خود را در بخش کامنت‌های پایین همین پنجره ثبت کنید تا پشتیبانی رسمی پاسخ دهد.
+                        می‌توانید پرسش خود را در بخش کامنت‌های پایین همین پنجره
+                        ثبت کنید تا پشتیبانی رسمی پاسخ دهد.
                       </p>
                     ) : (
                       product.faqs.map((f, idx) => (
@@ -413,10 +464,14 @@ export function PostModal() {
             {/* Comments List */}
             <div className="pt-2 border-t border-border space-y-3">
               <h3 className="font-extrabold text-sm text-ink-900">
-                دیدگاه‌ها و پرسش‌های خریداران ({formatNumber(postComments.length)})
+                دیدگاه‌ها و پرسش‌های خریداران (
+                {formatNumber(postComments.length)})
               </h3>
               {postComments.map((cm) => (
-                <div key={cm.id} className="p-3 rounded-2xl bg-canvas-sunken/70 space-y-2">
+                <div
+                  key={cm.id}
+                  className="p-3 rounded-2xl bg-canvas-sunken/70 space-y-2"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <img
@@ -443,7 +498,10 @@ export function PostModal() {
 
                     <button
                       onClick={() =>
-                        setReplyTarget({ id: cm.id, authorName: cm.author.name })
+                        setReplyTarget({
+                          id: cm.id,
+                          authorName: cm.author.name,
+                        })
                       }
                       className="text-[11px] font-bold text-brand-500 hover:underline flex items-center gap-1"
                     >
@@ -452,7 +510,9 @@ export function PostModal() {
                     </button>
                   </div>
 
-                  <p className="text-xs text-ink-800 leading-relaxed">{cm.text}</p>
+                  <p className="text-xs text-ink-800 leading-relaxed">
+                    {cm.text}
+                  </p>
 
                   {/* Quick Reactions */}
                   <div className="flex items-center gap-1.5">
@@ -461,10 +521,10 @@ export function PostModal() {
                         key={rx}
                         onClick={() => toggleCommentReaction(cm.id, rx)}
                         className={cn(
-                          'px-2 py-0.5 rounded-full text-[11px] border transition-all',
+                          "px-2 py-0.5 rounded-full text-[11px] border transition-all",
                           cm.activeReaction === rx
-                            ? 'bg-brand-50 border-brand-500 font-bold'
-                            : 'bg-surface border-border opacity-80 hover:opacity-100'
+                            ? "bg-brand-50 border-brand-500 font-bold"
+                            : "bg-surface border-border opacity-80 hover:opacity-100",
                         )}
                       >
                         {rx}
@@ -481,14 +541,18 @@ export function PostModal() {
                       {cm.replies.map((rep) => (
                         <div key={rep.id} className="text-xs space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-extrabold text-ink-900">{rep.authorName}</span>
+                            <span className="font-extrabold text-ink-900">
+                              {rep.authorName}
+                            </span>
                             {rep.isSeller && (
                               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-buy text-buy-fg">
                                 پاسخ رسمی فروشگاه
                               </span>
                             )}
                           </div>
-                          <p className="text-ink-700 leading-relaxed">{rep.text}</p>
+                          <p className="text-ink-700 leading-relaxed">
+                            {rep.text}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -519,13 +583,13 @@ export function PostModal() {
                 placeholder={
                   replyTarget
                     ? `پاسخ به ${replyTarget.authorName}...`
-                    : 'دیدگاه یا سؤال خود را بنویسید...'
+                    : "دیدگاه یا سؤال خود را بنویسید..."
                 }
                 className="flex-1 text-xs bg-transparent text-ink-900 placeholder:text-ink-400 outline-none py-1.5"
               />
               <button
                 type="submit"
-                disabled={!commentText.trim()}
+                disabled={commentPending || !commentText.trim()}
                 className="text-xs font-extrabold text-brand-500 disabled:opacity-35 flex items-center gap-1"
               >
                 <Send className="w-4 h-4 -scale-x-100" />
@@ -546,8 +610,12 @@ export function PostModal() {
                   </div>
                 )}
                 <span className="text-lg font-black text-ink-900">
-                  {isWholesaleView && pack.priceMode === 'FIXED'
-                    ? formatPrice(pack.wholesaleUnitPriceToman * pack.unitsPerPack * packCount)
+                  {isWholesaleView && pack.priceMode === "FIXED"
+                    ? formatPrice(
+                        pack.wholesaleUnitPriceToman *
+                          pack.unitsPerPack *
+                          packCount,
+                      )
                     : formatPrice(product.price)}
                 </span>
               </div>
@@ -558,7 +626,12 @@ export function PostModal() {
                   className="w-10 h-10 rounded-xl bg-canvas-sunken flex items-center justify-center text-ink-700"
                   aria-label="لایک"
                 >
-                  <Heart className={cn('w-5 h-5', post.isLiked && 'fill-danger text-danger')} />
+                  <Heart
+                    className={cn(
+                      "w-5 h-5",
+                      post.isLiked && "fill-danger text-danger",
+                    )}
+                  />
                 </button>
                 <button
                   onClick={() => toggleSavePost(post.id)}
@@ -566,11 +639,14 @@ export function PostModal() {
                   aria-label="ذخیره"
                 >
                   <Bookmark
-                    className={cn('w-5 h-5', post.isSaved && 'fill-brand-500 text-brand-500')}
+                    className={cn(
+                      "w-5 h-5",
+                      post.isSaved && "fill-brand-500 text-brand-500",
+                    )}
                   />
                 </button>
                 {isWholesaleView ? (
-                  pack.priceMode === 'FIXED' ? (
+                  pack.priceMode === "FIXED" ? (
                     <button
                       disabled={maxPacks < 1}
                       onClick={() => addToWholesaleCart(product.id, packCount)}
@@ -583,7 +659,7 @@ export function PostModal() {
                     <button
                       onClick={() => {
                         setSelectedPostId(null);
-                        setRoute('inbox');
+                        setRoute("inbox");
                       }}
                       className="px-5 py-2.5 rounded-xl bg-buy text-buy-fg font-bold text-xs"
                     >
@@ -593,11 +669,20 @@ export function PostModal() {
                 ) : (
                   <button
                     disabled={product.stock === 0}
-                    onClick={() => addToRetailCart(product.id, selectedColor, selectedSize, 1)}
+                    onClick={() =>
+                      addToRetailCart(
+                        product.id,
+                        selectedColor,
+                        selectedSize,
+                        1,
+                      )
+                    }
                     className="px-5 py-2.5 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover font-bold text-sm flex items-center gap-2 shadow-e1 disabled:opacity-50"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    <span>{product.stock > 0 ? 'افزودن به سبد' : 'ناموجود'}</span>
+                    <span>
+                      {product.stock > 0 ? "افزودن به سبد" : "ناموجود"}
+                    </span>
                   </button>
                 )}
               </div>

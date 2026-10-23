@@ -29,6 +29,10 @@ function dto(p: Awaited<ReturnType<typeof rows>>[number]): Product {
     description: p.description,
     image: p.imagePath,
     price: p.price.toString(),
+    availableUnits: p.variants.reduce(
+      (sum, v) => sum + Math.max(0, v.stock - v.reserved),
+      0,
+    ),
     ...(p.previousPrice?.gt(p.price)
       ? { previous: p.previousPrice.toString() }
       : {}),

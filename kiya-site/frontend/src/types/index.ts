@@ -1,17 +1,19 @@
 export type CategorySlug =
-  | 'bags'
-  | 'shoes'
-  | 'belts'
-  | 'personal-accessories'
-  | 'mobile-accessories'
-  | 'small-decor-gifts'
-  | 'underwear';
+  | "other"
+  | "bags"
+  | "shoes"
+  | "belts"
+  | "personal-accessories"
+  | "mobile-accessories"
+  | "small-decor-gifts"
+  | "underwear";
 
-export type AudienceType = 'زنانه' | 'مردانه' | 'یونیسکس';
+export type AudienceType = "زنانه" | "مردانه" | "یونیسکس";
 
-export type PartnerStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'EXPIRED';
+export type PartnerStatus =
+  "NONE" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED" | "EXPIRED";
 
-export type SalesMode = 'RETAIL' | 'WHOLESALE';
+export type SalesMode = "RETAIL" | "WHOLESALE";
 
 export interface PackComponent {
   variantLabel: string;
@@ -21,12 +23,12 @@ export interface PackComponent {
 export interface PackDefinition {
   id: string;
   label: string;
-  type: 'FIXED_ASSORTMENT' | 'HOMOGENEOUS';
+  type: "FIXED_ASSORTMENT" | "HOMOGENEOUS";
   unitsPerPack: number;
   version: number;
   components: PackComponent[];
   wholesaleUnitPriceToman: number;
-  priceMode: 'FIXED' | 'INQUIRY';
+  priceMode: "FIXED" | "INQUIRY";
 }
 
 export interface ProductSpecItem {
@@ -35,6 +37,9 @@ export interface ProductSpecItem {
 }
 
 export interface Product {
+  variantRefs?: { id: string; name: string }[];
+  serverManaged?: boolean;
+  isDemo?: boolean;
   id: string;
   slug: string;
   sku: string;
@@ -67,7 +72,7 @@ export interface Product {
   createdAt: string;
 }
 
-export type QuickReaction = '♥' | '👍' | '🔥' | '❓';
+export type QuickReaction = "♥" | "👍" | "🔥" | "❓";
 
 export interface CommentReply {
   id: string;
@@ -118,7 +123,7 @@ export interface StoryFrame {
 
 export interface Story {
   id: string;
-  type: 'drop' | 'sale' | 'collection' | 'live';
+  type: "drop" | "sale" | "collection" | "live";
   title: string;
   subtitle: string;
   coverImage: string;
@@ -143,7 +148,7 @@ export interface WholesaleCartItem {
 
 export interface ActivityEvent {
   id: string;
-  type: 'purchase' | 'view' | 'low_stock' | 'review';
+  type: "purchase" | "view" | "low_stock" | "review";
   text: string;
   timeAgo: string;
   productId?: string;
@@ -166,12 +171,7 @@ export interface PartnerApplication {
 }
 
 export type OrderStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'preparing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
+  "pending" | "confirmed" | "preparing" | "shipped" | "delivered" | "cancelled";
 
 export interface OrderLineSnapshot {
   productId: string;
@@ -200,14 +200,14 @@ export interface Order {
   discountToman: number;
   subtotalToman: number;
   totalToman: number;
-  paymentMethod: 'zarinpal' | 'wallet' | 'card_to_card';
+  paymentMethod: "zarinpal" | "wallet" | "card_to_card";
   lines: OrderLineSnapshot[];
   createdAt: string;
 }
 
 export interface DirectMessage {
   id: string;
-  sender: 'customer' | 'support' | 'bot';
+  sender: "customer" | "support" | "bot";
   senderName: string;
   text: string;
   createdAt: string;
@@ -220,7 +220,7 @@ export interface DirectMessage {
 export interface DirectThread {
   id: string;
   title: string;
-  tag: 'ربات سفارش' | 'پشتیبانی خرید' | 'استعلام عمده';
+  tag: "ربات سفارش" | "پشتیبانی خرید" | "استعلام عمده";
   unreadCount: number;
   customerName: string;
   customerPhone: string;
@@ -248,7 +248,7 @@ export interface MagIssue {
 
 export interface WalletEntry {
   id: string;
-  type: 'TOPUP' | 'ORDER_PAYMENT' | 'PROMO_CREDIT' | 'REFUND';
+  type: "TOPUP" | "ORDER_PAYMENT" | "PROMO_CREDIT" | "REFUND";
   title: string;
   amountToman: number; // positive or negative
   isPromoCredit: boolean;
@@ -257,13 +257,13 @@ export interface WalletEntry {
 }
 
 export type AdminRoleKey =
-  | 'OWNER'
-  | 'ADMIN'
-  | 'WAREHOUSE'
-  | 'SUPPORT'
-  | 'CONTENT'
-  | 'FINANCE'
-  | 'AUDITOR';
+  | "OWNER"
+  | "ADMIN"
+  | "WAREHOUSE"
+  | "SUPPORT"
+  | "CONTENT"
+  | "FINANCE"
+  | "AUDITOR";
 
 export interface RoleDefinition {
   key: AdminRoleKey;
@@ -293,24 +293,18 @@ export interface AuditLogEntry {
   target: string;
   detail: string;
   createdAt: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: "info" | "warning" | "critical";
 }
 
 export interface IntegrationRecord {
   id: string;
   title: string;
   publicHandle: string;
-  status: 'UNCONFIGURED' | 'REQUIRES_NEW_SECRET' | 'UNVERIFIED' | 'MANUAL_PACK';
+  status: "UNCONFIGURED" | "REQUIRES_NEW_SECRET" | "UNVERIFIED" | "MANUAL_PACK";
   envVarName: string;
   note: string;
   lastChecked: string;
 }
 
 export type StoreRoute =
-  | 'feed'
-  | 'explore'
-  | 'wholesale'
-  | 'profile'
-  | 'inbox'
-  | 'mag'
-  | 'account';
+  "feed" | "explore" | "wholesale" | "profile" | "inbox" | "mag" | "account";

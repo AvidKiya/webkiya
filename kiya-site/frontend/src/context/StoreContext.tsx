@@ -28,21 +28,10 @@ import type {
   QuickReaction,
   StoreRoute,
 } from "../types";
-import { initialProducts } from "../data/products";
+import { fetchCatalog, api } from "../services/catalog";
 import {
-  initialPosts,
-  initialComments,
-  initialStories,
-  initialActivities,
-  initialMagIssues,
-  initialDirectThreads,
-} from "../data/posts";
-import {
-  ROLE_DEFINITIONS,
-  initialOrders,
   initialPartnerApplications,
   initialStockLedger,
-  initialWalletEntries,
   initialAuditLogs,
 } from "../data/admin";
 
@@ -61,6 +50,9 @@ interface ToastState {
 }
 
 interface StoreContextValue {
+  catalogState: "loading" | "ready" | "error";
+  catalogError: string;
+  reloadCatalog: () => void;
   // Navigation & Theme
   viewMode: "storefront" | "admin";
   setViewMode: (v: "storefront" | "admin") => void;
@@ -97,7 +89,11 @@ interface StoreContextValue {
   toggleLikePost: (postId: string) => void;
   toggleSavePost: (postId: string) => void;
   markStorySeen: (storyId: string) => void;
-  addComment: (postId: string, text: string, replyToCommentId?: string) => void;
+  addComment: (
+    postId: string,
+    text: string,
+    replyToCommentId?: string,
+  ) => Promise<boolean>;
   toggleCommentReaction: (commentId: string, reaction: QuickReaction) => void;
 
   // Separate Retail & Wholesale Carts
@@ -202,9 +198,16 @@ const ACTOR_NAMES: Record<AdminRoleKey, string> = {
 };
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [viewMode, setViewMode] = useState<"storefront" | "admin">(
+  const [viewMode, setViewModeState] = useState<"storefront" | "admin">(
     "storefront",
   );
+  const setViewMode = useCallback((mode: "storefront" | "admin") => {
+    if (mode === "admin") {
+      window.location.assign("/admin");
+      return;
+    }
+    setViewModeState(mode);
+  }, []);
   const routes: StoreRoute[] = [
     "feed",
     "explore",
@@ -231,9 +234,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const checkoutOpen = false;
+  const setCheckoutOpen = useCallback((open: boolean) => {
+    if (open) setCartSheetOpen(true);
+  }, []);
   const [announcementBanner, setAnnouncementBanner] = useState(
-    "هر روز جدید، بدون واسطه · ارسال رایگان سفارش‌های تکی بالای ۲ میلیون تومان · خرید عمده همکاران از ۱ جین",
+    "هر روز جدید، بدون واسطه · عمده از یک جین با تأیید پشتیبانی · پرداخت و ارسال هنوز فعال نیست",
   );
   const [ordersPaused, setOrdersPaused] = useState(false);
 
@@ -246,60 +252,87 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   });
   const [salesMode, setSalesModeRaw] = useState<SalesMode>("RETAIL");
 
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
-  const [comments, setComments] = useState<Comment[]>(initialComments);
-  const [stories, setStories] = useState<Story[]>(initialStories);
-  const [activities] = useState<ActivityEvent[]>(initialActivities);
-  const [magIssues] = useState<MagIssue[]>(initialMagIssues);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [activities] = useState<ActivityEvent[]>([]);
+  const [magIssues] = useState<MagIssue[]>([]);
 
-  const [retailCart, setRetailCart] = useState<RetailCartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("kiya-rebuild-retail-cart-v1");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [wholesaleCart, setWholesaleCart] = useState<WholesaleCartItem[]>(
-    () => {
-      try {
-        const saved = localStorage.getItem("kiya-rebuild-wholesale-cart-v1");
-        return saved ? JSON.parse(saved) : [];
-      } catch {
-        return [];
-      }
-    },
-  );
+  const [catalogState, setCatalogState] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogRevision, setCatalogRevision] = useState(0);
+  const reloadCatalog = useCallback(() => setCatalogRevision((n) => n + 1), []);
+  useEffect(() => {
+    const controller = new AbortController();
+    setCatalogState("loading");
+    setCatalogError("");
+    fetchCatalog(controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setProducts(data.products);
+        setPosts(data.posts);
+        setComments([]);
+        setCatalogState("ready");
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setProducts([]);
+        setPosts([]);
+        setComments([]);
+        setCatalogError(
+          error instanceof Error ? error.message : "ارتباط با سرور برقرار نشد.",
+        );
+        setCatalogState("error");
+      });
+    return () => controller.abort();
+  }, [catalogRevision]);
+  const [retailCart, setRetailCart] = useState<RetailCartItem[]>([]);
+  const [wholesaleCart, setWholesaleCart] = useState<WholesaleCartItem[]>([]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "kiya-rebuild-retail-cart-v1",
-        JSON.stringify(retailCart),
-      );
-    } catch {}
-  }, [retailCart]);
-
+    setSelectedPostId(null);
+    setActiveStoryId(null);
+    setCartSheetOpen(false);
+  }, [route]);
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        "kiya-rebuild-wholesale-cart-v1",
-        JSON.stringify(wholesaleCart),
-      );
-    } catch {}
-  }, [wholesaleCart]);
-
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [walletEntries, setWalletEntries] =
-    useState<WalletEntry[]>(initialWalletEntries);
+    let active = true;
+    api<{
+      lines: {
+        id: string;
+        productId: string;
+        selection: string;
+        quantity: number;
+      }[];
+    }>("/api/cart?mode=RETAIL")
+      .then((data) => {
+        if (active)
+          setRetailCart(
+            data.lines.map((line) => ({
+              key: line.id,
+              productId: line.productId,
+              color: line.selection,
+              size: "",
+              quantity: line.quantity,
+            })),
+          );
+      })
+      .catch(() => {
+        if (active) setRetailCart([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [cartSheetOpen, route]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [walletEntries, setWalletEntries] = useState<WalletEntry[]>([]);
   const [hasSpunWheelToday, setHasSpunWheelToday] = useState(false);
   const [partnerApplications, setPartnerApplications] = useState<
     PartnerApplication[]
   >(initialPartnerApplications);
-  const [directThreads, setDirectThreads] =
-    useState<DirectThread[]>(initialDirectThreads);
+  const [directThreads] = useState<DirectThread[]>([]);
 
   const [activeAdminRole, setActiveAdminRole] = useState<AdminRoleKey>("OWNER");
   const [stockLedger, setStockLedger] =
@@ -340,69 +373,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const switchDemoPersona = useCallback(
-    (preset: "guest" | "pending" | "approved") => {
-      if (preset === "guest") {
-        setCustomer({
-          id: "cust-guest",
-          name: "مهسا رادمنش",
-          phone: "09121112233",
-          isVerifiedOtp: true,
-          partnerStatus: "NONE",
-        });
-        setSalesModeRaw("RETAIL");
-        showToast(
-          "نمای مشتری عادی (تک‌فروشی) فعال شد؛ قیمت‌های عمده مخفی هستند.",
-          "info",
-        );
-      } else if (preset === "pending") {
-        setCustomer({
-          id: "cust-pending-1",
-          name: "بهرام رستمی",
-          phone: "09134445566",
-          isVerifiedOtp: true,
-          partnerStatus: "PENDING",
-          businessName: "بوتیک اکسسوری آفتاب",
-        });
-        setSalesModeRaw("RETAIL");
-        showToast(
-          "نمای متقاضی همکاری (در انتظار تأیید پشتیبانی) فعال شد.",
-          "info",
-        );
-      } else {
-        setCustomer({
-          id: "cust-approved-1",
-          name: "حمیدرضا کریمی",
-          phone: "09173334455",
-          isVerifiedOtp: true,
-          partnerStatus: "APPROVED",
-          businessName: "گالری چرم پارسیان",
-        });
-        setSalesModeRaw("WHOLESALE");
-        showToast(
-          "حساب همکار تأییدشده فعال شد! قیمت عمده و خرید جینی باز است.",
-          "success",
-        );
-      }
+    (_preset: "guest" | "pending" | "approved") => {
+      showToast(
+        "وضعیت همکاری فقط با ورود و تأیید پشتیبانی در سرور تغییر می‌کند.",
+        "warning",
+      );
     },
     [showToast],
   );
-
-  const verifyCustomerOtp = useCallback((name: string, phone: string) => {
-    setCustomer((prev) => ({
-      ...prev,
-      name: name.trim() || prev.name,
-      phone: phone.trim() || prev.phone,
-      isVerifiedOtp: true,
-    }));
-  }, []);
-
-  const hasPermission = useCallback(
-    (perm: string) => {
-      const roleDef = ROLE_DEFINITIONS.find((r) => r.key === activeAdminRole);
-      return roleDef ? roleDef.permissions.includes(perm) : false;
+  const verifyCustomerOtp = useCallback(
+    (_name: string, _phone: string) => {
+      showToast(
+        "تأیید پیامک هنوز پیکربندی نشده است؛ ورود تأیید نشد.",
+        "warning",
+      );
     },
-    [activeAdminRole],
+    [showToast],
   );
+  const hasPermission = useCallback((_perm: string) => false, []);
 
   const appendAudit = useCallback(
     (
@@ -466,67 +454,81 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  type CommentDTO = {
+    id: string;
+    postId: string;
+    name: string;
+    text: string;
+    parentId: string | null;
+    createdAt: string;
+    isOfficial: boolean;
+  };
+  const loadComments = useCallback(async (postId: string) => {
+    const data = await api<{ items: CommentDTO[] }>(
+      "/api/posts/" + encodeURIComponent(postId) + "/comments",
+    );
+    const rows: Comment[] = data.items
+      .filter((c) => !c.parentId)
+      .map((c) => ({
+        id: c.id,
+        postId: c.postId,
+        author: {
+          name: c.name,
+          username: "",
+          avatar: "/brand/profile.webp",
+          isVerifiedBuyer: false,
+          isSeller: c.isOfficial,
+        },
+        text: c.text,
+        likes: 0,
+        createdAt: c.createdAt,
+        replies: data.items
+          .filter((r) => r.parentId === c.id)
+          .map((r) => ({
+            id: r.id,
+            authorName: r.name,
+            authorAvatar: "/brand/profile.webp",
+            isSeller: r.isOfficial,
+            text: r.text,
+            createdAt: r.createdAt,
+          })),
+      }));
+    setComments((prev) => [
+      ...prev.filter((c) => c.postId !== postId),
+      ...rows,
+    ]);
+  }, []);
+  useEffect(() => {
+    if (!selectedPostId) return;
+    let live = true;
+    loadComments(selectedPostId).catch((error) => {
+      if (live) showToast(error.message, "error");
+    });
+    return () => {
+      live = false;
+    };
+  }, [selectedPostId, loadComments, showToast]);
   const addComment = useCallback(
-    (postId: string, text: string, replyToCommentId?: string) => {
-      const clean = text.trim();
-      if (!clean) return;
-      if (replyToCommentId) {
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === replyToCommentId
-              ? {
-                  ...c,
-                  replies: [
-                    ...c.replies,
-                    {
-                      id: `rep-${Date.now()}`,
-                      authorName: customer.name,
-                      authorAvatar:
-                        "https://images.pexels.com/photos/35367077/pexels-photo-35367077.jpeg?auto=compress&cs=tinysrgb&dpr=1&h=100&w=100",
-                      text: clean,
-                      createdAt: new Date().toISOString(),
-                    },
-                  ],
-                }
-              : c,
-          ),
+    async (postId: string, text: string, replyToCommentId?: string) => {
+      if (!text.trim()) return false;
+      try {
+        await api("/api/posts/" + encodeURIComponent(postId) + "/comments", {
+          body: text.trim(),
+          ...(replyToCommentId ? { parentId: replyToCommentId } : {}),
+          clientMutationId: crypto.randomUUID(),
+        });
+        await loadComments(postId);
+        showToast("دیدگاه در سرور ثبت شد.", "success");
+        return true;
+      } catch (error) {
+        showToast(
+          error instanceof Error ? error.message : "ثبت دیدگاه ناموفق بود.",
+          "error",
         );
-      } else {
-        const hasDeliveredOrder = orders.some(
-          (o) =>
-            o.status === "delivered" &&
-            o.customerPhone === customer.phone &&
-            o.lines.some((l) => {
-              const post = posts.find((p) => p.id === postId);
-              return post && l.productId === post.productId;
-            }),
-        );
-        const newComment: Comment = {
-          id: `cm-${Date.now()}`,
-          postId,
-          author: {
-            name: customer.name,
-            username: "kiya_user",
-            avatar:
-              "https://images.pexels.com/photos/35367077/pexels-photo-35367077.jpeg?auto=compress&cs=tinysrgb&dpr=1&h=100&w=100",
-            isVerifiedBuyer: hasDeliveredOrder || customer.id === "cust-guest",
-          },
-          text: clean,
-          likes: 0,
-          isLiked: false,
-          createdAt: new Date().toISOString(),
-          replies: [],
-        };
-        setComments((prev) => [newComment, ...prev]);
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p,
-          ),
-        );
+        return false;
       }
-      showToast("دیدگاه شما ثبت شد", "success");
     },
-    [customer, orders, posts, showToast],
+    [showToast, loadComments],
   );
 
   const toggleCommentReaction = useCallback(
@@ -553,37 +555,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Retail Cart
   const addToRetailCart = useCallback(
-    (productId: string, color: string, size: string, qty = 1) => {
-      if (ordersPaused) {
-        showToast("ثبت سفارش موقتاً توسط مدیریت متوقف شده است.", "warning");
+    async (productId: string, color: string, _size: string, qty = 1) => {
+      const product = products.find((p) => p.id === productId),
+        variant = product?.variantRefs?.find((v) => v.name === color);
+      if (!variant) {
+        showToast("رنگ معتبر سروری انتخاب نشده است.", "error");
         return;
       }
-      const product = products.find((p) => p.id === productId);
-      if (!product || product.stock < qty) {
-        showToast("موجودی این کالا کافی نیست.", "error");
-        return;
+      try {
+        await api("/api/cart", {
+          mode: "RETAIL",
+          itemId: variant.id,
+          quantity: qty,
+          requestId: crypto.randomUUID(),
+        });
+        setCartSheetOpen(true);
+        showToast("کالا در سبد سروری ذخیره شد.", "success");
+      } catch (error) {
+        showToast(
+          error instanceof Error ? error.message : "افزودن ناموفق بود.",
+          "error",
+        );
       }
-      const key = `${productId}__${color}__${size}`;
-      setRetailCart((prev) => {
-        const existing = prev.find((i) => i.key === key);
-        const currentQty = existing ? existing.quantity : 0;
-        if (currentQty + qty > product.stock) {
-          showToast(
-            `حداکثر موجودی قابل خرید ${product.stock} عدد است.`,
-            "warning",
-          );
-          return prev;
-        }
-        if (existing) {
-          return prev.map((i) =>
-            i.key === key ? { ...i, quantity: i.quantity + qty } : i,
-          );
-        }
-        return [...prev, { key, productId, color, size, quantity: qty }];
-      });
-      showToast(`«${product.name}» به سبد خرید تکی اضافه شد`, "success");
     },
-    [ordersPaused, products, showToast],
+    [products, showToast],
   );
 
   const updateRetailQty = useCallback(
@@ -804,143 +799,61 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const submitPartnerApplication = useCallback(
-    (data: {
-      applicantName: string;
-      phone: string;
-      businessName: string;
-      city: string;
-      channelOrPage: string;
-      note: string;
-    }) => {
-      const appId = `pa-${Date.now().toString().slice(-4)}`;
-      const newApp: PartnerApplication = {
-        id: appId,
-        customerId: customer.id,
-        applicantName: data.applicantName,
-        phone: data.phone,
-        businessName: data.businessName,
-        city: data.city,
-        channelOrPage: data.channelOrPage,
-        note: data.note,
-        status: "PENDING",
-        submittedAt: new Date().toISOString(),
-        policyVersion: 1,
-      };
-      setPartnerApplications((prev) => [newApp, ...prev]);
-      setCustomer((prev) => ({
-        ...prev,
-        name: data.applicantName,
-        phone: data.phone,
-        businessName: data.businessName,
-        partnerStatus: "PENDING",
-      }));
-      showToast(
-        "درخواست همکاری عمده ثبت شد و در صف بررسی پشتیبانی قرار گرفت.",
-        "success",
-      );
+    async (
+      data: Parameters<StoreContextValue["submitPartnerApplication"]>[0],
+    ) => {
+      try {
+        await api("/api/partner", {
+          businessName: data.businessName,
+          city: data.city,
+          note: data.note,
+        });
+        setCustomer((prev) => ({
+          ...prev,
+          partnerStatus: "PENDING",
+          businessName: data.businessName,
+        }));
+        showToast(
+          "درخواست در سرور ثبت شد؛ تأیید پشتیبانی لازم است.",
+          "success",
+        );
+      } catch (error) {
+        showToast(
+          error instanceof Error ? error.message : "ثبت درخواست ناموفق بود.",
+          "error",
+        );
+      }
     },
-    [customer.id, showToast],
+    [showToast],
   );
 
-  // Direct Inbox & Bot
+  // No fake delivery receipts or local support impersonation.
   const sendDirectMessage = useCallback(
     (
-      threadId: string,
-      text: string,
-      sender: "customer" | "support" | "bot",
-      options?: {
+      _threadId: string,
+      _text: string,
+      _sender: "customer" | "support" | "bot",
+      _options?: {
         isInternalNote?: boolean;
         productIdAttachment?: string;
         orderCodeAttachment?: string;
       },
     ) => {
-      const clean = text.trim();
-      if (!clean) return;
-      setDirectThreads((prev) =>
-        prev.map((th) => {
-          if (th.id !== threadId) return th;
-          return {
-            ...th,
-            updatedAt: new Date().toISOString(),
-            unreadCount: sender === "customer" ? 0 : th.unreadCount,
-            messages: [
-              ...th.messages,
-              {
-                id: `msg-${Date.now()}`,
-                sender,
-                senderName:
-                  sender === "customer"
-                    ? customer.name
-                    : options?.isInternalNote
-                      ? `یادداشت محرمانه (${ACTOR_NAMES[activeAdminRole]})`
-                      : `${ACTOR_NAMES[activeAdminRole]} · پشتیبانی کیا`,
-                text: clean,
-                createdAt: new Date().toISOString(),
-                isInternalNote: options?.isInternalNote,
-                productIdAttachment: options?.productIdAttachment,
-                orderCodeAttachment: options?.orderCodeAttachment,
-              },
-            ],
-          };
-        }),
+      showToast(
+        "پیام‌رسان هنوز متصل نیست؛ پیامی برای پشتیبانی ارسال نشد.",
+        "warning",
       );
-      if (options?.isInternalNote) {
-        appendAudit(
-          "support:internal_note",
-          threadId,
-          "ثبت یادداشت داخلی محرمانه روی پرونده پشتیبانی",
-        );
-      }
     },
-    [customer.name, activeAdminRole, appendAudit],
+    [showToast],
   );
-
   const triggerBotQuickAction = useCallback(
-    (action: string) => {
-      let replyText = "";
-      let attachedOrder: string | undefined;
-      if (action === "TRACK_LAST") {
-        const latest = orders[0];
-        if (latest) {
-          replyText = `آخرین سفارش ثبت‌شده در سامانه: کد ${latest.code} به نام «${latest.customerName}» — روش ارسال: ${latest.shippingMethod}. برای مشاهده تایم‌لاین کامل روی کارت زیر بزنید.`;
-          attachedOrder = latest.code;
-        } else {
-          replyText = "هنوز سفارشی ثبت نشده است.";
-        }
-      } else if (action === "WHOLESALE_INFO") {
-        replyText =
-          "شرایط قطعی عمده‌فروشی کیا: ۱) ثبت و تأیید حساب همکاری در بخش «عمده و همکاری» · ۲) حداقل سفارش فقط ۱ جین کامل با گام ۱ جین (بدون حداقل مبلغ اضافی!) · ۳) نمایش هر سه قیمت واحد عمده، جین و تک‌فروشی پس از تأیید.";
-      } else if (action === "SHIPPING_INFO") {
-        replyText =
-          "ارسال سفارش‌های تهران با پیک اختصاصی (امکان انتخاب بازه زمانی) و شهرستان با پست پیشتاز ۲ تا ۴ روز کاری انجام می‌شود. سفارش‌های تکی بالای ۲ میلیون تومان ارسال رایگان دارند.";
-      } else {
-        replyText =
-          "درخواست شما به صف کارشناسان پشتیبانی کیا ارجاع شد. میانگین زمان پاسخ‌گویی در ساعات کاری کمتر از ۱۰ دقیقه است.";
-      }
-
-      setDirectThreads((prev) =>
-        prev.map((th) =>
-          th.id === "th-bot"
-            ? {
-                ...th,
-                updatedAt: new Date().toISOString(),
-                messages: [
-                  ...th.messages,
-                  {
-                    id: `msg-bot-${Date.now()}`,
-                    sender: "bot",
-                    senderName: "ربات کیا (@kiyaco24bot)",
-                    text: replyText,
-                    orderCodeAttachment: attachedOrder,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
-              }
-            : th,
-        ),
+    (_action: string) => {
+      showToast(
+        "ربات هنوز متصل نیست؛ برای سفارش‌ها به حساب مشتری مراجعه کنید.",
+        "warning",
       );
     },
-    [orders],
+    [showToast],
   );
 
   // Admin Mutations with RBAC + Audit
@@ -1173,6 +1086,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value: StoreContextValue = {
+    catalogState,
+    catalogError,
+    reloadCatalog,
     viewMode,
     setViewMode,
     route,
