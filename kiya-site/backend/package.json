@@ -31,7 +31,8 @@
     "worker:telegram": "node scripts/telegram-worker.mjs",
     "worker:telegram:poll": "node scripts/telegram-worker.mjs --poll",
     "telegram:first-install:poll": "node scripts/telegram-first-install.mjs --poll",
-    "telegram:first-install:webhook": "node scripts/telegram-first-install.mjs --webhook"
+    "telegram:first-install:webhook": "node scripts/telegram-first-install.mjs --webhook",
+    "test:telegram:transport": "node tests/telegram-transport-smoke.mjs"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.8",

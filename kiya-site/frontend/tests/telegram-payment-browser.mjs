@@ -22,6 +22,13 @@ try {
     page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(base + "/#account");
+  await context.route("https://t.me/**", (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "Synthetic Telegram navigation; no provider request.",
+    }),
+  );
   await page
     .getByRole("heading", { name: "ورود با حساب تلگرام", exact: true })
     .waitFor();
@@ -44,7 +51,7 @@ try {
       r.request().postDataJSON()?.action === "start",
   );
   await page
-    .getByRole("button", { name: "دریافت لینک یک‌بارمصرف تلگرام", exact: true })
+    .getByRole("button", { name: "ورود مستقیم با ربات", exact: true })
     .click();
   const startResponse = await started;
   assert.equal(startResponse.status(), 201);
@@ -75,9 +82,8 @@ try {
     });
     assert.equal(response.status(), 200);
   }
-  await page
-    .getByRole("button", { name: "این حساب من است؛ ورود به سایت", exact: true })
-    .click();
+
+  await page.bringToFront();
   await page
     .getByRole("button", { name: "خروج از حساب", exact: true })
     .waitFor();

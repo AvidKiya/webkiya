@@ -1,3 +1,4 @@
+import { completeTelegramSession } from "./telegram-session";
 import { verifiedTelegramPhone } from "./telegram-identity";
 import { normalizePhone } from "./identity";
 import "server-only";
@@ -19,7 +20,12 @@ function proof(r: Request) {
   return value && /^[a-f0-9]{64}$/.test(value) ? value : null;
 }
 export const telegramInput = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("start") }).strict(),
+  z
+    .object({
+      action: z.literal("start"),
+      mode: z.literal("direct").optional(),
+    })
+    .strict(),
   z.object({ action: z.enum(["status", "finish"]), id: z.uuid() }).strict(),
 ]);
 export async function telegramLogin(
@@ -46,6 +52,7 @@ export async function telegramLogin(
       code = String(randomInt(100000, 1000000));
     const row = await db().telegramLogin.create({
       data: {
+        autoApprove: input.mode === "direct",
         selectorHash: hash(selector),
         browserHash: hash(browser),
         displayCode: code,
@@ -105,54 +112,17 @@ export async function telegramLogin(
         "NOT_APPROVED",
         "ورود را ابتدا داخل ربات تأیید کنید.",
       );
-    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${"telegram-user:" + row.telegramId},0))`;
-    let user = await tx.user.findUnique({
-      where: { telegramId: row.telegramId },
-    });
-    if (user && (!user.isActive || user.isDemo))
-      throw new ApiError(
-        403,
-        "ACCOUNT_DISABLED",
-        "این حساب برای ورود مشتری مجاز نیست.",
-      );
-    if (!user)
-      user = await tx.user.create({
-        data: {
-          kind: "CUSTOMER",
-          displayName: row.displayName || "مشتری کیا",
-          telegramId: row.telegramId,
-          telegramVerifiedAt: new Date(),
-        },
-      });
-    if (row.verifiedPhone)
-      user = await verifiedTelegramPhone(tx, user.id, row.verifiedPhone);
-    const token = randomBytes(32).toString("hex");
-    await tx.session.create({
-      data: {
-        userId: user.id,
-        permissionVersion: user.permissionVersion,
-        tokenHash: hash(token),
-        expiresAt: new Date(Date.now() + 8 * 3600000),
-      },
-    });
+    const response = await completeTelegramSession(
+      tx,
+      r,
+      row.telegramId,
+      row.displayName,
+      row.verifiedPhone,
+      "TELEGRAM",
+    );
     await tx.telegramLogin.update({
       where: { id: row.id },
       data: { consumedAt: new Date() },
-    });
-    await tx.auditLog.create({
-      data: {
-        actorId: user.id,
-        action: "auth:telegram_login",
-        resourceId: user.id,
-        data: { method: "TELEGRAM" },
-      },
-    });
-    const response = attachCookie(ok({ authenticated: true }), token, r);
-    response.cookies.set(cookieName, "", {
-      path: "/api/auth/telegram",
-      maxAge: 0,
-      httpOnly: true,
-      sameSite: "lax",
     });
     return response;
   });
@@ -228,11 +198,12 @@ export async function acceptTelegramUpdate(input: z.infer<typeof updateInput>) {
       const rows = await tx.$queryRaw<
         { id: string }[]
       >`SELECT id FROM "TelegramLogin" WHERE "telegramId"=${BigInt(from.id)} AND "expiresAt">now() AND "approvedAt" IS NOT NULL ORDER BY "createdAt" DESC LIMIT 1 FOR UPDATE`;
-      if (!rows.length) return { accepted: true };
+
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${"telegram-user:" + from.id},0))`;
       const user = await tx.user.findUnique({
         where: { telegramId: BigInt(from.id) },
       });
+      if (!rows.length && !user) return { accepted: true };
       const collision = await tx.user.findUnique({ where: { phone } });
       if (collision && collision.id !== user?.id) {
         await tx.telegramOutbox.create({
@@ -243,10 +214,11 @@ export async function acceptTelegramUpdate(input: z.infer<typeof updateInput>) {
         });
         return { accepted: true };
       }
-      await tx.telegramLogin.update({
-        where: { id: rows[0].id },
-        data: { verifiedPhone: phone },
-      });
+      if (rows.length)
+        await tx.telegramLogin.update({
+          where: { id: rows[0].id },
+          data: { verifiedPhone: phone },
+        });
       if (user?.isActive && !user.isDemo)
         await verifiedTelegramPhone(tx, user.id, phone);
       await tx.telegramOutbox.create({
@@ -263,13 +235,45 @@ export async function acceptTelegramUpdate(input: z.infer<typeof updateInput>) {
       confirm = callback?.data?.match(/^confirm:([A-Za-z0-9_-]{32})$/);
     const selector = start?.[1] || confirm?.[1];
     if (!selector) {
-      if (msg?.text?.startsWith("/start"))
+      if (msg?.text?.trim() === "/logout") {
+        const u = await tx.user.findUnique({
+          where: { telegramId: BigInt(from.id) },
+        });
+        if (u)
+          await tx.session.updateMany({
+            where: { userId: u.id, revokedAt: null },
+            data: { revokedAt: new Date() },
+          });
         await tx.telegramOutbox.create({
           data: {
-            chatId: BigInt(chat.id),
-            text: "برای ورود به حساب کیا، لینک ورود را از خود سایت باز کنید. کد یا لینک دیگران را تأیید نکنید.",
+            chatId: BigInt(from.id),
+            text: "نشست‌های سایت شما باطل شدند. برای ورود تازه فقط از لینک سایت خودتان استفاده کنید.",
           },
         });
+      }
+      if (msg?.text?.trim() === "/start") {
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${"telegram-user:" + from.id},0))`;
+        let u = await tx.user.findUnique({
+          where: { telegramId: BigInt(from.id) },
+        });
+        if (!u)
+          u = await tx.user.create({
+            data: {
+              kind: "CUSTOMER",
+              displayName: (from.first_name || "کاربر کیا").slice(0, 80),
+              telegramId: BigInt(from.id),
+              telegramVerifiedAt: new Date(),
+            },
+          });
+        if (u.isActive && !u.isDemo)
+          await tx.telegramOutbox.create({
+            data: {
+              chatId: BigInt(from.id),
+              requestContact: true,
+              text: "به کیا خوش آمدید. برای دریافت کد یک‌بارمصرف در تلگرام، شمارهٔ متعلق به همین حساب را با دکمهٔ زیر تأیید کنید؛ سپس در سایت دریافت کد را بزنید. ورود مستقیم از دکمهٔ سایت هم در دسترس است.",
+            },
+          });
+      }
       return { accepted: true };
     }
     const selectorHash = hash(selector);
@@ -289,14 +293,29 @@ export async function acceptTelegramUpdate(input: z.infer<typeof updateInput>) {
       });
       return { accepted: true };
     }
+    if (confirm && row.autoApprove) return { accepted: true };
     if (start) {
       await tx.telegramLogin.update({
         where: { id: row.id },
         data: {
           telegramId: BigInt(from.id),
+          ...(row.autoApprove
+            ? { approvedAt: row.approvedAt || new Date() }
+            : {}),
           displayName: (from.first_name || "مشتری کیا").slice(0, 80),
         },
       });
+      if (row.autoApprove) {
+        if (!row.approvedAt)
+          await tx.telegramOutbox.create({
+            data: {
+              chatId: BigInt(chat.id),
+              requestContact: true,
+              text: "ورود در مرورگری که لینک را ساخته انجام می‌شود؛ به همان صفحه برگردید. اگر درخواست شما نبود /logout را بفرستید. اشتراک شماره فقط برای فعال‌سازی روش OTP یا تأیید شماره است و برای ورود مستقیم لازم نیست.",
+            },
+          });
+        return { accepted: true };
+      }
       await tx.telegramOutbox.create({
         data: {
           chatId: BigInt(chat.id),

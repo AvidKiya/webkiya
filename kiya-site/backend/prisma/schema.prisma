@@ -331,6 +331,7 @@ model StoreSettings {
  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }
 model TelegramLogin {
+ autoApprove Boolean @default(false)
  verifiedPhone String? @db.VarChar(20)
  id String @id @default(uuid()) @db.Uuid
  selectorHash String @unique @db.VarChar(64)
@@ -377,5 +378,16 @@ model ManualPayment {
  reviewerId String? @db.Uuid
  reviewReason String? @db.VarChar(500)
  reviewedAt DateTime? @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
+model TelegramOtp {
+ id String @id @default(uuid()) @db.Uuid
+ browserHash String @db.VarChar(64)
+ codeHash String @db.VarChar(64)
+ telegramId BigInt?
+ attempts Int @default(0)
+ expiresAt DateTime @db.Timestamptz(3)
+ consumedAt DateTime? @db.Timestamptz(3)
  createdAt DateTime @default(now()) @db.Timestamptz(3)
 }

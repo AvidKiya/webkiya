@@ -465,7 +465,7 @@ async function expireFixture(id: string) {
 }
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "TelegramOtp","ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -1051,6 +1051,201 @@ describe("real PostgreSQL backend", () => {
         where: { userId: user.id, role: { key: "OWNER" } },
       }),
     ).toBe(0);
+  });
+  it("signs in the direct-link browser after private Start alone, without bot callback or browser confirmation", async () => {
+    await configure(await staff());
+    const r = await telegramAuth(
+      request("/api/auth/telegram", "POST", "", {
+        action: "start",
+        mode: "direct",
+      }),
+    );
+    expect(r.status).toBe(201);
+    const c = (await payload(r)).data,
+      cookieValue = cookie(r),
+      selector = new URL(c.link).searchParams.get("start")!.slice(6);
+    await bot(startUpdate(selector));
+    expect(
+      (await db().telegramLogin.findUniqueOrThrow({ where: { id: c.id } }))
+        .approvedAt,
+    ).not.toBeNull();
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", "", {
+            action: "finish",
+            id: c.id,
+          }),
+        )
+      ).status,
+    ).toBe(401);
+    const finished = await telegramAuth(
+      request("/api/auth/telegram", "POST", cookieValue, {
+        action: "finish",
+        id: c.id,
+      }),
+    );
+    expect(finished.status).toBe(200);
+    expect(
+      (
+        await payload(
+          await me(
+            request("/api/auth/me", "GET", cookie(finished)),
+            acontext("me"),
+          ),
+        )
+      ).data.user.kind,
+    ).toBe("CUSTOMER");
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", cookieValue, {
+            action: "finish",
+            id: c.id,
+          }),
+        )
+      ).status,
+    ).toBe(410);
+  });
+  async function registeredOtpUser() {
+    await configure(await staff());
+    await bot({
+      update_id: 1,
+      message: {
+        from: { id: 555001, first_name: "آزمون کد تلگرام" },
+        chat: { id: 555001, type: "private" },
+        text: "/start",
+      },
+    });
+    expect(
+      await db().session.count({ where: { user: { telegramId: 555001n } } }),
+    ).toBe(0);
+    await bot({
+      update_id: 2,
+      message: {
+        from: { id: 555001 },
+        chat: { id: 555001, type: "private" },
+        contact: { user_id: 555001, phone_number: "989999999999" },
+      },
+    });
+    return db().user.findUniqueOrThrow({ where: { telegramId: 555001n } });
+  }
+  async function otpChallenge(phone = "09999999999") {
+    const r = await telegramAuth(
+      request("/api/auth/telegram", "POST", "", { action: "otp-start", phone }),
+    );
+    expect(r.status).toBe(201);
+    const p = (await payload(r)).data;
+    expect(p).not.toHaveProperty("code");
+    return { ...p, cookie: cookie(r) };
+  }
+  async function deliveredOtp() {
+    const out = await db().telegramOutbox.findFirstOrThrow({
+      where: {
+        chatId: 555001n,
+        text: { startsWith: "otp-encrypted:" },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return decrypt(out.text.slice(14)).match(/: (\d{6})/)![1];
+  }
+  it("delivers an OTP only to a previously started own-contact verified Telegram account and consumes once in the requesting browser", async () => {
+    const user = await registeredOtpUser();
+    expect(user.phoneVerifiedAt).not.toBeNull();
+    const c = await otpChallenge(),
+      code = await deliveredOtp();
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", "", {
+            action: "otp-verify",
+            id: c.id,
+            code,
+          }),
+        )
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", c.cookie, {
+            action: "otp-verify",
+            id: c.id,
+            code: "000000",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (await db().telegramOtp.findUniqueOrThrow({ where: { id: c.id } }))
+        .attempts,
+    ).toBe(1);
+    const result = await Promise.all(
+      [1, 2].map(() =>
+        telegramAuth(
+          request("/api/auth/telegram", "POST", c.cookie, {
+            action: "otp-verify",
+            id: c.id,
+            code: code.replace(/\d/g, (n) => "۰۱۲۳۴۵۶۷۸۹"[Number(n)]),
+          }),
+        ),
+      ),
+    );
+    expect(result.map((r) => r.status).sort()).toEqual([200, 410]);
+    const signed = cookie(result.find((r) => r.status === 200)!);
+    expect(
+      (
+        await payload(
+          await me(request("/api/auth/me", "GET", signed), acontext("me")),
+        )
+      ).data.user.id,
+    ).toBe(user.id);
+    expect(await db().session.count({ where: { userId: user.id } })).toBe(1);
+  });
+  it("uses generic OTP requests for unknown phones, locks after five wrong codes and enforces expiry", async () => {
+    await registeredOtpUser();
+    const count = await db().telegramOutbox.count(),
+      unknown = await otpChallenge("09999999998");
+    expect(await db().telegramOutbox.count()).toBe(count);
+    for (let i = 0; i < 5; i++)
+      expect(
+        (
+          await telegramAuth(
+            request("/api/auth/telegram", "POST", unknown.cookie, {
+              action: "otp-verify",
+              id: unknown.id,
+              code: "000000",
+            }),
+          )
+        ).status,
+      ).toBe(422);
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", unknown.cookie, {
+            action: "otp-verify",
+            id: unknown.id,
+            code: "000000",
+          }),
+        )
+      ).status,
+    ).toBe(410);
+    const c = await otpChallenge();
+    await db().telegramOtp.update({
+      where: { id: c.id },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+    expect(
+      (
+        await telegramAuth(
+          request("/api/auth/telegram", "POST", c.cookie, {
+            action: "otp-verify",
+            id: c.id,
+            code: await deliveredOtp(),
+          }),
+        )
+      ).status,
+    ).toBe(410);
   });
   it("protects write-only encrypted integration secrets with owner/MFA, versioning and sanitized audit", async () => {
     const owner = await staff(),

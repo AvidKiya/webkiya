@@ -1,7 +1,7 @@
 // Durable Telegram transport. No credentials, URLs containing tokens, messages or user IDs are logged.
 import { config } from "dotenv";
 import { Client } from "pg";
-import { createDecipheriv } from "node:crypto";
+import { createDecipheriv, createHash } from "node:crypto";
 config({ path: ".env.local", quiet: true });
 const db = new Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
@@ -28,14 +28,14 @@ async function configuration() {
     .rows[0];
   if (!(r?.telegramEnabled ?? process.env.TELEGRAM_LOGIN_ENABLED === "true"))
     return null;
-  const token = r.botTokenEncrypted
+  const token = r?.botTokenEncrypted
       ? decrypt(r.botTokenEncrypted)
       : process.env.TELEGRAM_BOT_TOKEN,
-    secret = r.webhookSecretEncrypted
+    secret = r?.webhookSecretEncrypted
       ? decrypt(r.webhookSecretEncrypted)
       : process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!token || !secret) return null;
-  return { token, secret };
+  return { token, secret, username: r?.botUsername || "kiyaco24bot" };
 }
 async function call(token, method, body) {
   let result;
@@ -83,6 +83,7 @@ try {
   console.log(
     "Telegram transport running; provider connectivity is not verified. Waiting for enabled settings if unconfigured.",
   );
+  let verifiedConfig = "";
   while (!stopping) {
     try {
       await db.query(
@@ -97,10 +98,27 @@ try {
       await db.query(
         `UPDATE "TelegramOutbox" SET state='UNKNOWN' WHERE state='PENDING' AND "createdAt"<now()-interval '3 minutes'`,
       );
+      await db.query(
+        `DELETE FROM "TelegramOtp" WHERE "expiresAt"<now()-interval '1 day'`,
+      );
       const c = await configuration();
       if (!c) {
         await new Promise((r) => setTimeout(r, 3000));
         continue;
+      }
+      const fingerprint = createHash("sha256")
+        .update(c.token + ":" + c.secret + ":" + c.username)
+        .digest("hex");
+      if (verifiedConfig !== fingerprint) {
+        const me = await call(c.token, "getMe", {});
+        if (me?.username?.toLowerCase() !== c.username.toLowerCase())
+          throw new Error("TELEGRAM_BOT_MISMATCH");
+        if (process.argv.includes("--poll"))
+          await call(c.token, "deleteWebhook", { drop_pending_updates: false });
+        verifiedConfig = fingerprint;
+        console.log(
+          "Telegram bot identity verified; transport mode configured. Full login delivery still requires an end-to-end check.",
+        );
       }
       if (process.argv.includes("--poll")) {
         const row = (
@@ -144,7 +162,9 @@ try {
         try {
           await call(c.token, "sendMessage", {
             chat_id: item.chatId,
-            text: item.text,
+            text: item.text.startsWith("otp-encrypted:")
+              ? decrypt(item.text.slice(14))
+              : item.text,
             ...(item.requestContact
               ? {
                   reply_markup: {

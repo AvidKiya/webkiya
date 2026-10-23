@@ -18,3 +18,10 @@ for (const key of [
   "KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID",
 ])
   delete process.env[key];
+
+for (const key of [
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_WEBHOOK_SECRET",
+  "TELEGRAM_LOGIN_ENABLED",
+])
+  delete process.env[key];
