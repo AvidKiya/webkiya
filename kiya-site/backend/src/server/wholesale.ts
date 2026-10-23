@@ -1,3 +1,4 @@
+import { canShop } from "./auth";
 import "server-only";
 import { z } from "zod";
 import { db, type Transaction } from "./db";
@@ -73,8 +74,9 @@ export async function partnerLock(tx: Transaction, id: string) {
     !p ||
     !eligible(p) ||
     !p.user.isActive ||
-    p.user.kind !== "CUSTOMER" ||
+    !canShop(p.user) ||
     (!p.user.phoneVerifiedAt &&
+      !p.user.telegramVerifiedAt &&
       !(p.user.isDemo && process.env.APP_MODE === "demo")) ||
     (p.user.isDemo && process.env.APP_MODE !== "demo")
   )
@@ -102,11 +104,30 @@ export async function offerContext(request: Request, id: string) {
         status: "APPROVED",
         OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
         user: {
-          kind: "CUSTOMER",
           isActive: true,
-          ...(process.env.APP_MODE !== "demo"
-            ? { isDemo: false, phoneVerifiedAt: { not: null } }
-            : { OR: [{ phoneVerifiedAt: { not: null } }, { isDemo: true }] }),
+          AND: [
+            {
+              OR: [
+                { kind: "CUSTOMER" },
+                { kind: "STAFF", telegramVerifiedAt: { not: null } },
+              ],
+            },
+            process.env.APP_MODE !== "demo"
+              ? {
+                  isDemo: false,
+                  OR: [
+                    { phoneVerifiedAt: { not: null } },
+                    { telegramVerifiedAt: { not: null } },
+                  ],
+                }
+              : {
+                  OR: [
+                    { phoneVerifiedAt: { not: null } },
+                    { telegramVerifiedAt: { not: null } },
+                    { isDemo: true },
+                  ],
+                },
+          ],
         },
       },
       select: {
@@ -397,11 +418,12 @@ export async function freshCustomer(tx: Transaction, current: AuthSession) {
   )
     throw new ApiError(401, "AUTH_REQUIRED", "نشست معتبر نیست.");
   if (
-    !s.user.phoneVerifiedAt && !s.user.telegramVerifiedAt &&
+    !s.user.phoneVerifiedAt &&
+    !s.user.telegramVerifiedAt &&
     !(s.user.isDemo && process.env.APP_MODE === "demo")
   )
     throw new ApiError(403, "PHONE_REQUIRED", "تأیید شمارهٔ مشتری لازم است.");
-  if (s.user.kind !== "CUSTOMER")
+  if (!canShop(s.user))
     throw new ApiError(
       403,
       "CUSTOMER_REQUIRED",
@@ -410,7 +432,7 @@ export async function freshCustomer(tx: Transaction, current: AuthSession) {
 }
 export async function privateWholesaleCatalog(request: Request) {
   const current = await requireUser(request);
-  if (current.user.kind !== "CUSTOMER")
+  if (!canShop(current.user))
     throw new ApiError(
       403,
       "CUSTOMER_REQUIRED",

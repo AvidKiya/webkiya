@@ -1,3 +1,4 @@
+import { canShop } from "@/server/auth";
 import { endpoint, ok, readBody, sameOrigin, ApiError } from "@/server/http";
 import { requireUser } from "@/server/auth";
 import { db } from "@/server/db";
@@ -5,7 +6,7 @@ import { applyPartner, partnerInput } from "@/server/partners";
 export async function GET(request: Request) {
   return endpoint(async () => {
     const current = await requireUser(request);
-    if (current.user.kind !== "CUSTOMER")
+    if (!canShop(current.user))
       throw new ApiError(
         403,
         "CUSTOMER_REQUIRED",

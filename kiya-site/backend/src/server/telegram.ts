@@ -1,3 +1,5 @@
+import { verifiedTelegramPhone } from "./telegram-identity";
+import { normalizePhone } from "./identity";
 import "server-only";
 import { randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
@@ -107,7 +109,7 @@ export async function telegramLogin(
     let user = await tx.user.findUnique({
       where: { telegramId: row.telegramId },
     });
-    if (user && (!user.isActive || user.kind !== "CUSTOMER" || user.isDemo))
+    if (user && (!user.isActive || user.isDemo))
       throw new ApiError(
         403,
         "ACCOUNT_DISABLED",
@@ -122,6 +124,8 @@ export async function telegramLogin(
           telegramVerifiedAt: new Date(),
         },
       });
+    if (row.verifiedPhone)
+      user = await verifiedTelegramPhone(tx, user.id, row.verifiedPhone);
     const token = randomBytes(32).toString("hex");
     await tx.session.create({
       data: {
@@ -165,6 +169,12 @@ export const updateInput = z.object({
       from: sender,
       chat: z.object({ id: z.number().int(), type: z.string() }),
       text: z.string().max(4096).optional(),
+      contact: z
+        .object({
+          user_id: z.number().int().positive().optional(),
+          phone_number: z.string().max(30),
+        })
+        .optional(),
     })
     .optional(),
   callback_query: z
@@ -207,6 +217,46 @@ export async function acceptTelegramUpdate(input: z.infer<typeof updateInput>) {
       chat.id !== from.id
     )
       return { accepted: true };
+    if (msg?.contact) {
+      if (msg.contact.user_id !== from.id) return { accepted: true };
+      const phone = normalizePhone(
+        msg.contact.phone_number.startsWith("+")
+          ? msg.contact.phone_number
+          : "+" + msg.contact.phone_number,
+      );
+      if (!phone) return { accepted: true };
+      const rows = await tx.$queryRaw<
+        { id: string }[]
+      >`SELECT id FROM "TelegramLogin" WHERE "telegramId"=${BigInt(from.id)} AND "expiresAt">now() AND "approvedAt" IS NOT NULL ORDER BY "createdAt" DESC LIMIT 1 FOR UPDATE`;
+      if (!rows.length) return { accepted: true };
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${"telegram-user:" + from.id},0))`;
+      const user = await tx.user.findUnique({
+        where: { telegramId: BigInt(from.id) },
+      });
+      const collision = await tx.user.findUnique({ where: { phone } });
+      if (collision && collision.id !== user?.id) {
+        await tx.telegramOutbox.create({
+          data: {
+            chatId: BigInt(from.id),
+            text: "این شماره قبلاً به حساب دیگری متصل است؛ ادغام یا اعطای مدیریت خودکار انجام نشد.",
+          },
+        });
+        return { accepted: true };
+      }
+      await tx.telegramLogin.update({
+        where: { id: rows[0].id },
+        data: { verifiedPhone: phone },
+      });
+      if (user?.isActive && !user.isDemo)
+        await verifiedTelegramPhone(tx, user.id, phone);
+      await tx.telegramOutbox.create({
+        data: {
+          chatId: BigInt(from.id),
+          text: "شمارهٔ متعلق به همین حساب تلگرام تأیید شد. به مرورگر برگردید؛ اگر نشست قبلی باطل شده، دوباره با لینک تازه وارد شوید. مدیریت فقط با نقش مجاز و MFA باز می‌شود.",
+        },
+      });
+      return { accepted: true };
+    }
     const start = msg?.text?.match(
         /^\/start(?:@[A-Za-z0-9_]+)? login_([A-Za-z0-9_-]{32})$/,
       ),
@@ -253,11 +303,19 @@ export async function acceptTelegramUpdate(input: z.infer<typeof updateInput>) {
           text:
             "درخواست ورود به کیا. فقط اگر خودتان در مرورگر کد " +
             row.displayCode +
-            " را می‌بینید تأیید کنید. تأیید لینک فرد دیگر، حساب شما را در مرورگر او باز می‌کند. هیچ مجوز مدیریتی یا تأیید موبایل داده نمی‌شود.",
+            " را می‌بینید تأیید کنید. تأیید لینک فرد دیگر، حساب شما را در مرورگر او باز می‌کند. این دکمه فقط ورود را تأیید می‌کند؛ نقش مدیریت جداگانه و شماره فقط با اشتراک تماس خودتان بررسی می‌شود.",
           callback: "confirm:" + selector,
         },
       });
     } else if (row.telegramId === BigInt(from.id)) {
+      if (!row.approvedAt)
+        await tx.telegramOutbox.create({
+          data: {
+            chatId: BigInt(chat.id),
+            requestContact: true,
+            text: "برای تأیید شمارهٔ حساب خودتان و امکان معرفی به مدیریت، دکمهٔ اشتراک شماره را بزنید. فقط تماس متعلق به همین حساب پذیرفته می‌شود. این مرحله برای خرید عادی اختیاری است.",
+          },
+        });
       if (!row.approvedAt)
         await tx.telegramLogin.update({
           where: { id: row.id },

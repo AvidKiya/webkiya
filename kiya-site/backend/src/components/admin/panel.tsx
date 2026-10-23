@@ -25,7 +25,7 @@ import { products } from "@/lib/catalog";
 import { PartnerValidity } from "./wholesale-prices";
 import { ProductWorkbench } from "./product-workbench";
 import { DraftProductForm } from "./product-form";
-import { AccessManagement, PasswordChange } from "./access-management";
+import { AccessManagement } from "./access-management";
 const tabs = [
   {
     id: "dashboard",
@@ -195,26 +195,6 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
       active = false;
     };
   }, [ready, visibleTab, nonce, preview]);
-  async function login(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    setBusy(true);
-    setError("");
-    try {
-      await api("/api/auth/staff", {
-        method: "POST",
-        body: JSON.stringify({
-          handle: form.get("handle"),
-          password: form.get("password"),
-        }),
-      });
-      authChanged();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
   async function enroll() {
     setBusy(true);
     setError("");
@@ -417,37 +397,14 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
               <div className="admin-auth-symbol">
                 <LockKeyhole size={24} />
               </div>
-              <form className="backend-form" onSubmit={login}>
-                <label>
-                  شناسهٔ پرسنلی یا شمارهٔ موبایل
-                  <input
-                    name="handle"
-                    dir="ltr"
-                    autoComplete="username"
-                    maxLength={60}
-                    required
-                  />
-                </label>
-                <label>
-                  رمز عبور
-                  <input
-                    name="password"
-                    type="password"
-                    dir="ltr"
-                    autoComplete="current-password"
-                    maxLength={200}
-                    required
-                  />
-                </label>
-                <button className="primary" disabled={busy}>
-                  {busy ? "در حال بررسی…" : "ادامهٔ ورود امن"}
-                </button>
-              </form>
               <p className="admin-note">
-                حساب عمومی یا رمز پیش‌فرض وجود ندارد. حساب مالک فقط با ابزار
-                راه‌اندازی محلی ساخته می‌شود؛ ورود آزمایشی مشتری دسترسی مدیریت
-                نمی‌دهد.
+                با همان حساب کاربری فروشگاه وارد شوید. پنل فقط برای حساب‌های
+                دارای نقش مدیریت باز می‌شود؛ عملیات مدیریت تأیید دومرحله‌ای
+                دارد.
               </p>
+              <a className="primary" href="/#account">
+                ورود از حساب کاربری
+              </a>
             </>
           )}
         </div>
@@ -884,7 +841,6 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
               فقط در نشست واقعی مدیر کل در دسترس است.
             </p>
           ) : null}
-          {!preview ? <PasswordChange /> : null}
         </main>
         <footer className="admin-bottom">
           KIYA / CONTROL ROOM <span>بدون آمار ساختگی. بدون تأیید خودکار.</span>

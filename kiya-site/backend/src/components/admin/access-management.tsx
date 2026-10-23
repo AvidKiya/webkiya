@@ -11,14 +11,23 @@ type Role = {
 type Staff = {
   id: string;
   displayName: string;
-  handle: string;
+  handle: string | null;
   phoneMasked: string | null;
   isActive: boolean;
   mfaEnabled: boolean;
   permissionVersion: number;
   roles: { roleId: string }[];
 };
-type Data = { roles: Role[]; staff: Staff[]; delegatedPermissions: string[] };
+type Data = {
+  roles: Role[];
+  staff: Staff[];
+  eligibleAccounts: {
+    id: string;
+    displayName: string;
+    phoneMasked: string | null;
+  }[];
+  delegatedPermissions: string[];
+};
 const labels: Record<string, string> = {
   "dashboard:read": "نمای کلی",
   "comment:read": "خواندن دیدگاه",
@@ -101,7 +110,7 @@ export function AccessManagement({ selfId }: { selfId: string }) {
       {data ? (
         <>
           <details className="access-section" data-testid="staff-create">
-            <summary>ساخت حساب پرسنل</summary>
+            <summary>مدیر کردن حساب کاربری تأییدشده</summary>
             <form
               className="backend-form"
               onSubmit={async (e) => {
@@ -109,11 +118,9 @@ export function AccessManagement({ selfId }: { selfId: string }) {
                 const form = e.currentTarget,
                   v = new FormData(form);
                 if (
-                  await mutate("/api/admin/staff", "POST", {
-                    name: v.get("name"),
-                    handle: v.get("handle"),
-                    phone: v.get("phone"),
-                    password: v.get("password"),
+                  await mutate("/api/admin/staff/promote", "POST", {
+                    userId: v.get("userId"),
+                    reason: v.get("reason"),
                     roleIds: v.getAll("roleIds"),
                     ownerConfirmed: v.get("ownerConfirmed") === "on",
                   })
@@ -122,38 +129,30 @@ export function AccessManagement({ selfId }: { selfId: string }) {
               }}
             >
               <label>
-                نام نمایشی پرسنل
-                <input name="name" required minLength={2} maxLength={80} />
+                حساب کاربری
+                <select name="userId" required defaultValue="">
+                  <option value="" disabled>
+                    انتخاب حساب با تلگرام و شمارهٔ تأییدشده
+                  </option>
+                  {data.eligibleAccounts.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.displayName} · {u.phoneMasked} · {u.id}
+                    </option>
+                  ))}
+                </select>
               </label>
+              <p>
+                فرد ابتدا با حساب تلگرام خودش وارد سایت و شمارهٔ خودش را در بات
+                به اشتراک بگذارد. سفارش‌ها و شناسهٔ حساب حفظ می‌شوند؛ پس از
+                اعطای نقش باید دوباره وارد شود.
+              </p>
               <label>
-                شناسهٔ ورود (انگلیسی، شروع با حرف)
-                <input
-                  name="handle"
-                  dir="ltr"
+                دلیل اعطای نقش
+                <textarea
+                  name="reason"
                   required
-                  pattern={String.raw`[a-z][a-z0-9_\-]{2,39}`}
-                  autoComplete="off"
-                />
-              </label>
-              <label>
-                شمارهٔ موبایل پرسنل (اختیاری)
-                <input
-                  name="phone"
-                  type="tel"
-                  dir="ltr"
-                  maxLength={20}
-                  autoComplete="off"
-                />
-              </label>
-              <label>
-                رمز اولیهٔ پرسنل (حداقل ۱۴ نویسه)
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  minLength={14}
-                  maxLength={200}
-                  autoComplete="new-password"
+                  minLength={10}
+                  maxLength={500}
                 />
               </label>
               <RoleChoices roles={data.roles} />
@@ -162,7 +161,7 @@ export function AccessManagement({ selfId }: { selfId: string }) {
                 در صورت انتخاب نقش مالک، اعطای اختیارات کامل را تأیید می‌کنم.
               </label>
               <button className="primary" disabled={busy}>
-                ساخت حساب واقعی پرسنل
+                اعطای نقش به همین حساب
               </button>
             </form>
           </details>
@@ -182,7 +181,7 @@ export function AccessManagement({ selfId }: { selfId: string }) {
                 {u.id === selfId ? " · حساب شما" : ""}
               </h4>
               <p>
-                <code dir="ltr">{u.handle}</code> ·{" "}
+                <code dir="ltr">{u.handle || "ورود با حساب تلگرام"}</code> ·{" "}
                 {u.phoneMasked || "بدون موبایل ثبت‌شده"} ·{" "}
                 {u.isActive ? "فعال" : "غیرفعال"} · MFA:{" "}
                 {u.mfaEnabled ? "فعال" : "در انتظار تنظیم"}

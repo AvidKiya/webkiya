@@ -50,7 +50,8 @@ export async function integrationConfig() {
   const s = await db().storeSettings.findUnique({ where: { id: 1 } });
   return {
     settings: s,
-    enabled: !!s?.telegramEnabled,
+    enabled:
+      s?.telegramEnabled ?? process.env.TELEGRAM_LOGIN_ENABLED === "true",
     username: s?.botUsername || "kiyaco24bot",
     token: s?.botTokenEncrypted
       ? decrypt(s.botTokenEncrypted)
@@ -65,7 +66,8 @@ export async function readSettings(request: Request) {
   const s = await db().storeSettings.findUnique({ where: { id: 1 } });
   return {
     version: s?.version || 0,
-    telegramEnabled: s?.telegramEnabled || false,
+    telegramEnabled:
+      s?.telegramEnabled ?? process.env.TELEGRAM_LOGIN_ENABLED === "true",
     botUsername: s?.botUsername || "kiyaco24bot",
     botTokenConfigured: !!(
       s?.botTokenEncrypted || process.env.TELEGRAM_BOT_TOKEN

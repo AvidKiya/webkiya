@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { ManualPaymentView } from "./ManualPaymentView";
 import { TelegramLogin } from "./TelegramLogin";
 import { api } from "../../services/catalog";
-type User = { id: string; name: string; kind: string; isDemo: boolean };
+type User = {
+  id: string;
+  name: string;
+  kind: string;
+  isDemo: boolean;
+  canShop: boolean;
+  adminAccess: boolean;
+};
 type Session = {
   user: User | null;
   demoLoginAvailable: boolean;
@@ -32,7 +39,7 @@ export function CustomerAccount() {
     if (ticket !== generation.current) return;
     setSession(me);
     setOrders([]);
-    if (me.user?.kind === "CUSTOMER") {
+    if (me.user?.canShop) {
       const list = await api<{ orders: Order[] }>("/api/orders");
       if (ticket === generation.current) {
         setOrders(list.orders);
@@ -102,17 +109,22 @@ export function CustomerAccount() {
           </>
         )
       )}
-      <a href="/admin" className="block text-brand-500 underline">
-        ورود کارکنان با رمز و MFA
-      </a>
+      {session?.user?.adminAccess && (
+        <a
+          href="/admin"
+          className="block bg-brand-500 text-white rounded-xl p-3 text-center font-bold"
+        >
+          پنل مدیریت
+        </a>
+      )}
       <h2 className="font-bold">سفارش‌های سروری</h2>
-      {session?.user?.kind === "CUSTOMER" && !ordersLoaded && !message && (
+      {session?.user?.canShop && !ordersLoaded && !message && (
         <p role="status">در حال دریافت سفارش‌ها…</p>
       )}
-      {session?.user?.kind === "CUSTOMER" &&
-        ordersLoaded &&
-        orders.length === 0 && <p>سفارشی در حساب شما وجود ندارد.</p>}
-      {session?.user?.kind === "CUSTOMER" &&
+      {session?.user?.canShop && ordersLoaded && orders.length === 0 && (
+        <p>سفارشی در حساب شما وجود ندارد.</p>
+      )}
+      {session?.user?.canShop &&
         orders.map((order) => (
           <article
             key={order.id}

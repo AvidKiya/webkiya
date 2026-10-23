@@ -1,3 +1,4 @@
+import { POST as promote } from "@/app/api/admin/staff/promote/route";
 import { beforeEach, afterAll, describe, it, expect, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -800,6 +801,222 @@ describe("real PostgreSQL backend", () => {
       (await db().manualPayment.findUniqueOrThrow({ where: { id: p.id } }))
         .status,
     ).toBe("UNDER_REVIEW");
+  });
+  const contactUpdate = (id = 111001, owner = id, update_id = 3) => ({
+    update_id,
+    message: {
+      from: { id },
+      chat: { id, type: "private" },
+      contact: { user_id: owner, phone_number: "989999999999" },
+    },
+  });
+  async function approvedTelegram(id = 111001) {
+    const c = await telegramStart();
+    await bot(startUpdate(c.selector, id, 1));
+    await bot(confirmUpdate(c.selector, id, 2));
+    return c;
+  }
+  async function finishTelegram(c: { id: string; cookie: string }) {
+    const r = await telegramAuth(
+      request("/api/auth/telegram", "POST", c.cookie, {
+        action: "finish",
+        id: c.id,
+      }),
+    );
+    expect(r.status).toBe(200);
+    return cookie(r);
+  }
+  it("verifies only the private sender own contact, never grants ownership when an owner already exists, and never exposes phone in audit", async () => {
+    const prior = process.env.KIYA_BOOTSTRAP_OWNER_PHONE;
+    process.env.KIYA_BOOTSTRAP_OWNER_PHONE = "09999999999";
+    try {
+      await configure(await staff());
+      const c = await approvedTelegram();
+      await bot(contactUpdate(111001, 222002));
+      expect(
+        (await db().telegramLogin.findUniqueOrThrow({ where: { id: c.id } }))
+          .verifiedPhone,
+      ).toBeNull();
+      await bot(contactUpdate(111001, 111001, 4));
+      const signed = await finishTelegram(c);
+      const user = (
+        await payload(
+          await me(request("/api/auth/me", "GET", signed), acontext("me")),
+        )
+      ).data.user;
+      expect(user.kind).toBe("CUSTOMER");
+      expect(user.adminAccess).toBe(false);
+      const record = await db().user.findUniqueOrThrow({
+        where: { id: user.id },
+      });
+      expect(record.phone).toBe("+989999999999");
+      expect(record.phoneVerifiedAt).not.toBeNull();
+      expect(JSON.stringify(await db().auditLog.findMany())).not.toContain(
+        "989999999999",
+      );
+    } finally {
+      if (prior === undefined) delete process.env.KIYA_BOOTSTRAP_OWNER_PHONE;
+      else process.env.KIYA_BOOTSTRAP_OWNER_PHONE = prior;
+    }
+  });
+  it("bootstraps the first owner only from operator-configured phone and Telegram own-contact proof; keeps same account and requires MFA without a password", async () => {
+    const prior = process.env.KIYA_BOOTSTRAP_OWNER_PHONE;
+    process.env.KIYA_BOOTSTRAP_OWNER_PHONE = "09999999999";
+    try {
+      const setupOwner = await staff();
+      await configure(setupOwner);
+      await db().userRole.deleteMany({ where: { userId: setupOwner.user.id } });
+      const c = await approvedTelegram();
+      const oldCookie = await finishTelegram(c);
+      const before = (
+        await payload(
+          await me(request("/api/auth/me", "GET", oldCookie), acontext("me")),
+        )
+      ).data.user;
+      expect(before.adminAccess).toBe(false);
+      await bot(contactUpdate());
+      expect(
+        (
+          await payload(
+            await me(request("/api/auth/me", "GET", oldCookie), acontext("me")),
+          )
+        ).data.user,
+      ).toBeNull();
+      const next = await telegramStart();
+      await bot(startUpdate(next.selector, 111001, 4));
+      await bot(confirmUpdate(next.selector, 111001, 5));
+      const signed = await finishTelegram(next);
+      const user = (
+        await payload(
+          await me(request("/api/auth/me", "GET", signed), acontext("me")),
+        )
+      ).data.user;
+      expect(user.id).toBe(before.id);
+      expect(user.kind).toBe("STAFF");
+      expect(user.adminAccess).toBe(true);
+      expect(user.canShop).toBe(true);
+      expect(user.permissions).toEqual([]);
+      const record = await db().user.findUniqueOrThrow({
+        where: { id: user.id },
+      });
+      expect(record.passwordHash).toBeNull();
+      expect(record.handle).toBeNull();
+      expect(
+        (await settingsGet(request("/api/admin/settings", "GET", signed)))
+          .status,
+      ).toBe(403);
+      expect(
+        (await cartRead(request("/api/cart?mode=RETAIL", "GET", signed)))
+          .status,
+      ).toBe(200);
+      const setup = (
+        await payload(
+          await auth(
+            request("/api/auth/mfa-setup", "POST", signed, {}),
+            acontext("mfa-setup"),
+          ),
+        )
+      ).data;
+      expect(
+        (
+          await auth(
+            request("/api/auth/mfa-verify", "POST", signed, {
+              code: totp(setup.secret),
+            }),
+            acontext("mfa-verify"),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (await settingsGet(request("/api/admin/settings", "GET", signed)))
+          .status,
+      ).toBe(200);
+    } finally {
+      if (prior === undefined) delete process.env.KIYA_BOOTSTRAP_OWNER_PHONE;
+      else process.env.KIYA_BOOTSTRAP_OWNER_PHONE = prior;
+    }
+  });
+  it("promotes an existing verified shopping account with owner-selected role, revokes old sessions and preserves account/order ownership without new username/password", async () => {
+    const f = await orderFixture();
+    await configure(f.owner);
+    await db().user.update({
+      where: { id: f.buyer.id },
+      data: {
+        isDemo: false,
+        telegramId: 111001n,
+        telegramVerifiedAt: new Date(),
+        phone: "+989999999999",
+        phoneVerifiedAt: new Date(),
+      },
+    });
+    const order = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    const role = await db().role.findUniqueOrThrow({
+      where: { key: "SUPPORT" },
+    });
+    const input = {
+      userId: f.buyer.id,
+      roleIds: [role.id],
+      reason: "اعطای مستند نقش پشتیبانی به همان حساب کاربری آزمون",
+    };
+    expect(
+      (
+        await promote(
+          request("/api/admin/staff/promote", "POST", f.buyer.cookie, input),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await promote(
+          request("/api/admin/staff/promote", "POST", f.owner.cookie, input),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await db().purchaseOrder.findUniqueOrThrow({ where: { id: order.id } }))
+        .userId,
+    ).toBe(f.buyer.id);
+    expect(
+      (
+        await payload(
+          await me(
+            request("/api/auth/me", "GET", f.buyer.cookie),
+            acontext("me"),
+          ),
+        )
+      ).data.user,
+    ).toBeNull();
+    const c = await approvedTelegram();
+    const signed = await finishTelegram(c);
+    const user = (
+      await payload(
+        await me(request("/api/auth/me", "GET", signed), acontext("me")),
+      )
+    ).data.user;
+    expect(user.id).toBe(f.buyer.id);
+    expect(
+      (
+        await payload(await ordersRead(request("/api/orders", "GET", signed)))
+      ).data.orders.some((o: { id: string }) => o.id === order.id),
+    ).toBe(true);
+    expect(user.adminAccess).toBe(true);
+    expect(user.canShop).toBe(true);
+    expect(user.mfaVerified).toBe(false);
+    expect(
+      (await cartRead(request("/api/cart?mode=RETAIL", "GET", signed))).status,
+    ).toBe(200);
+    expect(
+      (await settingsGet(request("/api/admin/settings", "GET", signed))).status,
+    ).toBe(403);
+    const record = await db().user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    expect(record.passwordHash).toBeNull();
+    expect(
+      await db().userRole.count({
+        where: { userId: user.id, role: { key: "OWNER" } },
+      }),
+    ).toBe(0);
   });
   it("protects write-only encrypted integration secrets with owner/MFA, versioning and sanitized audit", async () => {
     const owner = await staff(),

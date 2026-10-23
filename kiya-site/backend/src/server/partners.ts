@@ -1,3 +1,4 @@
+import { canShop } from "./auth";
 import "server-only";
 import { z } from "zod";
 import { db } from "./db";
@@ -23,13 +24,17 @@ export async function applyPartner(
   input: z.infer<typeof partnerInput>,
 ) {
   const current = await requireUser(request);
-  if (current.user.kind !== "CUSTOMER")
+  if (!canShop(current.user))
     throw new ApiError(
       403,
       "CUSTOMER_REQUIRED",
       "این بخش برای حساب مشتری است.",
     );
-  if (!current.user.phoneVerifiedAt && !current.user.telegramVerifiedAt && !current.user.isDemo)
+  if (
+    !current.user.phoneVerifiedAt &&
+    !current.user.telegramVerifiedAt &&
+    !current.user.isDemo
+  )
     throw new ApiError(403, "PHONE_REQUIRED", "تأیید شماره لازم است.");
   await limit("partner:" + current.user.id, 5, 3600);
   return db().$transaction(async (tx) => {

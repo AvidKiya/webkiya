@@ -29,7 +29,9 @@
     "cf:preview": "wrangler dev --ip 0.0.0.0 --port 8787",
     "cf:check-local": "node scripts/cloudflare/local-check.mjs",
     "worker:telegram": "node scripts/telegram-worker.mjs",
-    "worker:telegram:poll": "node scripts/telegram-worker.mjs --poll"
+    "worker:telegram:poll": "node scripts/telegram-worker.mjs --poll",
+    "telegram:first-install:poll": "node scripts/telegram-first-install.mjs --poll",
+    "telegram:first-install:webhook": "node scripts/telegram-first-install.mjs --webhook"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.8",

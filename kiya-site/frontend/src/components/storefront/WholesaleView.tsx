@@ -66,7 +66,7 @@ export function WholesaleView() {
         setState({ user: null, application: null });
         return;
       }
-      if (me.user.kind !== "CUSTOMER") {
+      if (!(me.user.kind === "CUSTOMER" || me.user.canShop)) {
         setState({ user: me.user, application: null });
         setError(
           "این بخش مخصوص حساب مشتری است؛ حساب کارکنان مجوز خرید همکار ندارد.",
@@ -303,7 +303,7 @@ export function WholesaleView() {
         >
           دریافت وضعیت و قیمت جاری
         </button>
-        {state?.user?.kind === "CUSTOMER" && (
+        {(state?.user?.kind === "CUSTOMER" || state?.user?.canShop) && (
           <button
             onClick={() => openServerCart("WHOLESALE")}
             className="px-4 py-2 rounded-xl bg-brand-50 text-brand-600 text-xs font-bold"
@@ -385,76 +385,77 @@ export function WholesaleView() {
           </p>
         </section>
       )}
-      {state?.user?.kind === "CUSTOMER" && !state.application && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          <section className="lg:col-span-7 bg-surface rounded-2xl border border-border p-5 shadow-e1 space-y-4">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-brand-500" />
-              <h2 className="font-extrabold">
-                ثبت درخواست حساب همکار (خرید عمده جینی)
-              </h2>
-            </div>
-            <p className="text-xs text-ink-600">
-              هویت و تأیید شماره از نشست سرور بررسی می‌شوند؛ این فرم شماره‌ای را
-              تأیید نمی‌کند. توضیحات شما برای بررسی پشتیبانی ذخیره می‌شود.
-            </p>
-            <form onSubmit={apply} className="space-y-3 text-xs">
-              <label className="block font-bold">
-                نام فروشگاه / گالری / پیج
-                <input
-                  required
-                  minLength={2}
-                  maxLength={100}
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  className="block w-full mt-1 h-10 px-3 rounded-xl bg-canvas-sunken border border-border"
-                />
-              </label>
-              <label className="block font-bold">
-                شهر محل فعالیت
-                <input
-                  required
-                  minLength={2}
-                  maxLength={80}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="block w-full mt-1 h-10 px-3 rounded-xl bg-canvas-sunken border border-border"
-                />
-              </label>
-              <label className="block font-bold">
-                توضیحات همکاری و نشانی فروشگاه یا پیج
-                <textarea
-                  required
-                  minLength={5}
-                  maxLength={500}
-                  rows={3}
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="block w-full mt-1 p-3 rounded-xl bg-canvas-sunken border border-border"
-                />
-              </label>
-              <button
-                disabled={pending}
-                className="w-full py-3 rounded-xl bg-buy text-buy-fg font-extrabold flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-                {pending
-                  ? "در حال ارسال…"
-                  : "ارسال درخواست به واحد امور همکاران"}
-              </button>
-            </form>
-          </section>
-          <aside className="lg:col-span-5 bg-surface rounded-2xl border border-border p-5 space-y-3">
-            <Lock className="w-5 h-5 text-brand-500" />
-            <h3 className="font-extrabold">محرمانگی نرخ همکار</h3>
-            <p className="text-sm text-ink-600">
-              هیچ نرخ یا ترکیب جین فرضی نمایش داده نمی‌شود. بسته و قیمت اختصاصی
-              پس از تأیید از سرور خوانده می‌شوند. حداقل سفارش یک جین و بدون
-              حداقل مبلغ اضافه است.
-            </p>
-          </aside>
-        </div>
-      )}
+      {(state?.user?.kind === "CUSTOMER" || state?.user?.canShop) &&
+        !state.application && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <section className="lg:col-span-7 bg-surface rounded-2xl border border-border p-5 shadow-e1 space-y-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-brand-500" />
+                <h2 className="font-extrabold">
+                  ثبت درخواست حساب همکار (خرید عمده جینی)
+                </h2>
+              </div>
+              <p className="text-xs text-ink-600">
+                هویت و تأیید شماره از نشست سرور بررسی می‌شوند؛ این فرم شماره‌ای
+                را تأیید نمی‌کند. توضیحات شما برای بررسی پشتیبانی ذخیره می‌شود.
+              </p>
+              <form onSubmit={apply} className="space-y-3 text-xs">
+                <label className="block font-bold">
+                  نام فروشگاه / گالری / پیج
+                  <input
+                    required
+                    minLength={2}
+                    maxLength={100}
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className="block w-full mt-1 h-10 px-3 rounded-xl bg-canvas-sunken border border-border"
+                  />
+                </label>
+                <label className="block font-bold">
+                  شهر محل فعالیت
+                  <input
+                    required
+                    minLength={2}
+                    maxLength={80}
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="block w-full mt-1 h-10 px-3 rounded-xl bg-canvas-sunken border border-border"
+                  />
+                </label>
+                <label className="block font-bold">
+                  توضیحات همکاری و نشانی فروشگاه یا پیج
+                  <textarea
+                    required
+                    minLength={5}
+                    maxLength={500}
+                    rows={3}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="block w-full mt-1 p-3 rounded-xl bg-canvas-sunken border border-border"
+                  />
+                </label>
+                <button
+                  disabled={pending}
+                  className="w-full py-3 rounded-xl bg-buy text-buy-fg font-extrabold flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  {pending
+                    ? "در حال ارسال…"
+                    : "ارسال درخواست به واحد امور همکاران"}
+                </button>
+              </form>
+            </section>
+            <aside className="lg:col-span-5 bg-surface rounded-2xl border border-border p-5 space-y-3">
+              <Lock className="w-5 h-5 text-brand-500" />
+              <h3 className="font-extrabold">محرمانگی نرخ همکار</h3>
+              <p className="text-sm text-ink-600">
+                هیچ نرخ یا ترکیب جین فرضی نمایش داده نمی‌شود. بسته و قیمت
+                اختصاصی پس از تأیید از سرور خوانده می‌شوند. حداقل سفارش یک جین و
+                بدون حداقل مبلغ اضافه است.
+              </p>
+            </aside>
+          </div>
+        )}
       {catalog && (
         <section aria-label="قیمت اختصاصی همکار" className="space-y-4">
           <p className="text-xs text-ink-600">

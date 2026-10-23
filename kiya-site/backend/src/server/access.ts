@@ -111,7 +111,7 @@ async function rolesFor(tx: Tx, ids: string[], confirmed: boolean) {
 }
 export async function accessData(request: Request) {
   await requireOwner(request);
-  const [staff, roles] = await Promise.all([
+  const [staff, roles, eligibleAccounts] = await Promise.all([
     db().user.findMany({
       where: { kind: "STAFF" },
       orderBy: { createdAt: "asc" },
@@ -138,10 +138,26 @@ export async function accessData(request: Request) {
         version: true,
       },
     }),
+    db().user.findMany({
+      where: {
+        kind: "CUSTOMER",
+        isActive: true,
+        isDemo: false,
+        telegramVerifiedAt: { not: null },
+        phoneVerifiedAt: { not: null },
+      },
+      take: 100,
+      orderBy: { createdAt: "desc" },
+      select: { id: true, displayName: true, phone: true },
+    }),
   ]);
   return {
     staff: staff.map(({ phone, ...s }) => ({
       ...s,
+      phoneMasked: phone ? phone.slice(0, 5) + "••••" + phone.slice(-3) : null,
+    })),
+    eligibleAccounts: eligibleAccounts.map(({ phone, ...u }) => ({
+      ...u,
       phoneMasked: phone ? phone.slice(0, 5) + "••••" + phone.slice(-3) : null,
     })),
     roles,
@@ -365,5 +381,67 @@ export async function editStaff(
       },
     });
     return u;
+  });
+}
+
+export const promoteInput = z
+  .object({
+    userId: z.uuid(),
+    roleIds: z.array(z.uuid()).min(1).max(5),
+    ownerConfirmed: z.boolean().default(false),
+    reason: z.string().trim().min(10).max(500),
+  })
+  .strict();
+export async function promoteAccount(
+  request: Request,
+  input: z.infer<typeof promoteInput>,
+) {
+  const actor = await requireOwner(request);
+  await limit("iam:" + actor.user.id, 20, 60);
+  return db().$transaction(async (tx) => {
+    await authorize(tx, actor);
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id=${input.userId}::uuid FOR UPDATE`;
+    const target = await tx.user.findUnique({ where: { id: input.userId } });
+    if (
+      !target ||
+      !target.isActive ||
+      target.isDemo ||
+      target.kind !== "CUSTOMER" ||
+      target.telegramId === null ||
+      !target.phone ||
+      !target.telegramVerifiedAt ||
+      !target.phoneVerifiedAt
+    )
+      throw new ApiError(
+        409,
+        "VERIFIED_ACCOUNT_REQUIRED",
+        "حساب واقعی با تلگرام و شمارهٔ متعلق به خود کاربر باید تأیید شده باشد.",
+      );
+    const roles = await rolesFor(tx, input.roleIds, input.ownerConfirmed);
+    const result = await tx.user.update({
+      where: { id: target.id },
+      data: { kind: "STAFF", permissionVersion: { increment: 1 } },
+      select: { id: true, kind: true, permissionVersion: true },
+    });
+    await tx.userRole.createMany({
+      data: roles.map((r) => ({ userId: target.id, roleId: r.id })),
+    });
+    await tx.session.updateMany({
+      where: { userId: target.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: actor.user.id,
+        action: "staff:promote_account",
+        resourceId: target.id,
+        data: {
+          roles: roles.map((r) => r.key),
+          reason: input.reason,
+          mfaRequired: true,
+        },
+      },
+    });
+    return result;
   });
 }

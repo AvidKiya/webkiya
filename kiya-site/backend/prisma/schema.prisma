@@ -331,6 +331,7 @@ model StoreSettings {
  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 }
 model TelegramLogin {
+ verifiedPhone String? @db.VarChar(20)
  id String @id @default(uuid()) @db.Uuid
  selectorHash String @unique @db.VarChar(64)
  browserHash String @db.VarChar(64)
@@ -348,6 +349,7 @@ model TelegramUpdate {
  createdAt DateTime @default(now()) @db.Timestamptz(3)
 }
 model TelegramOutbox {
+ requestContact Boolean @default(false)
  id String @id @default(uuid()) @db.Uuid
  chatId BigInt
  text String @db.VarChar(1000)

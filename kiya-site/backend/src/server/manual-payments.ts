@@ -1,3 +1,4 @@
+import { canShop } from "./auth";
 import "server-only";
 import { z } from "zod";
 import { createHash } from "node:crypto";
@@ -55,7 +56,7 @@ function dto(
 }
 export async function transferForOrder(r: Request, orderId: string) {
   const current = await requireUser(r);
-  if (current.user.kind !== "CUSTOMER")
+  if (!canShop(current.user))
     throw new ApiError(403, "CUSTOMER_REQUIRED", "حساب مشتری لازم است.");
   const order = await db().purchaseOrder.findFirst({
     where: { id: orderId, userId: current.user.id },

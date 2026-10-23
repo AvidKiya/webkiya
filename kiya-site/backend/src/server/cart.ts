@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { db, type Transaction } from "./db";
-import { requireUser, limit, type AuthSession } from "./auth";
+import { canShop, requireUser, limit, type AuthSession } from "./auth";
 import { ApiError } from "./http";
 import { productLock } from "./product-workflow";
 import { freshCustomer, partnerLock } from "./wholesale";
@@ -31,7 +31,7 @@ export const quoteInput = z
   .strict();
 export async function customer(request: Request) {
   const current = await requireUser(request);
-  if (current.user.kind !== "CUSTOMER")
+  if (!canShop(current.user))
     throw new ApiError(
       403,
       "CUSTOMER_REQUIRED",

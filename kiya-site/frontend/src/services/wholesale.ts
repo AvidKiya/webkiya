@@ -10,6 +10,7 @@ export type PartnerApplicationDTO = {
   version: number;
 };
 export type CustomerIdentity = {
+  canShop?: boolean;
   id: string;
   name: string;
   kind: string;

@@ -13,6 +13,7 @@
     "test:wholesale:prepare": "node scripts/prepare-wholesale-ui.mjs",
     "dev:ui-test": "node scripts/ui-test.mjs",
     "test:wholesale:browser": "node --experimental-strip-types frontend/tests/wholesale-browser.mjs",
-    "test:telegram-payment:browser": "node frontend/tests/telegram-payment-browser.mjs"
+    "test:telegram-payment:browser": "node frontend/tests/telegram-payment-browser.mjs",
+    "test:account:browser": "node frontend/tests/unified-account-browser.mjs"
   }
 }

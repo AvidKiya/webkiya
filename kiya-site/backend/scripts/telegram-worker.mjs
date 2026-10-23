@@ -26,7 +26,8 @@ const decrypt = (encoded) => {
 async function configuration() {
   const r = (await db.query('SELECT * FROM "StoreSettings" WHERE id=1'))
     .rows[0];
-  if (!r?.telegramEnabled) return null;
+  if (!(r?.telegramEnabled ?? process.env.TELEGRAM_LOGIN_ENABLED === "true"))
+    return null;
   const token = r.botTokenEncrypted
       ? decrypt(r.botTokenEncrypted)
       : process.env.TELEGRAM_BOT_TOKEN,
@@ -144,6 +145,17 @@ try {
           await call(c.token, "sendMessage", {
             chat_id: item.chatId,
             text: item.text,
+            ...(item.requestContact
+              ? {
+                  reply_markup: {
+                    keyboard: [
+                      [{ text: "اشتراک شمارهٔ خودم", request_contact: true }],
+                    ],
+                    resize_keyboard: true,
+                    one_time_keyboard: true,
+                  },
+                }
+              : {}),
             ...(item.callback
               ? {
                   reply_markup: {

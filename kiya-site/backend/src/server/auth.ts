@@ -144,11 +144,24 @@ export function attachCookie(
   });
   return response;
 }
+export function canShop(user: {
+  kind: string;
+  telegramVerifiedAt: Date | null;
+}) {
+  return (
+    user.kind === "CUSTOMER" ||
+    (user.kind === "STAFF" && !!user.telegramVerifiedAt)
+  );
+}
 export function safeUser(current: AuthSession) {
   return {
     id: current.user.id,
     name: current.user.displayName,
     kind: current.user.kind,
+    canShop: canShop(current.user),
+    adminAccess:
+      current.user.kind === "STAFF" &&
+      current.user.roles.some((r) => r.role.permissions.length > 0),
     isDemo: current.user.isDemo,
     mfaEnabled: current.user.mfaEnabled,
     mfaVerified: current.mfaVerified,

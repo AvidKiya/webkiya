@@ -4,7 +4,6 @@ import {
   ShoppingBag,
   Sun,
   Moon,
-  Shield,
   Layers,
   Sparkles,
 } from "lucide-react";
@@ -27,7 +26,6 @@ export function Header({
   onSearchChange,
 }: HeaderProps) {
   const {
-    setViewMode,
     route,
     setRoute,
     setCartSheetOpen,
@@ -37,7 +35,6 @@ export function Header({
     setSalesMode,
     isApprovedPartner,
     directThreads,
-    announcementBanner,
   } = useStore();
 
   const unreadInbox = directThreads.reduce((s, t) => s + t.unreadCount, 0);
@@ -46,22 +43,6 @@ export function Header({
 
   return (
     <div className="sticky top-0 z-50">
-      {/* Top Announcement + Demo Persona Bar */}
-      <div className="bg-[#482780] text-white text-[11px] px-3 md:px-6 py-1.5 border-b border-white/10">
-        <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="px-1.5 py-0.5 rounded bg-gold-500 text-[#211A2B] font-extrabold text-[10px] shrink-0">
-              KIYA
-            </span>
-            <span className="truncate text-white/90">{announcementBanner}</span>
-          </div>
-
-          <a href="/admin" className="font-bold underline">
-            ورود به مدیریت امن
-          </a>
-        </div>
-      </div>
-
       {/* Main Glass Header */}
       <header className="h-15 md:h-16 glass border-b border-border">
         <div className="max-w-[1440px] mx-auto h-full px-3 md:px-6 flex items-center justify-between gap-3">
@@ -181,15 +162,6 @@ export function Header({
                   {formatNumber(activeCartBadge)}
                 </span>
               )}
-            </button>
-
-            {/* Admin Command Center Button */}
-            <button
-              onClick={() => setViewMode("admin")}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover text-xs font-bold transition-all shadow-e1"
-            >
-              <Shield className="w-4 h-4" />
-              <span className="hidden sm:inline">پنل مدیریت</span>
             </button>
           </div>
         </div>
