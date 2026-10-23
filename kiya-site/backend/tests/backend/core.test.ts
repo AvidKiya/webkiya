@@ -84,6 +84,21 @@ import { GET as financeList } from "@/app/api/admin/payments/route";
 import { validCard } from "@/server/settings";
 import { GET as fulfillmentList } from "@/app/api/admin/orders/route";
 import { POST as fulfill } from "@/app/api/admin/orders/[id]/route";
+import {
+  GET as supportListApi,
+  POST as supportCreateApi,
+} from "@/app/api/support/route";
+import {
+  GET as supportReadApi,
+  POST as supportMessageApi,
+  PATCH as supportStatusApi,
+} from "@/app/api/support/[id]/route";
+import { GET as staffSupportList } from "@/app/api/admin/support/route";
+import {
+  GET as staffSupportRead,
+  POST as staffSupportMessage,
+  PATCH as staffSupportStatus,
+} from "@/app/api/admin/support/[id]/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -467,7 +482,7 @@ async function expireFixture(id: string) {
 }
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "OrderShipment","TelegramOtp","ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "SupportMessage","SupportThread","OrderShipment","TelegramOtp","ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -554,6 +569,14 @@ afterAll(async () => {
       },
     });
     const finance = await staff("CUSTOM_FINANCE_UI");
+    await db().role.create({
+      data: {
+        key: "CUSTOM_SUPPORT_READER_UI",
+        name: "خواندن پشتیبانی مرورگر",
+        permissions: ["support:read"],
+      },
+    });
+    const supportReader = await staff("CUSTOM_SUPPORT_READER_UI");
     await mkdir(".data", { recursive: true });
     await writeFile(
       ".data/wholesale-ui-fixture.json",
@@ -561,6 +584,7 @@ afterAll(async () => {
         users,
         reviewerCookie: f.reviewer.cookie,
         financeCookie: finance.cookie,
+        supportReaderCookie: supportReader.cookie,
         telegramSecret: "SYNTHETIC_WEBHOOK_TEST_SECRET_NOT_FOR_PRODUCTION",
         productId: f.p.id,
         variantId: f.v.id,
@@ -1501,6 +1525,575 @@ describe("real PostgreSQL backend", () => {
     ).toBe(404);
   });
 
+  async function supportFixture() {
+    const buyer = await customer(),
+      owner = await staff();
+    const body = {
+      requestId: randomUUID(),
+      subject: "درخواست خصوصی آزمون",
+      body: "پیام خصوصی مشتری برای آزمون نرم‌افزار",
+    };
+    const created = await supportCreateApi(
+      request("/api/support", "POST", buyer.cookie, body),
+    );
+    expect(created.status).toBe(201);
+    return { buyer, owner, input: body, thread: (await payload(created)).data };
+  }
+  const supportPath = (id: string, admin = false) =>
+    "/api/" + (admin ? "admin/" : "") + "support/" + id;
+  it("requires an authenticated customer and scoped MFA staff for private support", async () => {
+    expect((await supportListApi(request("/api/support"))).status).toBe(401);
+    const f = await supportFixture(),
+      plain = await staff("SUPPORT"),
+      pending = await staff("OWNER", false);
+    expect(
+      (
+        await staffSupportList(
+          request("/api/admin/support", "GET", f.buyer.cookie),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await staffSupportList(
+          request("/api/admin/support", "GET", plain.cookie),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await staffSupportList(
+          request("/api/admin/support", "GET", pending.cookie),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await supportCreateApi(
+          request("/api/support", "POST", f.buyer.cookie, f.input, {
+            Origin: "https://evil.test",
+          }),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await staffSupportList(
+          request("/api/admin/support", "GET", f.owner.cookie),
+        )
+      ).status,
+    ).toBe(200);
+  });
+  it("creates a support conversation exactly once under retries and rejects body collisions", async () => {
+    const c = await customer(),
+      input = {
+        requestId: randomUUID(),
+        subject: "سؤال خصوصی",
+        body: "پیام یکسان برای آزمون هم‌زمانی",
+      };
+    const results = await Promise.all(
+      [1, 2].map(() =>
+        supportCreateApi(request("/api/support", "POST", c.cookie, input)),
+      ),
+    );
+    expect(results.map((r) => r.status)).toEqual([201, 201]);
+    expect(await db().supportThread.count()).toBe(1);
+    expect(await db().supportMessage.count()).toBe(1);
+    expect(
+      (
+        await supportCreateApi(
+          request("/api/support", "POST", c.cookie, {
+            ...input,
+            body: "متن تغییر یافته",
+          }),
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await supportCreateApi(
+          request("/api/support", "POST", c.cookie, {
+            ...input,
+            requestId: randomUUID(),
+            internal: true,
+          }),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await supportCreateApi(
+          request("/api/support", "POST", c.cookie, {
+            ...input,
+            requestId: randomUUID(),
+            body: "bad\u0000control",
+          }),
+        )
+      ).status,
+    ).toBe(422);
+  });
+  it("never exposes another customer's private thread or messages", async () => {
+    const f = await supportFixture(),
+      other = await customer(),
+      path = supportPath(f.thread.id);
+    expect(
+      (
+        await supportReadApi(
+          request(path, "GET", other.cookie),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await supportMessageApi(
+          request(path, "POST", other.cookie, {
+            requestId: randomUUID(),
+            body: "دسترسی غیرمجاز",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await supportStatusApi(
+          request(path, "PATCH", other.cookie, {
+            status: "CLOSED",
+            version: 1,
+            reason: "تلاش غیرمجاز",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await payload(
+          await supportListApi(request("/api/support", "GET", other.cookie)),
+        )
+      ).data.items,
+    ).toEqual([]);
+  });
+  it("keeps staff notes absent from customer bodies, cursors, versions and public activity timestamps", async () => {
+    const f = await supportFixture(),
+      path = supportPath(f.thread.id),
+      staffPath = supportPath(f.thread.id, true);
+    const before = (
+      await payload(
+        await supportReadApi(
+          request(path, "GET", f.buyer.cookie),
+          context(f.thread.id),
+        ),
+      )
+    ).data;
+    const note = await staffSupportMessage(
+      request(staffPath, "POST", f.owner.cookie, {
+        requestId: randomUUID(),
+        body: "INTERNAL-CANARY-DO-NOT-EXPOSE",
+        internal: true,
+      }),
+      context(f.thread.id),
+    );
+    expect(note.status).toBe(201);
+    const noteId = (await payload(note)).data.id;
+    const after = (
+      await payload(
+        await supportReadApi(
+          request(path, "GET", f.buyer.cookie),
+          context(f.thread.id),
+        ),
+      )
+    ).data;
+    expect(after).toEqual(before);
+    expect(
+      JSON.stringify(
+        (
+          await payload(
+            await supportListApi(
+              request("/api/support", "GET", f.buyer.cookie),
+            ),
+          )
+        ).data,
+      ),
+    ).not.toContain("INTERNAL-CANARY");
+    expect(
+      (
+        await supportReadApi(
+          request(path + "?before=" + noteId, "GET", f.buyer.cookie),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await supportReadApi(
+          request(path + "?internal=true", "GET", f.buyer.cookie),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await supportMessageApi(
+          request(path, "POST", f.buyer.cookie, {
+            requestId: randomUUID(),
+            body: "customer note",
+            internal: true,
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      JSON.stringify(
+        (
+          await payload(
+            await staffSupportRead(
+              request(staffPath, "GET", f.owner.cookie),
+              context(f.thread.id),
+            ),
+          )
+        ).data,
+      ),
+    ).toContain("INTERNAL-CANARY");
+  });
+  it("allows public staff replies without granting internal note access or status management", async () => {
+    const f = await supportFixture(),
+      role = await db().role.create({
+        data: {
+          key: "CUSTOM_SUPPORT_REPLY",
+          name: "پاسخ خصوصی",
+          permissions: ["support:read", "support:reply"],
+        },
+      }),
+      agent = await staff(role.key),
+      path = supportPath(f.thread.id, true);
+    await staffSupportMessage(
+      request(path, "POST", f.owner.cookie, {
+        requestId: randomUUID(),
+        body: "INTERNAL-HIDDEN-NOTE",
+        internal: true,
+      }),
+      context(f.thread.id),
+    );
+    expect(
+      JSON.stringify(
+        (
+          await payload(
+            await staffSupportRead(
+              request(path, "GET", agent.cookie),
+              context(f.thread.id),
+            ),
+          )
+        ).data,
+      ),
+    ).not.toContain("INTERNAL-HIDDEN");
+    const reply = await staffSupportMessage(
+      request(path, "POST", agent.cookie, {
+        requestId: randomUUID(),
+        body: "پاسخ عمومی واقعی در سایت",
+      }),
+      context(f.thread.id),
+    );
+    expect(reply.status).toBe(201);
+    expect(
+      (
+        await staffSupportMessage(
+          request(path, "POST", agent.cookie, {
+            requestId: randomUUID(),
+            body: "یادداشت غیرمجاز",
+            internal: true,
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await staffSupportStatus(
+          request(path, "PATCH", agent.cookie, {
+            status: "CLOSED",
+            version: 2,
+            reason: "نباید مجاز باشد",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(403);
+    const response = await supportReadApi(
+      request(supportPath(f.thread.id), "GET", f.buyer.cookie),
+      context(f.thread.id),
+    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    const data = (await payload(response)).data;
+    expect(data.messages.at(-1).authorKind).toBe("STAFF");
+    expect(JSON.stringify(data)).not.toMatch(
+      /authorId|digest|requestId|telegramId|passwordHash/,
+    );
+  });
+  it("idempotently appends messages and rejects reusing a message key in another thread", async () => {
+    const f = await supportFixture(),
+      path = supportPath(f.thread.id),
+      input = { requestId: randomUUID(), body: "UNIQUE-MESSAGE-REPLAY" };
+    const results = await Promise.all(
+      [1, 2].map(() =>
+        supportMessageApi(
+          request(path, "POST", f.buyer.cookie, input),
+          context(f.thread.id),
+        ),
+      ),
+    );
+    expect(results.map((r) => r.status)).toEqual([201, 201]);
+    expect(await db().supportMessage.count()).toBe(2);
+    expect(
+      (
+        await db().supportThread.findUniqueOrThrow({
+          where: { id: f.thread.id },
+        })
+      ).version,
+    ).toBe(2);
+    expect(
+      (
+        await supportMessageApi(
+          request(path, "POST", f.buyer.cookie, {
+            ...input,
+            body: "different body",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(409);
+    const second = (
+      await payload(
+        await supportCreateApi(
+          request("/api/support", "POST", f.buyer.cookie, {
+            ...f.input,
+            requestId: randomUUID(),
+          }),
+        ),
+      )
+    ).data;
+    expect(
+      (
+        await supportMessageApi(
+          request(supportPath(second.id), "POST", f.buyer.cookie, input),
+          context(second.id),
+        )
+      ).status,
+    ).toBe(409);
+    const crossKey = randomUUID();
+    const crossThread = await Promise.all(
+      [f.thread.id, second.id].map((id) =>
+        supportMessageApi(
+          request(supportPath(id), "POST", f.buyer.cookie, {
+            requestId: crossKey,
+            body: "متن آزمون رقابت دو گفت‌وگو",
+          }),
+          context(id),
+        ),
+      ),
+    );
+    expect(crossThread.map((response) => response.status).sort()).toEqual([
+      201, 409,
+    ]);
+    expect(
+      await db().supportMessage.count({
+        where: { authorId: f.buyer.id, requestId: crossKey },
+      }),
+    ).toBe(1);
+    expect(JSON.stringify(await db().auditLog.findMany())).not.toContain(
+      "UNIQUE-MESSAGE-REPLAY",
+    );
+  });
+  it("serializes close/reopen and prevents public replies on closed threads while allowing private notes", async () => {
+    const f = await supportFixture(),
+      path = supportPath(f.thread.id),
+      input = { status: "CLOSED", version: 1, reason: "موضوع بررسی و بسته شد" };
+    const closed = await Promise.all(
+      [1, 2].map(() =>
+        supportStatusApi(
+          request(path, "PATCH", f.buyer.cookie, input),
+          context(f.thread.id),
+        ),
+      ),
+    );
+    expect(closed.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(
+      (
+        await supportMessageApi(
+          request(path, "POST", f.buyer.cookie, {
+            requestId: randomUUID(),
+            body: "پیام در ترد بسته",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await staffSupportMessage(
+          request(supportPath(f.thread.id, true), "POST", f.owner.cookie, {
+            requestId: randomUUID(),
+            body: "یادداشت داخلی پس از بستن",
+            internal: true,
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await supportStatusApi(
+          request(path, "PATCH", f.buyer.cookie, {
+            status: "OPEN",
+            version: 2,
+            reason: "نیاز به بررسی دوباره",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await supportMessageApi(
+          request(path, "POST", f.buyer.cookie, {
+            requestId: randomUUID(),
+            body: "پیام پس از بازکردن",
+          }),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(201);
+  });
+  it("paginates only public history without leaking note cursor IDs", async () => {
+    const f = await supportFixture(),
+      path = supportPath(f.thread.id);
+    await db().supportMessage.createMany({
+      data: Array.from({ length: 53 }, (_, index) => ({
+        threadId: f.thread.id,
+        authorId: f.buyer.id,
+        authorKind: "CUSTOMER",
+        requestId: randomUUID(),
+        digest: hash("history-" + index),
+        body: "پیام قبلی " + index,
+        createdAt: new Date(Date.now() - 60000 + index * 10),
+      })),
+    });
+    const latest = (
+      await payload(
+        await supportReadApi(
+          request(path, "GET", f.buyer.cookie),
+          context(f.thread.id),
+        ),
+      )
+    ).data;
+    expect(latest.messages).toHaveLength(50);
+    expect(latest.hasMore).toBe(true);
+    const older = (
+      await payload(
+        await supportReadApi(
+          request(
+            path + "?before=" + latest.messages[0].id,
+            "GET",
+            f.buyer.cookie,
+          ),
+          context(f.thread.id),
+        ),
+      )
+    ).data;
+    expect(older.messages).toHaveLength(4);
+    expect(older.hasMore).toBe(false);
+    expect(
+      new Set([...older.messages, ...latest.messages].map((m) => m.id)).size,
+    ).toBe(54);
+  });
+  it("links only owned orders and preserves message and thread identities in the database", async () => {
+    const f = await orderFixture(),
+      order = (await payload(await reserve(f.buyer.cookie, f.input))).data,
+      other = await customer(),
+      input = {
+        requestId: randomUUID(),
+        subject: "پیگیری سفارش",
+        body: "درخواست پیگیری سفارش خودم",
+        orderId: order.id,
+      };
+    expect(
+      (
+        await supportCreateApi(
+          request("/api/support", "POST", other.cookie, input),
+        )
+      ).status,
+    ).toBe(404);
+    const response = await supportCreateApi(
+      request("/api/support", "POST", f.buyer.cookie, input),
+    );
+    expect(response.status).toBe(201);
+    const thread = (await payload(response)).data,
+      message = await db().supportMessage.findFirstOrThrow({
+        where: { threadId: thread.id },
+      });
+    await expect(
+      db().supportMessage.update({
+        where: { id: message.id },
+        data: { body: "rewrite history" },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().supportMessage.delete({ where: { id: message.id } }),
+    ).rejects.toThrow();
+    await expect(
+      db().supportThread.update({
+        where: { id: thread.id },
+        data: { userId: other.id, version: 2 },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().supportMessage.create({
+        data: {
+          threadId: thread.id,
+          authorId: other.id,
+          authorKind: "CUSTOMER",
+          requestId: randomUUID(),
+          digest: hash("forged"),
+          body: "forged author",
+        },
+      }),
+    ).rejects.toThrow();
+  });
+  it("bounds open conversations and reauthorizes suspended sessions on every read", async () => {
+    const f = await supportFixture();
+    await db().supportThread.createMany({
+      data: Array.from({ length: 9 }, (_, i) => ({
+        userId: f.buyer.id,
+        requestId: randomUUID(),
+        digest: hash("cap-" + i),
+        subject: "درخواست باز " + i,
+      })),
+    });
+    expect(
+      (
+        await supportCreateApi(
+          request("/api/support", "POST", f.buyer.cookie, {
+            ...f.input,
+            requestId: randomUUID(),
+          }),
+        )
+      ).status,
+    ).toBe(409);
+    await db().user.update({
+      where: { id: f.buyer.id },
+      data: { isActive: false },
+    });
+    expect(
+      (
+        await supportReadApi(
+          request(supportPath(f.thread.id), "GET", f.buyer.cookie),
+          context(f.thread.id),
+        )
+      ).status,
+    ).toBe(401);
+  });
   async function paidFulfillmentFixture() {
     const f = await paymentFixture();
     const receipt = (await payload(await receiptFor(f))).data;

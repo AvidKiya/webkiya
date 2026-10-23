@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../../services/catalog";
+import { api, announceAuthChange } from "../../services/catalog";
 type Challenge = { id: string; code: string; link: string; expiresAt: string };
 type Otp = { id: string; expiresAt: string; message: string };
 export function TelegramLogin({ onLogin }: { onLogin: () => Promise<void> }) {
@@ -19,6 +19,7 @@ export function TelegramLogin({ onLogin }: { onLogin: () => Promise<void> }) {
   }, []);
   const loggedIn = async () => {
     window.dispatchEvent(new Event("kiya-session-changed"));
+    announceAuthChange();
     await onLogin();
   };
   useEffect(() => {

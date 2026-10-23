@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ManualPaymentView } from "./ManualPaymentView";
 import { TelegramLogin } from "./TelegramLogin";
-import { api } from "../../services/catalog";
+import { api, announceAuthChange } from "../../services/catalog";
 type User = {
   id: string;
   name: string;
@@ -93,7 +93,12 @@ export function CustomerAccount() {
           </p>
           <button
             disabled={busy}
-            onClick={() => run(() => api("/api/auth/logout", {}))}
+            onClick={() =>
+              run(async () => {
+                await api("/api/auth/logout", {});
+                announceAuthChange();
+              })
+            }
             className="border border-border rounded-xl p-3"
           >
             خروج از حساب

@@ -145,3 +145,13 @@ export async function api<T>(
     throw new Error(result.error?.message || "عملیات سرور ناموفق بود.");
   return result.data;
 }
+
+// Broadcast only an invalidation nonce, never session tokens or personal data.
+export function announceAuthChange() {
+  window.dispatchEvent(new Event("kiya-auth-changed"));
+  try {
+    localStorage.setItem("kiya-auth-change", crypto.randomUUID());
+  } catch {
+    /* Storage may be disabled. */
+  }
+}

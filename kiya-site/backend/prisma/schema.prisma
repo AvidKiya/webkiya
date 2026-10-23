@@ -27,6 +27,8 @@ model User {
   roles             UserRole[]
   comments          Comment[]
   partner           PartnerAccount?
+  supportThreads SupportThread[]
+  supportMessages SupportMessage[]
   carts ServerCart[]
  orders PurchaseOrder[]
 }
@@ -284,6 +286,7 @@ model PurchaseOrder {
  createdAt DateTime @default(now()) @db.Timestamptz(3)
  user User @relation(fields:[userId],references:[id],onDelete:Restrict)
  cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
+ supportThreads SupportThread[]
  shipment OrderShipment?
  holds OrderHold[]
  movements ReservationMovement[]
@@ -406,4 +409,38 @@ model OrderShipment {
  deliveredAt DateTime? @db.Timestamptz(3)
  order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
  @@index([status,createdAt])
+}
+
+model SupportThread {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ orderId String? @db.Uuid
+ requestId String @db.Uuid
+ digest String @db.VarChar(64)
+ subject String @db.VarChar(120)
+ status String @default("OPEN") @db.VarChar(8)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ publicUpdatedAt DateTime @default(now()) @db.Timestamptz(3)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ order PurchaseOrder? @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ messages SupportMessage[]
+ @@unique([userId,requestId])
+ @@index([userId,publicUpdatedAt])
+ @@index([status,publicUpdatedAt])
+}
+model SupportMessage {
+ id String @id @default(uuid()) @db.Uuid
+ threadId String @db.Uuid
+ authorId String @db.Uuid
+ authorKind String @db.VarChar(8)
+ requestId String @db.Uuid
+ digest String @db.VarChar(64)
+ body String @db.VarChar(3000)
+ internal Boolean @default(false)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ thread SupportThread @relation(fields:[threadId],references:[id],onDelete:Restrict)
+ author User @relation(fields:[authorId],references:[id],onDelete:Restrict)
+ @@unique([authorId,requestId])
+ @@index([threadId,internal,createdAt,id])
 }

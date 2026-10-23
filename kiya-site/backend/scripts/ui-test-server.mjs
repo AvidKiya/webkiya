@@ -23,6 +23,7 @@ const child = spawn(
     env: {
       ...process.env,
       DATABASE_URL: url.toString(),
+      KIYA_UI_TEST: "true",
       APP_MODE: "demo",
       ALLOW_DEMO_LOGIN: "true",
       MEDIA_ROOT: process.cwd() + "/.data/test-media",

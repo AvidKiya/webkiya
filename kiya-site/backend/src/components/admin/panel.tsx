@@ -483,6 +483,11 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
           </div>
         </header>
         <main className="admin-content">
+          {user?.permissions.includes("support:read") && !preview && (
+            <Link className="secondary" href="/admin/support">
+              صندوق پشتیبانی خصوصی
+            </Link>
+          )}
           {user?.permissions.includes("order:read") && !preview && (
             <Link className="secondary" href="/admin/orders">
               پردازش و ارسال سفارش‌ها

@@ -35,6 +35,11 @@ export async function api<T>(
 }
 export function authChanged() {
   window.dispatchEvent(new Event("kiya-auth-changed"));
+  try {
+    localStorage.setItem("kiya-auth-change", crypto.randomUUID());
+  } catch {
+    /* Storage may be disabled. */
+  }
 }
 export function useAccount(enabled = true) {
   const [account, setAccount] = useState<Account | null>(null),

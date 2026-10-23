@@ -15,6 +15,7 @@
     "test:wholesale:browser": "node --experimental-strip-types frontend/tests/wholesale-browser.mjs",
     "test:telegram-payment:browser": "node frontend/tests/telegram-payment-browser.mjs",
     "test:account:browser": "node frontend/tests/unified-account-browser.mjs",
-    "test:telegram-modes:browser": "node frontend/tests/telegram-two-modes-browser.mjs"
+    "test:telegram-modes:browser": "node frontend/tests/telegram-two-modes-browser.mjs",
+    "test:support:browser": "node frontend/tests/support-browser.mjs"
   }
 }

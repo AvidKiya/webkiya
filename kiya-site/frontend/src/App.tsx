@@ -326,13 +326,6 @@ function KiyaAppContent() {
 
             {route === "inbox" && (
               <div className="px-3 md:px-0">
-                <p
-                  className="p-4 rounded-2xl border border-border bg-surface text-sm"
-                  role="status"
-                >
-                  پیام‌رسان پشتیبانی هنوز فعال نیست. هیچ پیام یا سابقهٔ آزمایشی
-                  به‌عنوان مکاتبهٔ واقعی نمایش داده نمی‌شود.
-                </p>
                 <DirectInboxView />
               </div>
             )}

@@ -30,6 +30,10 @@ type Data = {
 };
 const labels: Record<string, string> = {
   "dashboard:read": "نمای کلی",
+  "support:read": "مشاهده درخواست‌های خصوصی پشتیبانی",
+  "support:reply": "پاسخ عمومی به صاحب درخواست",
+  "support:note": "مشاهده و ثبت یادداشت داخلی پشتیبانی",
+  "support:manage": "بستن و بازکردن درخواست پشتیبانی",
   "order:read": "مشاهده سفارش‌های پرداخت‌شده و اطلاعات ارسال",
   "order:manage": "آماده‌سازی، ثبت ارسال و تحویل سفارش",
   "payment:review": "بررسی مستقل رسید و تطبیق بانک",
