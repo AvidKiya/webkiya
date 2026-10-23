@@ -1,6 +1,6 @@
 # آماده‌سازی Cloudflare — نسخهٔ 0.11.0
 
-2026-10-22 · شاخهٔ `arena/f6a09f64-webkiya`
+2026-10-22 · شاخهٔ `arena/2c244362-webkiya`
 
 ## وضعیت واقعی
 
@@ -80,3 +80,11 @@ OpenNext اجرای Node middleware را experimental می‌داند. `scripts/
 `npm audit --omit=dev` صفر است. ۵ هشدار high باقی‌مانده در زنجیرهٔ dev/lint مربوط به braces/micromatch/fast-glob/ESLint است؛ نسخهٔ اصلاح‌شدهٔ braces در registry فعلی موجود نیست. مشکل glob ابزار build با override به 10.5.0 رفع شد؛ از `audit fix --force` و downgrade ناسازگار Next/ESLint استفاده نشده است.
 
 **دامنهٔ FULL عوض نشده:** پرداخت، SMS، ارسال، چرخهٔ کامل مدیریت سفارش و بقیهٔ موارد باز نقشهٔ ۲۶ با آماده‌شدن این بسته انجام‌شده محسوب نمی‌شوند. انتشار preview با فعال‌بودن فروش واقعی یا انتقال حساب مدیر یکسان نیست.
+
+## اصلاح مسیر انتشار — 2026-10-24
+
+workflow اکنون فقط شاخهٔ فعال `arena/2c244362-webkiya` و مسیر `kiya-site/backend` را build/deploy می‌کند، نه نسخهٔ قدیمی ریشه. انتشار همچنان پیش‌فرض خاموش است. مجوز اتصال GitHub برای Actions/Secrets API در بررسی تازه نیز 403 است؛ secret باید توسط مالک در داشبورد وارد شود.
+
+**هنوز مسیر کامل ربات روی Workers آماده/منتشر اعلام نمی‌شود:** worker Node دارای حلقهٔ polling را نمی‌توان عیناً به Workers منتقل کرد. webhook دریافت update در API وجود دارد، اما ارسال outbox رمزگذاری‌شده باید به transport سازگار با Workers و زمان‌بندی/صف متصل و با provider واقعی آزموده شود. cron فعلی فقط رزرو سفارش را آزاد می‌کند. انتشار فعلیِ صرفاً سایت معادل انتشار کامل ربات نیست. به همین دلیل صرف دریافت API token مجوز اعلام موفقیت همهٔ سرویس‌ها نیست.
+
+توکن محدود به همان account با Workers Scripts Edit، Workers R2 Storage Edit، Images Edit و Account Settings Read برای انتشار workers.dev درخواست شود؛ DNS، Billing، مدیریت API Token و دسترسی تمام حساب‌ها لازم نیستند. لینک template فقط فرم را پر می‌کند و تأیید مالک همچنان ضروری است. توکن را در GitHub Environment Secret `CLOUDFLARE_API_TOKEN` وارد کنید، نه چت. Account ID محرمانهٔ احراز نیست ولی باید از حساب واقعی بیاید.
