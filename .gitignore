@@ -20,3 +20,6 @@ src/generated/
 .wrangler/
 .dev.vars
 .dev.vars.*
+
+# Independent rebuild generated Prisma client
+kiya-site/backend/src/generated/

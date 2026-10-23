@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span>محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span>انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span>سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span>دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span>مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span>دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span>مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span>SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span>ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span>تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span>ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full gap-6">
+<!-- ================= TOP ACTION BAR & HEADER ================= -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface rounded-xl p-5 shadow-sm">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<h1 class="font-display text-headline-lg text-ink-900 tracking-tight">محصولات 📦</h1>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-code-mono text-label-micro font-bold">
+          ۱۲ فعال
+        </span>
+</div>
+<p class="font-body-default text-ink-500 text-label-caption flex items-center gap-1.5">
+<span>۱۲ محصول در فروشگاه</span>
+<span class="text-ink-300">•</span>
+<span class="text-primary font-medium">هر تغییری بدی بلافاصله توی سایت اعمال می‌شه ⚡</span>
+</p>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-2.5">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-canvas-sunken hover:bg-ink-100 text-ink-700 font-body-emphasis text-label-caption transition-all" onclick="resetDemoToast()" type="button">
+<span class="material-symbols-outlined text-[18px] text-ink-500">restart_alt</span>
+<span>بازنشانی دمو</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary text-on-primary font-body-emphasis text-label-caption shadow-sm hover:opacity-95 active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>+ محصول جدید</span>
+</button>
+</div>
+</div>
+<!-- ================= KPI SNIPPETS & SYNC STATS ================= -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+<div class="bg-surface rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-caption text-ink-500 text-label-micro">کل موجودی انبار</span>
+<span class="font-display text-headline-md text-ink-900 mt-0.5">۳۸۴ عدد</span>
+<span class="font-label-micro text-success text-[11px] flex items-center gap-0.5 mt-1">
+<span class="material-symbols-outlined text-[13px]">trending_up</span> +۸٪ این هفته
+        </span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">inventory_2</span>
+</div>
+</div>
+<div class="bg-surface rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-caption text-ink-500 text-label-micro">کم‌موجود و در آستانه اتمام</span>
+<span class="font-display text-headline-md text-warning mt-0.5">۲ کالا</span>
+<span class="font-label-micro text-warning text-[11px] flex items-center gap-0.5 mt-1">
+<span class="material-symbols-outlined text-[13px]">priority_high</span> نیازمند تأمین مجدد
+        </span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-warning">
+<span class="material-symbols-outlined text-[22px]">notification_important</span>
+</div>
+</div>
+<div class="bg-surface rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-caption text-ink-500 text-label-micro">تعامل شبکه‌های اجتماعی</span>
+<span class="font-display text-headline-md text-ink-900 mt-0.5">۱۴,۲۹۰</span>
+<span class="font-label-micro text-secondary text-[11px] flex items-center gap-0.5 mt-1">
+<span class="material-symbols-outlined text-[13px]">favorite</span> ۱۱.۸k لایک • ۲.۴k کامنت
+        </span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[22px]">chat_bubble</span>
+</div>
+</div>
+<div class="bg-surface rounded-xl p-4 shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-caption text-ink-500 text-label-micro">فروش ماهانه کاتالوگ</span>
+<span class="font-display text-headline-md text-ink-900 mt-0.5">۲۴۸.۵ م</span>
+<span class="font-label-micro text-success text-[11px] flex items-center gap-0.5 mt-1">
+<span class="material-symbols-outlined text-[13px]">verified</span> همگام با درگاه شاپرک
+        </span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-success">
+<span class="material-symbols-outlined text-[22px]">payments</span>
+</div>
+</div>
+</div>
+<!-- ================= SEARCH, CATEGORIES & QUICK FILTER BAR ================= -->
+<div class="bg-surface rounded-xl p-4 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+<!-- Search Box -->
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 text-[20px]">search</span>
+<input class="w-full h-11 pr-10 pl-4 rounded-lg bg-canvas-sunken text-ink-900 placeholder:text-ink-400 font-body-default text-label-caption focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" id="productSearchInput" onkeyup="filterProducts()" placeholder="جست‌وجوی کالا، کد SKU، یا نام اسلاگ..." type="text"/>
+</div>
+<!-- Category Buttons & Dropdown -->
+<div class="flex flex-wrap items-center gap-2">
+<div class="flex items-center gap-1 bg-canvas-sunken p-1 rounded-lg overflow-x-auto max-w-full">
+<button class="category-btn px-3 py-1.5 rounded-md font-body-emphasis text-label-micro bg-surface text-primary shadow-sm transition-all" onclick="setCategoryFilter('all', this)" type="button">همه دسته‌ها</button>
+<button class="category-btn px-3 py-1.5 rounded-md font-body-default text-label-micro text-ink-600 hover:text-ink-900 transition-all" onclick="setCategoryFilter('اکسسوری', this)" type="button">اکسسوری</button>
+<button class="category-btn px-3 py-1.5 rounded-md font-body-default text-label-micro text-ink-600 hover:text-ink-900 transition-all" onclick="setCategoryFilter('ساعت', this)" type="button">ساعت</button>
+<button class="category-btn px-3 py-1.5 rounded-md font-body-default text-label-micro text-ink-600 hover:text-ink-900 transition-all" onclick="setCategoryFilter('پوشاک', this)" type="button">پوشاک</button>
+<button class="category-btn px-3 py-1.5 rounded-md font-body-default text-label-micro text-ink-600 hover:text-ink-900 transition-all" onclick="setCategoryFilter('دیجیتال', this)" type="button">دیجیتال</button>
+<button class="category-btn px-3 py-1.5 rounded-md font-body-default text-label-micro text-ink-600 hover:text-ink-900 transition-all" onclick="setCategoryFilter('زیبایی', this)" type="button">زیبایی</button>
+</div>
+<!-- Inventory Sorter Filter -->
+<select class="h-11 px-3 rounded-lg bg-canvas-sunken text-ink-700 font-body-default text-label-micro focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20" id="stockSortSelect" onchange="filterProducts()">
+<option value="all">تمام موجودی‌ها</option>
+<option value="in_stock">فقط موجودها</option>
+<option value="low_stock">هشدار کمبود انبار (&lt; ۶)</option>
+</select>
+</div>
+</div>
+<!-- ================= BULK ACTIONS FLOATING STRIP ================= -->
+<div class="hidden items-center justify-between bg-surface-container px-4 py-2.5 rounded-xl shadow-sm text-on-surface animate-fadeIn" id="bulkActionsBar">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">checklist</span>
+<span class="font-body-emphasis text-label-caption"><span class="font-bold font-code-mono text-primary" id="selectedCount">۰</span> مورد انتخاب شده است</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface text-ink-700 hover:bg-canvas-sunken font-body-emphasis text-label-micro shadow-sm flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_note</span> تغییر دسته‌ای موجودی
+      </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface text-ink-700 hover:bg-canvas-sunken font-body-emphasis text-label-micro shadow-sm flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">label</span> برچسب تخفیف
+      </button>
+<button class="px-3 py-1.5 rounded-lg bg-danger text-on-error hover:bg-tertiary font-body-emphasis text-label-micro flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span> حذف انتخاب‌شده‌ها
+      </button>
+</div>
+</div>
+<!-- ================= PRODUCTS MAIN DATA TABLE ================= -->
+<div class="bg-surface rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-right" id="productsTable">
+<thead>
+<tr class="bg-canvas-sunken text-ink-500 font-body-emphasis text-label-micro">
+<th class="p-4 w-12 text-center">
+<input class="w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" id="selectAllCheckbox" onchange="toggleSelectAll(this)" type="checkbox"/>
+</th>
+<th class="py-4 px-3 font-semibold">کالا و پیوند اسلاگ</th>
+<th class="py-4 px-3 font-semibold">دسته‌بندی</th>
+<th class="py-4 px-3 font-semibold">قیمت فروش / خط خورده</th>
+<th class="py-4 px-3 font-semibold">وضعیت انبار</th>
+<th class="py-4 px-3 font-semibold">تعامل اجتماعی</th>
+<th class="py-4 px-4 font-semibold text-center w-28">عملیات</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-ink-800 font-body-default text-label-caption" id="productsTableBody">
+<!-- PRODUCT 1: Minimal Steel Watch -->
+<tr class="product-row hover:bg-canvas-sunken/60 transition-colors group" data-category="ساعت" data-stock="11">
+<td class="p-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" onchange="updateSelectedCount()" type="checkbox"/>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-canvas-sunken shrink-0">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="ساعت مچی مینیمال استیل با بند نقره‌ای مشبک، صفحه مشکی مات در پس‌زمینه استودیویی شیک با نورپردازی ملایم تجاری و لوکس" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB9_KwjR56sxQ8hwqJcIUZfK9vuPXPRl2kfvOQ4sCY-D8gXeaxUKz-2OUwxuPlw6lsF3pjaikoqAgtf_zdRVuJIbvH11oHjQzcHqd7kz59odrl9MVB20_m_1EE0duOejUzSI1JPnpcIWCZh1Ph3KZDNfG8rUagySfB3tEe2yDGvbRez2l1neosa_mWhPiUuxDMAX7HhkyeVoVP92ISavMWee_yxr7dzWzuj7d58meaQzS_dafkW3AG"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-tl-md"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-emphasis text-ink-900 group-hover:text-primary transition-colors truncate">ساعت مینیمال کلاسیک فلزی</span>
+<a class="font-code-mono text-label-micro text-ink-400 hover:text-secondary flex items-center gap-1 transition-colors" href="/p/minimal-steel-watch" target="_blank">
+<span>/p/minimal-steel-watch</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-ink-700 text-label-micro font-medium">ساعت</span>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-price-headline text-headline-sm text-ink-900">۱,۸۵۰,۰۰۰ <span class="font-label-micro text-ink-500 font-normal">تومان</span></span>
+<span class="font-label-micro text-ink-400 line-through">۲,۱۰۰,۰۰۰ تومان</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-success text-label-micro font-body-emphasis">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>۱۱ عدد موجود</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3 font-code-mono text-label-micro text-ink-600">
+<span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">favorite</span> ۱,۴۲۰</span>
+<span class="flex items-center gap-1 text-ink-500"><span class="material-symbols-outlined text-[15px]">mode_comment</span> ۳۸</span>
+</div>
+</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="w-8 h-8 rounded-lg text-ink-600 hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all" title="ویرایش کالا" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<a class="w-8 h-8 rounded-lg text-ink-600 hover:text-secondary hover:bg-surface-container flex items-center justify-center transition-all" href="/p/minimal-steel-watch" target="_blank" title="مشاهده صفحه کالا">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</a>
+<button class="w-8 h-8 rounded-lg text-ink-400 hover:text-danger hover:bg-error-container flex items-center justify-center transition-all" onclick="deleteRow(this)" title="آرشیو یا حذف" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- PRODUCT 2: Leather Crossbody Bag -->
+<tr class="product-row hover:bg-canvas-sunken/60 transition-colors group" data-category="اکسسوری" data-stock="5">
+<td class="p-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" onchange="updateSelectedCount()" type="checkbox"/>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-canvas-sunken shrink-0">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="کیف چرم طبیعی کراس‌بادی زنانه شتری رنگ با سگک طلایی برس‌خورده و بند دوشی قابل تنظیم روی پایه مرمر با پس‌زمینه گرم خنثی" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlIjtsVo7qYAGzq0fnyGSmHHS-EcTvJ7eY3NXbgEbi7feHBpzgi7f-7_uUkIZ8KPBP67yJ-wGKDo-iSJfAI6Sk5SvFASB74lrzOQVHoNOCw-hW0BEySbo89Rp2RojnGI8YOgljIkinnVFch1oAih-CxH4OqOkIAoIRZ2A6p_WotH0K2w-BwxcgKXuKmEa3aBlrQN5Tp_bIKgeDXzlikfAy2Rwb7_rY_7ivkgYMEOxMYDuMCTA0DBi6"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-warning rounded-tl-md"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-emphasis text-ink-900 group-hover:text-primary transition-colors truncate">کیف دوشی چرم طبیعی سندی</span>
+<a class="font-code-mono text-label-micro text-ink-400 hover:text-secondary flex items-center gap-1 transition-colors" href="/p/leather-crossbody-bag" target="_blank">
+<span>/p/leather-crossbody-bag</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-ink-700 text-label-micro font-medium">اکسسوری</span>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-price-headline text-headline-sm text-ink-900">۹۸۰,۰۰۰ <span class="font-label-micro text-ink-500 font-normal">تومان</span></span>
+<span class="font-label-micro text-ink-400 line-through">۱,۲۰۰,۰۰۰ تومان</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-warning text-label-micro font-body-emphasis">
+<span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+<span>۵ عدد کم‌موجود</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3 font-code-mono text-label-micro text-ink-600">
+<span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">favorite</span> ۹۵۰</span>
+<span class="flex items-center gap-1 text-ink-500"><span class="material-symbols-outlined text-[15px]">mode_comment</span> ۸۲</span>
+</div>
+</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="w-8 h-8 rounded-lg text-ink-600 hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all" title="ویرایش کالا" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<a class="w-8 h-8 rounded-lg text-ink-600 hover:text-secondary hover:bg-surface-container flex items-center justify-center transition-all" href="/p/leather-crossbody-bag" target="_blank" title="مشاهده صفحه کالا">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</a>
+<button class="w-8 h-8 rounded-lg text-ink-400 hover:text-danger hover:bg-error-container flex items-center justify-center transition-all" onclick="deleteRow(this)" title="آرشیو یا حذف" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- PRODUCT 3: Ceramic Coffee Tumbler -->
+<tr class="product-row hover:bg-canvas-sunken/60 transition-colors group" data-category="اکسسوری" data-stock="34">
+<td class="p-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" onchange="updateSelectedCount()" type="checkbox"/>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-canvas-sunken shrink-0">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="ماگ سرامیکی مینیمال دوجداره با درب چوبی بامبو به رنگ کرم پودری در کنار دانه‌های قهوه با نور صبحگاهی و سایه‌های لطیف" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5aUlWiu8ZJWor_9lXodQUamkLW3BgDFa046R0ih-DUhmyquXzlsCzNSsRgXDSUKsrONSkiy6VFn847s2oFN0Z1D8pmm30aLtmQC_SlB4WNN1AkoUZNGo4luPp5ps7uhR7g3jSEeOLG-cawRI3JfbIspU7JVvY5yYwsPiplJGVEHpNAI_Ry6hpRczrFbtZJAY0wTkhOjPJDGQru_NJqRTmwaWD1CHsrSc_517kMV8ekUSuG9l6CYJu"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-tl-md"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-emphasis text-ink-900 group-hover:text-primary transition-colors truncate">تراول ماگ سرامیکی مات</span>
+<a class="font-code-mono text-label-micro text-ink-400 hover:text-secondary flex items-center gap-1 transition-colors" href="/p/ceramic-tumbler-matte" target="_blank">
+<span>/p/ceramic-tumbler-matte</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-ink-700 text-label-micro font-medium">اکسسوری</span>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-price-headline text-headline-sm text-ink-900">۴۲۰,۰۰۰ <span class="font-label-micro text-ink-500 font-normal">تومان</span></span>
+<span class="font-label-micro text-ink-400 line-through">۴۹۰,۰۰۰ تومان</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-success text-label-micro font-body-emphasis">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>۳۴ عدد موجود</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3 font-code-mono text-label-micro text-ink-600">
+<span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">favorite</span> ۲,۱۱۰</span>
+<span class="flex items-center gap-1 text-ink-500"><span class="material-symbols-outlined text-[15px]">mode_comment</span> ۱۱۴</span>
+</div>
+</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="w-8 h-8 rounded-lg text-ink-600 hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all" title="ویرایش کالا" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<a class="w-8 h-8 rounded-lg text-ink-600 hover:text-secondary hover:bg-surface-container flex items-center justify-center transition-all" href="/p/ceramic-tumbler-matte" target="_blank" title="مشاهده صفحه کالا">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</a>
+<button class="w-8 h-8 rounded-lg text-ink-400 hover:text-danger hover:bg-error-container flex items-center justify-center transition-all" onclick="deleteRow(this)" title="آرشیو یا حذف" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- PRODUCT 4: Wireless Noise-Cancelling Earbuds -->
+<tr class="product-row hover:bg-canvas-sunken/60 transition-colors group" data-category="دیجیتال" data-stock="18">
+<td class="p-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" onchange="updateSelectedCount()" type="checkbox"/>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-canvas-sunken shrink-0">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="هدفون بی‌سیم سفید مدرن داخل کیس شارژ مغناطیسی باز، روی پد شارژ وایرلس با المان‌های مینیمالیستی های‌تک" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtzEI3rUELnbhZ6odBpqhrPSHli2kZixlsDtX4BVDIYncKGMp9zmpsq7h2cRXJBO8kQB_tS6FfUjUMVpnGa7AFFvKjMaLuZfnF9AD6M8YKleeuTAFqTTmJICnNsF4zmAGpoSMLGdHuh_Rm26TW_8SWoEKhrFBqQx30i0LrCviuwPfjbDEtf2-L8PDOcx4a_LwPC3MxtGTfUNIddYLXv-eI1Q_mPonfdvdMW9j7dlqBH7rgmF4jie6P"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-tl-md"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-emphasis text-ink-900 group-hover:text-primary transition-colors truncate">ایرپاد پرو بی‌سیم نویز کنسلینگ</span>
+<a class="font-code-mono text-label-micro text-ink-400 hover:text-secondary flex items-center gap-1 transition-colors" href="/p/pro-wireless-earbuds" target="_blank">
+<span>/p/pro-wireless-earbuds</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-ink-700 text-label-micro font-medium">دیجیتال</span>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-price-headline text-headline-sm text-ink-900">۲,۴۵۰,۰۰۰ <span class="font-label-micro text-ink-500 font-normal">تومان</span></span>
+<span class="font-label-micro text-ink-400 line-through">۲,۸۹۰,۰۰۰ تومان</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-success text-label-micro font-body-emphasis">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>۱۸ عدد موجود</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3 font-code-mono text-label-micro text-ink-600">
+<span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">favorite</span> ۳,۸۰۰</span>
+<span class="flex items-center gap-1 text-ink-500"><span class="material-symbols-outlined text-[15px]">mode_comment</span> ۲۴۵</span>
+</div>
+</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="w-8 h-8 rounded-lg text-ink-600 hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all" title="ویرایش کالا" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<a class="w-8 h-8 rounded-lg text-ink-600 hover:text-secondary hover:bg-surface-container flex items-center justify-center transition-all" href="/p/pro-wireless-earbuds" target="_blank" title="مشاهده صفحه کالا">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</a>
+<button class="w-8 h-8 rounded-lg text-ink-400 hover:text-danger hover:bg-error-container flex items-center justify-center transition-all" onclick="deleteRow(this)" title="آرشیو یا حذف" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- PRODUCT 5: Oversized Linen Shirt -->
+<tr class="product-row hover:bg-canvas-sunken/60 transition-colors group" data-category="پوشاک" data-stock="4">
+<td class="p-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" onchange="updateSelectedCount()" type="checkbox"/>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-canvas-sunken shrink-0">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="پیراهن اورسایز لینن کتان طبیعی با بافت طبیعی به رنگ کرم خاکی آویخته روی چوب‌لباسی مینیمال در فضایی با نور گرم طبیعی" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTuS7VWwvMD48gHblPyyN3TmkOLOICjVlSxMyorHX45LUnoUB4rBxY-uuM7xkE_CJUN_BMD6ivl_NF-P6FmoTOFlxqU_Jh5K6DFaRO_fJ-FBwLQhY-91Ajaxoqv7YjrekVhY_nIx-LX4tk8_VSqzEaUuLq4VJp-vMWmx6UieaNF4KLmY6tpd1lfhHRnKHo4J3b-Ye75wyFv0xlyUaUe6aVXI9LYhdhRRFslyr6Qd0xojIc6ffPhjBv"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-warning rounded-tl-md"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-emphasis text-ink-900 group-hover:text-primary transition-colors truncate">شومیز لینن اسلپ بهاره</span>
+<a class="font-code-mono text-label-micro text-ink-400 hover:text-secondary flex items-center gap-1 transition-colors" href="/p/linen-oversized-shirt" target="_blank">
+<span>/p/linen-oversized-shirt</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-ink-700 text-label-micro font-medium">پوشاک</span>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-price-headline text-headline-sm text-ink-900">۶۹۰,۰۰۰ <span class="font-label-micro text-ink-500 font-normal">تومان</span></span>
+<span class="font-label-micro text-ink-400 line-through">۷۸۰,۰۰۰ تومان</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-warning text-label-micro font-body-emphasis">
+<span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+<span>۴ عدد کم‌موجود</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3 font-code-mono text-label-micro text-ink-600">
+<span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">favorite</span> ۱,۰۴۰</span>
+<span class="flex items-center gap-1 text-ink-500"><span class="material-symbols-outlined text-[15px]">mode_comment</span> ۶۳</span>
+</div>
+</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="w-8 h-8 rounded-lg text-ink-600 hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all" title="ویرایش کالا" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<a class="w-8 h-8 rounded-lg text-ink-600 hover:text-secondary hover:bg-surface-container flex items-center justify-center transition-all" href="/p/linen-oversized-shirt" target="_blank" title="مشاهده صفحه کالا">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</a>
+<button class="w-8 h-8 rounded-lg text-ink-400 hover:text-danger hover:bg-error-container flex items-center justify-center transition-all" onclick="deleteRow(this)" title="آرشیو یا حذف" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- PRODUCT 6: Botanical Face Serum -->
+<tr class="product-row hover:bg-canvas-sunken/60 transition-colors group" data-category="زیبایی" data-stock="22">
+<td class="p-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer" onchange="updateSelectedCount()" type="checkbox"/>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-canvas-sunken shrink-0">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="بطری شیشه‌ای قطره‌چکانی سرم جوانساز پوست با قطرات آب و برگ‌های سبز در محیط تمیز و ارگانیک مراقبت پوستی" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDviLyoHpulg3fMJf2V9c168hR5Tim8Hy4CaVJDNNzwSYEpuWnDziDZuWc5IrWAfa1WykxM7AcW7bKBvz1CMpgGIzQkaSgloDR8CQ_gNEj-sGhKzlfwp7db6jBQfaV5_AvmuPfXphb3OlEGcufppxkw6ODECegsEGlhq1xw-8hhDiRjnowE8TqtHA4e-rledcxX8tdb3LWEhL5KsOB1y1KEhNJjIW8HCWZT0XVeo2VcLzuSjI1YBSR1"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-tl-md"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-emphasis text-ink-900 group-hover:text-primary transition-colors truncate">سرم آبرسان عمیق هیالورونیک</span>
+<a class="font-code-mono text-label-micro text-ink-400 hover:text-secondary flex items-center gap-1 transition-colors" href="/p/hyaluronic-deep-serum" target="_blank">
+<span>/p/hyaluronic-deep-serum</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-ink-700 text-label-micro font-medium">زیبایی</span>
+</td>
+<td class="py-3 px-3">
+<div class="flex flex-col">
+<span class="font-price-headline text-headline-sm text-ink-900">۵۴۰,۰۰۰ <span class="font-label-micro text-ink-500 font-normal">تومان</span></span>
+<span class="font-label-micro text-ink-400 line-through">۶۲۰,۰۰۰ تومان</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-success text-label-micro font-body-emphasis">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>۲۲ عدد موجود</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-3 font-code-mono text-label-micro text-ink-600">
+<span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">favorite</span> ۱,۶۷۰</span>
+<span class="flex items-center gap-1 text-ink-500"><span class="material-symbols-outlined text-[15px]">mode_comment</span> ۹۵</span>
+</div>
+</td>
+<td class="py-3 px-4 text-center">
+<div class="flex items-center justify-center gap-1">
+<button class="w-8 h-8 rounded-lg text-ink-600 hover:text-primary hover:bg-primary-fixed/40 flex items-center justify-center transition-all" title="ویرایش کالا" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<a class="w-8 h-8 rounded-lg text-ink-600 hover:text-secondary hover:bg-surface-container flex items-center justify-center transition-all" href="/p/hyaluronic-deep-serum" target="_blank" title="مشاهده صفحه کالا">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</a>
+<button class="w-8 h-8 rounded-lg text-ink-400 hover:text-danger hover:bg-error-container flex items-center justify-center transition-all" onclick="deleteRow(this)" title="آرشیو یا حذف" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Pagination -->
+<div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-canvas-sunken/40 gap-3">
+<span class="font-body-default text-ink-500 text-label-micro">
+        نمایش ۶ از ۱۲ محصول کاتالوگ (صفحه ۱ از ۲)
+      </span>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg bg-surface text-ink-400 flex items-center justify-center disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-code-mono text-label-micro font-bold flex items-center justify-center">۱</button>
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-canvas-sunken text-ink-700 font-code-mono text-label-micro flex items-center justify-center transition-colors">۲</button>
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-canvas-sunken text-ink-700 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ================= REFERENCE MEDIA & AUDIT BANNER ================= -->
+<div class="relative rounded-xl overflow-hidden bg-surface p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex flex-col gap-2 max-w-xl">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container text-secondary text-label-micro font-bold">
+          سیستم مدیریت همگام
+        </span>
+<span class="text-ink-400 text-label-micro font-code-mono">SYNC-v2.4</span>
+</div>
+<h3 class="font-display text-headline-sm text-ink-900">هماهنگی خودکار فروشگاه، اینستاگرام و ربات تلگرام</h3>
+<p class="font-body-default text-ink-500 text-label-caption leading-relaxed">
+        تمام کالاهای تغییریافته در این پنل به صورت آنی در کاتالوگ استوری اینستاگرام و ویترین تلگرام فروشگاه با تصاویر رزولوشن بالا به‌روزرسانی می‌شوند.
+      </p>
+</div>
+<!-- Linked Reference Display -->
+<div class="w-full md:w-64 h-32 rounded-lg overflow-hidden bg-canvas-sunken shrink-0 relative group">
+<img alt="پیش‌نمایش معماری همگام‌سازی محصولات" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCF4rSoJjKSW_ziFoiruAbCMt4VmhQub_uMJQ9OU_tjSro3o2BlpSsgsAMCV1r_Wh5iL9LitYQH80e0_O547GXBggdwBF2RDjazRRAJOs2M-PBaxlnHnSkXUOuqaG1B4rWLTn2XIjexAINECurp4Ii4oAj2Q-ICQ3EZKsFFZcmQcf8taIaoWHqm9pZ0njlaTc9qvdP1MJxSARaF79KC9jGBgwWm2Prv9DhLompMm7sh63B0dEC0Ls2pxL-MaXVzg5_58A"/>
+<div class="absolute inset-0 bg-gradient-to-t from-ink-900/60 to-transparent flex items-end p-2.5">
+<span class="text-on-primary font-body-emphasis text-label-micro flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span> مرجع سیستم کاتالوگ
+        </span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= EMBEDDED JAVASCRIPT ================= -->
+<script>
+  let currentCategory = 'all';
+
+  function setCategoryFilter(category, btnElement) {
+    currentCategory = category;
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.classList.remove('bg-surface', 'text-primary', 'shadow-sm', 'font-body-emphasis');
+      btn.classList.add('text-ink-600', 'font-body-default');
+    });
+    btnElement.classList.add('bg-surface', 'text-primary', 'shadow-sm', 'font-body-emphasis');
+    btnElement.classList.remove('text-ink-600', 'font-body-default');
+    filterProducts();
+  }
+
+  function filterProducts() {
+    const query = (document.getElementById('productSearchInput').value || '').toLowerCase().trim();
+    const stockFilter = document.getElementById('stockSortSelect').value;
+    const rows = document.querySelectorAll('.product-row');
+
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const cat = row.getAttribute('data-category');
+      const stock = parseInt(row.getAttribute('data-stock'), 10) || 0;
+
+      const matchesSearch = text.includes(query);
+      const matchesCategory = (currentCategory === 'all' || cat === currentCategory);
+
+      let matchesStock = true;
+      if (stockFilter === 'low_stock') {
+        matchesStock = stock < 6;
+      } else if (stockFilter === 'in_stock') {
+        matchesStock = stock > 0;
+      }
+
+      if (matchesSearch && matchesCategory && matchesStock) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  function toggleSelectAll(masterCheckbox) {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = masterCheckbox.checked;
+    });
+    updateSelectedCount();
+  }
+
+  function updateSelectedCount() {
+    const checked = document.querySelectorAll('.row-checkbox:checked').length;
+    const counter = document.getElementById('selectedCount');
+    const bar = document.getElementById('bulkActionsBar');
+    if (counter) {
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      counter.textContent = checked.toString().replace(/\d/g, d => persianDigits[d]);
+    }
+    if (bar) {
+      if (checked > 0) {
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+      } else {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+      }
+    }
+  }
+
+  function deleteRow(btn) {
+    const row = btn.closest('tr');
+    if (confirm('آیا از انتقال این محصول به زباله‌دان اطمینان دارید؟')) {
+      row.style.opacity = '0';
+      row.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        row.remove();
+        updateSelectedCount();
+      }, 200);
+    }
+  }
+
+  function resetDemoToast() {
+    alert('اطلاعات دمو کاتالوگ با موفقیت بازنشانی شد! تمام ۱۲ کالا با موجودی اولیه فعال گردیدند.');
+  }
+</script></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+</body></html>

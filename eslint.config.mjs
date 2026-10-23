@@ -6,6 +6,7 @@ export default defineConfig([
   ...ts,
   globalIgnores([
     ".next/**",
+    "kiya-site/**",
     ".open-next/**",
     ".wrangler/**",
     "کیایی که دوسش داشتم/**",

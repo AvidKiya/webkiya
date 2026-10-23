@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ویترین — ماکاپ کانسپت</title>
+<style>
+  :root{
+    --brand-500:#E1306C; --brand-600:#C81E5B; --violet-500:#7C3AED;
+    --grad-brand:linear-gradient(135deg,#E1306C 0%,#C13584 35%,#7C3AED 100%);
+    --grad-story:conic-gradient(from 180deg,#F9CE34,#EE2A7B,#6228D7,#F9CE34);
+    --buy-500:#EF4056; --success-500:#12B76A; --warning-500:#F79009; --danger-500:#F04438;
+    --ink-900:#0B1220; --ink-800:#16213A; --ink-700:#253049; --ink-600:#475467;
+    --ink-500:#667085; --ink-400:#98A2B3; --ink-300:#D0D5DD; --ink-200:#EAECF0; --ink-100:#F2F4F7;
+    --surface:#fff; --bg:#FAFAFB; --bg-sunken:#F6F7F9;
+    --e1:0 1px 2px rgba(16,24,40,.06); --e2:0 4px 12px rgba(16,24,40,.08); --e3:0 16px 40px rgba(16,24,40,.12);
+    --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Vazirmatn","IRANSans","Segoe UI",Tahoma,sans-serif;
+    background:var(--bg); color:var(--ink-900); -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit}
+  input,textarea{font-family:inherit}
+  .fa{font-variant-numeric:tabular-nums}
+
+  /* ---------- top switcher ---------- */
+  .switchbar{position:sticky; top:0; z-index:60; display:flex; align-items:center; gap:12px;
+    padding:10px 20px; background:rgba(255,255,255,.86); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--ink-200);}
+  .switchbar .logo{display:flex; align-items:center; gap:8px; font-weight:800; font-size:15px}
+  .logo .dot{width:26px;height:26px;border-radius:9px;background:var(--grad-brand);display:grid;place-items:center;color:#fff;font-size:13px}
+  .tabs{display:flex; gap:4px; background:var(--ink-100); padding:4px; border-radius:999px; margin-inline-start:8px}
+  .tabs button{padding:7px 16px; border-radius:999px; font-size:13px; font-weight:600; color:var(--ink-600); transition:.18s}
+  .tabs button.on{background:#fff; color:var(--ink-900); box-shadow:var(--e1)}
+  .switchbar .hint{margin-inline-start:auto; font-size:11.5px; color:var(--ink-400)}
+
+  /* ---------- layout ---------- */
+  .app{display:grid; grid-template-columns:76px minmax(0,1fr) 320px; gap:0; max-width:1580px; margin:0 auto; align-items:start}
+  @media(max-width:1180px){ .app{grid-template-columns:76px minmax(0,1fr)} .side{display:none} }
+  @media(max-width:760px){ .app{grid-template-columns:1fr} .rail{display:none} }
+
+  /* rail */
+  .rail{position:sticky; top:49px; height:calc(100vh - 49px); padding:14px 10px; display:flex; flex-direction:column; gap:4px;
+    border-inline-start:1px solid var(--ink-200); background:#fff}
+  .rail .it{width:56px; height:52px; border-radius:14px; display:grid; place-items:center; position:relative; color:var(--ink-700); transition:.18s}
+  .rail .it:hover{background:var(--ink-100)}
+  .rail .it.on{background:linear-gradient(135deg,rgba(225,48,108,.12),rgba(124,58,237,.12)); color:var(--brand-600)}
+  .rail .it svg{width:22px;height:22px;stroke-width:1.8}
+  .rail .badge{position:absolute; top:6px; inset-inline-start:8px; min-width:16px; height:16px; border-radius:9px;
+    background:var(--buy-500); color:#fff; font-size:9.5px; display:grid; place-items:center; padding:0 4px; font-weight:700}
+  .rail .spacer{flex:1}
+
+  .feed{max-width:640px; margin:0 auto; padding:0 0 100px; width:100%}
+  @media(max-width:760px){ .feed{max-width:none} }
+
+  .feedhead{position:sticky; top:49px; z-index:20; background:rgba(250,250,251,.92); backdrop-filter:blur(10px);
+    display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--ink-200)}
+  .feedhead h1{font-size:16px; margin:0; font-weight:800; display:flex; align-items:center; gap:8px}
+  .feedhead .chip{font-size:10.5px; font-weight:700; color:var(--brand-600); background:rgba(225,48,108,.1); padding:3px 8px; border-radius:999px}
+
+  /* stories */
+  .stories{display:flex; gap:14px; overflow-x:auto; padding:16px; scrollbar-width:none; background:#fff; border-bottom:1px solid var(--ink-200)}
+  .stories::-webkit-scrollbar{display:none}
+  .story{display:flex; flex-direction:column; align-items:center; gap:7px; width:74px; flex:0 0 auto}
+  .ring{width:64px;height:64px;border-radius:50%; padding:3px; background:var(--grad-story); position:relative}
+  .ring.seen{background:var(--ink-300)}
+  .ring.live{background:linear-gradient(135deg,#F04438,#EF4056); animation:pulse 2.2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,68,56,.35)}50%{box-shadow:0 0 0 7px rgba(240,68,56,0)}}
+  .ring .inner{width:100%;height:100%;border-radius:50%;background:#fff;padding:2px}
+  .ph{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;font-size:24px;overflow:hidden}
+  .story span{font-size:10.5px; color:var(--ink-600); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%}
+  .story .livebadge{position:absolute; bottom:-2px; left:50%; transform:translateX(-50%); background:#F04438; color:#fff; font-size:8.5px; padding:1px 5px; border-radius:4px; font-weight:800}
+
+  /* post */
+  .post{background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); margin:16px 0; overflow:hidden; box-shadow:var(--e1); transition:.2s}
+  @media(max-width:760px){ .post{border-radius:0; border-inline:none; margin:0 0 10px; box-shadow:none; border-bottom:1px solid var(--ink-200)} }
+  .post:hover{box-shadow:var(--e2)}
+  .phead{display:flex; align-items:center; gap:10px; padding:12px 14px}
+  .av{width:38px;height:38px;border-radius:50%; background:var(--grad-brand); display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px; flex:0 0 auto}
+  .phead .meta{flex:1; min-width:0}
+  .phead .meta b{font-size:13.5px; display:flex; align-items:center; gap:5px}
+  .phead .meta small{color:var(--ink-500); font-size:11px}
+  .verified{width:14px;height:14px}
+  .more{color:var(--ink-500); letter-spacing:2px; font-weight:700}
+
+  .media{position:relative; aspect-ratio:4/5; display:grid; place-items:center; overflow:hidden; background:#0B1220}
+  @media(min-width:761px){ .media{aspect-ratio:1/1} }
+  .media .art{font-size:120px; filter:drop-shadow(0 22px 40px rgba(0,0,0,.35)); transition:transform .5s}
+  .post:hover .art{transform:scale(1.04) rotate(-2deg)}
+  .media .veil{position:absolute; inset:0; background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.16), transparent 62%)}
+  .disc{position:absolute; top:12px; inset-inline-start:12px; background:var(--buy-500); color:#fff; font-size:12px; font-weight:800; padding:5px 9px; border-radius:var(--r-sm); box-shadow:var(--e2)}
+  .livetag{position:absolute; top:12px; inset-inline-end:12px; background:rgba(11,18,32,.62); color:#fff; font-size:10.5px; padding:5px 9px; border-radius:999px; backdrop-filter:blur(6px); display:flex; align-items:center; gap:5px}
+  .livetag i{width:6px;height:6px;border-radius:50%;background:#12B76A; display:block}
+  .dots{position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:5px}
+  .dots i{width:6px;height:6px;border-radius:50%; background:rgba(255,255,255,.45); display:block}
+  .dots i.on{background:#fff; width:16px; border-radius:3px}
+
+  .body{padding:12px 14px 0}
+  .ttl{display:flex; align-items:flex-start; gap:8px}
+  .ttl h3{margin:0; font-size:15.5px; font-weight:700; line-height:1.6; flex:1}
+  .rate{font-size:11.5px; color:var(--ink-700); background:var(--ink-100); padding:3px 7px; border-radius:6px; white-space:nowrap; font-weight:700}
+  .trust{display:flex; flex-wrap:wrap; gap:12px; margin-top:7px; font-size:11.5px; color:var(--ink-500)}
+  .trust b{color:var(--ink-800); font-weight:700}
+  .trust .ok{color:var(--success-500); font-weight:700}
+
+  .desc{margin-top:9px; font-size:13.5px; line-height:1.85; color:var(--ink-600); position:relative}
+  .desc .txt{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; transition:.25s}
+  .desc.open .txt{-webkit-line-clamp:unset; display:block}
+  .desc .fade{position:absolute; bottom:26px; inset-inline:0; height:26px; background:linear-gradient(to top,#fff,rgba(255,255,255,0)); pointer-events:none}
+  .desc.open .fade{display:none}
+  .morebtn{display:inline-flex; align-items:center; gap:4px; font-size:12.5px; font-weight:700; color:var(--ink-700); margin-top:3px; padding:2px 0}
+  .morebtn:hover{color:var(--brand-600)}
+  .ghostlink{font-size:12px; font-weight:700; color:var(--brand-600); margin-inline-start:8px}
+
+  .variants{display:flex; gap:8px; flex-wrap:wrap; margin-top:11px}
+  .vsel{border:1px solid var(--ink-200); background:var(--bg-sunken); border-radius:999px; padding:6px 11px; font-size:12px; color:var(--ink-700); display:flex; align-items:center; gap:6px; transition:.16s}
+  .vsel:hover{border-color:var(--ink-300); background:#fff}
+  .sw{width:11px;height:11px;border-radius:50%; display:block; border:1px solid rgba(0,0,0,.12)}
+
+  .buybar{display:flex; align-items:center; gap:10px; padding:14px; margin-top:12px; border-top:1px solid var(--ink-200)}
+  .price{display:flex; flex-direction:column; line-height:1.3}
+  .price .old{font-size:11px; color:var(--ink-400); text-decoration:line-through}
+  .price .now{font-size:16px; font-weight:800}
+  .price .now small{font-size:10.5px; font-weight:600; color:var(--ink-500); margin-inline-start:2px}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:var(--r-md); font-weight:700; font-size:13px; padding:11px 16px; transition:.18s}
+  .btn-primary{background:var(--buy-500); color:#fff; box-shadow:0 4px 14px rgba(239,64,86,.28)}
+  .btn-primary:hover{background:#D73246; transform:translateY(-1px)}
+  .btn-ghost{background:var(--ink-100); color:var(--ink-800)}
+  .btn-ghost:hover{background:var(--ink-200)}
+  .btn-brand{background:var(--grad-brand); color:#fff}
+  .buybar .grow{flex:1}
+  .iconbtn{width:38px;height:38px;border-radius:50%; display:grid; place-items:center; color:var(--ink-700); transition:.16s}
+  .iconbtn:hover{background:var(--ink-100)}
+  .iconbtn svg{width:20px;height:20px;stroke-width:1.8}
+  .iconbtn.liked{color:var(--brand-500)}
+  .iconbtn.liked svg{fill:var(--brand-500); stroke:var(--brand-500)}
+
+  .actions{display:flex; align-items:center; gap:4px; padding:8px 10px 10px}
+  .actions .cnt{font-size:12px; color:var(--ink-700); font-weight:700; margin-inline-end:10px}
+  .actions .grow{flex:1}
+
+  .cpreview{padding:0 14px 12px}
+  .cpreview .row{display:flex; gap:8px; font-size:12.5px; line-height:1.75; margin-bottom:4px}
+  .cpreview .row b{font-weight:700}
+  .cpreview .row .badge-v{font-size:9.5px; color:var(--success-500); background:rgba(18,183,106,.1); padding:1px 5px; border-radius:4px; font-weight:800; margin-inline-start:4px}
+  .cpreview .allcom{font-size:12px; color:var(--ink-500); margin-top:4px}
+
+  .quick{display:flex; gap:8px; padding:0 14px 12px}
+  .qbtn{flex:1; display:flex; align-items:center; gap:6px; background:var(--bg-sunken); border-radius:999px; padding:7px 11px; font-size:11.5px; color:var(--ink-600)}
+
+  /* side rail */
+  .side{position:sticky; top:49px; padding:20px 16px; display:flex; flex-direction:column; gap:14px; height:calc(100vh - 49px); overflow:auto}
+  .card{background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-lg); padding:14px; box-shadow:var(--e1)}
+  .card h4{margin:0 0 10px; font-size:12.5px; color:var(--ink-500); font-weight:700; display:flex; align-items:center; gap:6px}
+  .cartline{display:flex; align-items:center; gap:9px; margin-bottom:9px}
+  .cartline .th{width:38px;height:38px;border-radius:10px; display:grid; place-items:center; font-size:18px; background:var(--ink-100)}
+  .cartline .info{flex:1; min-width:0; font-size:11.5px; line-height:1.5}
+  .cartline .info b{display:block; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .cartline .info span{color:var(--ink-500)}
+  .cartline .p{font-size:11.5px; font-weight:700; white-space:nowrap}
+  .carttotal{display:flex; justify-content:space-between; font-size:13px; font-weight:800; border-top:1px dashed var(--ink-200); padding-top:10px; margin-top:4px}
+  .live{display:flex; gap:9px; align-items:flex-start; margin-bottom:11px; font-size:11.5px; line-height:1.6; color:var(--ink-600)}
+  .live .dot{width:7px;height:7px;border-radius:50%; background:var(--success-500); margin-top:6px; flex:0 0 auto; box-shadow:0 0 0 3px rgba(18,183,106,.16)}
+  .live b{color:var(--ink-900)}
+  .mini{display:flex; gap:9px; align-items:center; margin-bottom:10px}
+  .mini .th{width:42px;height:42px;border-radius:10px; display:grid; place-items:center; font-size:20px; background:var(--bg-sunken); border:1px solid var(--ink-200)}
+  .mini .info{flex:1; min-width:0; font-size:11.5px; line-height:1.5}
+  .mini .info b{display:block; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .mini .info span{color:var(--ink-500)}
+  .foot{font-size:10.5px; color:var(--ink-400); line-height:1.9}
+
+  /* modal */
+  .overlay{position:fixed; inset:0; background:rgba(11,18,32,.62); backdrop-filter:blur(3px); z-index:100; display:none; align-items:center; justify-content:center; padding:24px}
+  .overlay.show{display:flex; animation:fadein .2s}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .modal{width:min(1080px,96vw); height:min(760px,92vh); background:#fff; border-radius:var(--r-lg); overflow:hidden; display:grid; grid-template-columns:.56fr .44fr; box-shadow:0 32px 80px rgba(0,0,0,.4); animation:pop .24s ease-out}
+  @keyframes pop{from{transform:scale(.96); opacity:.6}to{transform:scale(1); opacity:1}}
+  @media(max-width:900px){ .modal{grid-template-columns:1fr; height:94vh; width:96vw} .modal .mmedia{display:none} }
+  .mmedia{background:#0B1220; display:grid; place-items:center; position:relative; overflow:hidden}
+  .mmedia .art{font-size:170px; filter:drop-shadow(0 30px 50px rgba(0,0,0,.45))}
+  .mbody{display:flex; flex-direction:column; min-height:0; background:#fff}
+  .mhead{display:flex; align-items:center; gap:10px; padding:14px; border-bottom:1px solid var(--ink-200)}
+  .mhead .fbtn{margin-inline-start:auto; font-size:12px; font-weight:700; color:var(--brand-600); border:1px solid rgba(225,48,108,.3); padding:6px 12px; border-radius:999px}
+  .mclose{position:absolute; top:14px; inset-inline-end:14px; z-index:5; width:34px;height:34px;border-radius:50%; background:rgba(255,255,255,.92); display:grid; place-items:center; box-shadow:var(--e2)}
+  .mscroll{overflow:auto; padding:14px; flex:1; min-height:0}
+  .mprice{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--ink-200); background:#fff}
+  .mcomment{margin-top:14px; border-top:1px solid var(--ink-200); padding-top:12px}
+  .csort{display:flex; gap:6px; margin-bottom:10px}
+  .csort button{font-size:11.5px; font-weight:700; color:var(--ink-500); padding:5px 10px; border-radius:999px}
+  .csort button.on{background:var(--ink-100); color:var(--ink-900)}
+  .comment{display:flex; gap:9px; margin-bottom:14px}
+  .comment .cav{width:30px;height:30px;border-radius:50%; flex:0 0 auto; display:grid; place-items:center; font-size:11px; font-weight:800; color:#fff}
+  .comment .cmain{flex:1; min-width:0}
+  .comment .cl{font-size:12px; line-height:1.8; color:var(--ink-700)}
+  .comment .cl b{color:var(--ink-900); font-weight:700}
+  .comment .cmeta{display:flex; align-items:center; gap:10px; font-size:10.5px; color:var(--ink-400); margin-top:3px}
+  .comment .cmeta button{font-size:10.5px; color:var(--ink-500); font-weight:700}
+  .comment .cmeta button:hover{color:var(--brand-600)}
+  .comment .clike{display:flex; flex-direction:column; align-items:center; gap:1px; font-size:9px; color:var(--ink-400)}
+  .comment .clike button{color:var(--ink-400)}
+  .comment .clike.on button{color:var(--brand-500)}
+  .comment .clike svg{width:14px;height:14px}
+  .pin{color:var(--warning-500); font-size:10px; font-weight:800}
+  .vbadge{font-size:9px; font-weight:800; color:var(--success-500); background:rgba(18,183,106,.12); padding:1px 5px; border-radius:4px; vertical-align:middle; margin-inline-start:3px}
+  .sbadge{font-size:9px; font-weight:800; color:#fff; background:var(--brand-500); padding:1px 5px; border-radius:4px; vertical-align:middle; margin-inline-start:3px}
+  .reply{font-size:12px; color:var(--ink-600); background:var(--bg-sunken); border-radius:var(--r-sm); padding:7px 9px; margin-top:6px; line-height:1.8}
+  .mform{display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--ink-200); background:#fff}
+  .mform input{flex:1; border:1px solid var(--ink-200); background:var(--bg-sunken); border-radius:999px; padding:10px 14px; font-size:12.5px; outline:none}
+  .mform input:focus{border-color:var(--brand-500); background:#fff}
+  .mform .send{width:36px;height:36px;border-radius:50%; background:var(--grad-brand); color:#fff; display:grid; place-items:center}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink-900); color:#fff; font-size:12.5px; padding:11px 18px; border-radius:999px; z-index:200; transition:.3s; opacity:0; box-shadow:var(--e3)}
+  .toast.show{transform:translateX(-50%) translateY(0); opacity:1}
+
+  /* ---------- admin ---------- */
+  .admin{display:none; grid-template-columns:250px minmax(0,1fr); min-height:calc(100vh - 49px); max-width:1580px; margin:0 auto}
+  .admin.show{display:grid}
+  .aside{background:#fff; border-inline-start:1px solid var(--ink-200); padding:16px 12px; position:sticky; top:49px; height:calc(100vh - 49px); overflow:auto}
+  .aside .brand{display:flex; align-items:center; gap:9px; padding:6px 8px 16px; font-weight:800; font-size:13.5px}
+  .aside .brand .dot{width:30px;height:30px;border-radius:10px; background:var(--grad-brand); display:grid; place-items:center; color:#fff; font-size:12px}
+  .navgroup{font-size:10px; color:var(--ink-400); font-weight:700; padding:12px 10px 6px; letter-spacing:.4px}
+  .navit{display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:10px; font-size:12.5px; font-weight:600; color:var(--ink-700); margin-bottom:2px; cursor:pointer}
+  .navit:hover{background:var(--ink-100)}
+  .navit.on{background:var(--grad-brand); color:#fff; box-shadow:0 6px 16px rgba(225,48,108,.24)}
+  .navit svg{width:17px;height:17px;stroke-width:1.8}
+  .navit .nb{margin-inline-start:auto; background:var(--buy-500); color:#fff; font-size:9.5px; padding:1px 6px; border-radius:999px; font-weight:800}
+  .navit.on .nb{background:rgba(255,255,255,.28)}
+
+  .amain{padding:22px 26px 60px}
+  .ahead{display:flex; align-items:flex-start; gap:14px; margin-bottom:18px}
+  .ahead h2{margin:0; font-size:19px; font-weight:800}
+  .ahead p{margin:3px 0 0; font-size:11.5px; color:var(--ink-500)}
+  .ahead .sp{flex:1}
+  .rolepill{display:flex; align-items:center; gap:7px; background:#fff; border:1px solid var(--ink-200); border-radius:999px; padding:6px 12px; font-size:11.5px; font-weight:700}
+  .rolepill .r{width:8px;height:8px;border-radius:50%; background:var(--success-500)}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px}
+  @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-md); padding:13px 14px; box-shadow:var(--e1); position:relative; overflow:hidden}
+  .kpi .lab{font-size:11px; color:var(--ink-500); display:flex; align-items:center; gap:6px}
+  .kpi .lab .ic{width:22px;height:22px;border-radius:7px; display:grid; place-items:center; font-size:11px}
+  .kpi .val{font-size:21px; font-weight:800; margin-top:8px}
+  .kpi .val small{font-size:10.5px; font-weight:600; color:var(--ink-400); margin-inline-start:3px}
+  .kpi .delta{font-size:10.5px; font-weight:700; margin-top:3px; color:var(--success-500)}
+  .kpi .spark{position:absolute; inset-inline-start:0; bottom:0; opacity:.55}
+
+  .alert{display:flex; align-items:center; gap:10px; background:#FFFAEB; border:1px solid #FEDF89; border-radius:var(--r-md); padding:11px 14px; font-size:12px; color:#B54708; margin-bottom:14px}
+  .alert b{font-weight:800}
+  .alert .sp{flex:1}
+  .alert .mini-btn{background:#B54708; color:#fff; font-size:11px; font-weight:700; padding:5px 11px; border-radius:8px}
+  .alert.blue{background:#EFF8FF; border-color:#B2DDFF; color:#175CD3}
+  .alert.blue .mini-btn{background:#1570EF}
+
+  .grid2{display:grid; grid-template-columns:1.15fr .85fr; gap:12px; margin-bottom:14px}
+  @media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+  .panel{background:#fff; border:1px solid var(--ink-200); border-radius:var(--r-md); box-shadow:var(--e1); overflow:hidden}
+  .panel .ph2{display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--ink-200); font-size:12.5px; font-weight:800}
+  .panel .ph2 .sp{flex:1}
+  .panel .ph2 a{font-size:11px; color:var(--brand-600); font-weight:700}
+  .panel .pb{padding:12px 14px}
+
+  .chart{display:flex; align-items:flex-end; gap:9px; height:130px; padding:6px 4px 0}
+  .chart .col{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end}
+  .chart .bar{width:100%; max-width:26px; border-radius:6px 6px 3px 3px; background:linear-gradient(to top,#F5A3B6,#E1306C)}
+  .chart .bar.peak{background:linear-gradient(to top,#C13584,#7C3AED)}
+  .chart .cb{font-size:9.5px; color:var(--ink-400)}
+
+  table{width:100%; border-collapse:collapse; font-size:11.5px}
+  th{text-align:right; font-weight:700; color:var(--ink-500); font-size:10.5px; padding:9px 10px; border-bottom:1px solid var(--ink-200); background:var(--bg-sunken); white-space:nowrap}
+  td{padding:9px 10px; border-bottom:1px solid var(--ink-100); vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#FCFCFD}
+  .pill{display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px}
+  .pill.ok{color:#027A48; background:#ECFDF3}
+  .pill.low{color:#B54708; background:#FFFAEB}
+  .pill.out{color:#B42318; background:#FEF3F2}
+  .pill.wait{color:#175CD3; background:#EFF8FF}
+  .thumb{width:26px;height:26px;border-radius:7px; display:inline-grid; place-items:center; background:var(--ink-100); font-size:13px; vertical-align:middle; margin-inline-end:6px}
+  .money{font-weight:700; white-space:nowrap}
+  .ops{display:flex; gap:5px}
+  .ops button{width:24px;height:24px;border-radius:6px; display:grid; place-items:center; background:var(--ink-100); font-size:10px}
+  .ops button:hover{background:var(--ink-200)}
+
+  .mall{margin-top:14px}
+  .matrix th, .matrix td{font-size:10.5px; padding:7px 8px; text-align:center}
+  .matrix th:first-child, .matrix td:first-child{text-align:right}
+  .matrix .yes{color:var(--success-500); font-weight:900}
+  .matrix .no{color:var(--ink-300)}
+  .matrix .warn{color:var(--warning-500); font-weight:900}
+
+  .tag{display:inline-block; font-size:10px; padding:2px 7px; border-radius:6px; background:var(--ink-100); color:var(--ink-600); margin:1px}
+  .tag.v{background:rgba(124,58,237,.1); color:var(--violet-500)}
+  .tag.g{background:rgba(18,183,106,.1); color:#027A48}
+
+  .note{max-width:1580px; margin:0 auto; padding:16px 26px 40px; font-size:11.5px; color:var(--ink-400); line-height:1.9}
+  .note b{color:var(--ink-600)}
+  @media(max-width:760px){ .note{padding:14px} .amain{padding:16px 14px 50px} .aside{display:none} .admin{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<div class="switchbar">
+  <div class="logo"><span class="dot">و</span> ویترین</div>
+  <div class="tabs">
+    <button id="tab-store" class="on" onclick="switchView('store')">فروشگاه</button>
+    <button id="tab-admin" onclick="switchView('admin')">پنل مدیریت</button>
+  </div>
+  <div class="hint">ماکاپ تعاملی کانسپت — روی پست بزن، «بیشتر» را باز کن، کامنت بنویس</div>
+</div>
+
+<!-- ═══════════════ STOREFRONT ═══════════════ -->
+<div class="app" id="store">
+  <aside class="rail">
+    <button class="it on" title="خانه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg></button>
+    <button class="it" title="اکسپلور"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+    <button class="it" title="کالکشن‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></button>
+    <button class="it" title="دایرکت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-4.2-7.6"/><path d="m20 4-8.5 8.5"/></svg><span class="badge fa">۳</span></button>
+    <button class="it" title="سبد"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 7h12l-1.2 12H7.2z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="badge fa">۲</span></button>
+    <button class="it" title="علاقه‌مندی"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20s-7-4.4-7-9.2A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.8C19 15.6 12 20 12 20z"/></svg></button>
+    <div class="spacer"></div>
+    <button class="it" title="تنظیمات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></button>
+  </aside>
+
+  <main class="feed">
+    <div class="feedhead">
+      <h1>ویترین <span class="chip">فید فروشگاه</span></h1>
+      <div style="display:flex;gap:4px">
+        <button class="iconbtn" title="جست‌وجو"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+        <button class="iconbtn" title="اعلان"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 16v-5a6 6 0 1 0-12 0v5l-2 3h16z"/><path d="M10 22h4"/></svg></button>
+      </div>
+    </div>
+
+    <div class="stories" id="stories"></div>
+    <div id="posts"></div>
+  </main>
+
+  <aside class="side">
+    <div class="card">
+      <h4>🛍 سبد خرید شما · ۲ قلم</h4>
+      <div id="cartlines"></div>
+      <div class="carttotal"><span>جمع کل</span><span class="fa">۳٬۸۹۰٬۰۰۰ تومان</span></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:11px" onclick="toast('به صفحهٔ پرداخت می‌رویم… (ماکاپ)')">تسویه حساب</button>
+      <div style="font-size:10px;color:var(--ink-400);margin-top:8px;text-align:center">ارسال رایگان برای خرید بالای ۵ میلیون</div>
+    </div>
+
+    <div class="card">
+      <h4>⚡ همین حالا در حال خرید</h4>
+      <div class="live"><span class="dot"></span><div><b>مریم</b> کیف چرم دست‌دوز را خرید <span style="color:var(--ink-400)">· ۲ دقیقه پیش</span></div></div>
+      <div class="live"><span class="dot"></span><div><b>۳ نفر</b> در حال دیدن ساعت مینیمال <span style="color:var(--ink-400)">· زنده</span></div></div>
+      <div class="live"><span class="dot"></span><div>موجودی <b>عینک آفتابی پلاریزه</b> رو به اتمام <span style="color:var(--ink-400)">· ۵ عدد</span></div></div>
+      <div class="live" style="margin-bottom:0"><span class="dot"></span><div><b>سارا</b> یک کامنت دربارهٔ سایز نوشت</div></div>
+    </div>
+
+    <div class="card">
+      <h4>✨ پیشنهاد امروز برای تو</h4>
+      <div id="sideMini"></div>
+      <button class="btn btn-ghost" style="width:100%;font-size:11.5px;margin-top:4px" onclick="toast('کالکشن پیشنهادی (ماکاپ)')">مشاهدهٔ همه</button>
+    </div>
+
+    <div class="foot">درباره · قوانین · حریم خصوصی · مرجوعی · تماس<br>© ۱۴۰۵ ویترین — همهٔ حقوق محفوظ است.</div>
+  </aside>
+</div>
+
+<!-- ═══════════════ ADMIN ═══════════════ -->
+<div class="admin" id="admin">
+  <aside class="aside">
+    <div class="brand"><span class="dot">و</span> ویترین <span style="font-weight:500;font-size:10.5px;color:var(--ink-400)">/ پنل مدیریت</span></div>
+    <div class="navit on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg> داشبورد</div>
+    <div class="navgroup">فروش</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16l-1.5 13h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg> محصولات</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M3 8l3-4h12l3 4"/><path d="M12 8v12"/></svg> انبار <span class="nb fa">۲</span></div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h12v18l-6-3-6 3z"/></svg> سفارش‌ها <span class="nb fa">۱</span></div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M17 20a6 6 0 0 0-2-4.5"/></svg> مشتریان</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> مالی</div>
+    <div class="navgroup">رشد</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 4 3 11l6 3 3 6z"/></svg> کمپین</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19c4-2 7-5.4 7-9a4 4 0 0 0-7-2.6A4 4 0 0 0 5 10c0 3.6 3 7 7 9z"/></svg> SocialHub</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-4.2-7.6"/><path d="m20 4-8.5 8.5"/></svg> پشتیبانی</div>
+    <div class="navgroup">سیستم</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20s-7-4.4-7-9.2A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.8C19 15.6 12 20 12 20z"/></svg> نظرات و گزارش‌ها</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="8" r="3"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11v6M14 14h6"/></svg> کارکنان و نقش‌ها</div>
+    <div class="navit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg> تنظیمات</div>
+  </aside>
+
+  <main class="amain">
+    <div class="ahead">
+      <div>
+        <h2>سلام، مدیر 👋</h2>
+        <p>امروز ۲۵ مهر ۱۴۰۵ — خلاصهٔ وضعیت فروشگاه</p>
+      </div>
+      <div class="sp"></div>
+      <div class="rolepill"><span class="r"></span> نقش: مالک فروشگاه</div>
+      <div class="rolepill">مشاهدهٔ فروشگاه ↗</div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="lab"><span class="ic" style="background:rgba(225,48,108,.12);color:#E1306C">💰</span> فروش کل</div>
+        <div class="val fa">۴۲٬۳۱۰٬۰۰۰ <small>تومان</small></div>
+        <div class="delta fa">↑ ۱۸٪ نسبت به ماه قبل</div>
+        <svg class="spark" width="120" height="34" viewBox="0 0 120 34"><polyline points="0,26 16,22 32,24 48,15 64,18 80,9 96,12 120,4" fill="none" stroke="#E1306C" stroke-width="2"/></svg>
+      </div>
+      <div class="kpi">
+        <div class="lab"><span class="ic" style="background:rgba(46,144,250,.12);color:#2E90FA">📦</span> سفارش‌ها</div>
+        <div class="val fa">۳۸</div>
+        <div class="delta fa">↑ ۶ سفارش جدید امروز</div>
+        <svg class="spark" width="120" height="34" viewBox="0 0 120 34"><polyline points="0,28 16,24 32,18 48,20 64,14 80,16 96,8 120,6" fill="none" stroke="#2E90FA" stroke-width="2"/></svg>
+      </div>
+      <div class="kpi">
+        <div class="lab"><span class="ic" style="background:rgba(124,58,237,.12);color:#7C3AED">👥</span> مشتریان</div>
+        <div class="val fa">۲۴۷</div>
+        <div class="delta fa">↑ ۹ مشتری جدید</div>
+        <svg class="spark" width="120" height="34" viewBox="0 0 120 34"><polyline points="0,24 16,20 32,22 48,16 64,10 80,12 96,7 120,3" fill="none" stroke="#7C3AED" stroke-width="2"/></svg>
+      </div>
+      <div class="kpi">
+        <div class="lab"><span class="ic" style="background:rgba(18,183,106,.12);color:#12B76A">📈</span> سود خالص</div>
+        <div class="val fa">۹٬۷۶۰٬۰۰۰ <small>تومان</small></div>
+        <div class="delta fa">↑ ۱۱٪ حاشیهٔ سود ۲۳٪</div>
+        <svg class="spark" width="120" height="34" viewBox="0 0 120 34"><polyline points="0,22 16,26 32,20 48,18 64,20 80,12 96,14 120,5" fill="none" stroke="#12B76A" stroke-width="2"/></svg>
+      </div>
+    </div>
+
+    <div class="alert">
+      <span>⚠️</span> <div><b>۲ محصول رو به اتمام است</b> — کیف چرم دست‌دوز (۵ عدد) و ادکلن امبر (۹ عدد)</div>
+      <span class="sp"></span><button class="mini-btn" onclick="toast('رفتن به انبار (ماکاپ)')">مدیریت</button>
+    </div>
+    <div class="alert blue">
+      <span>🔐</span> <div><b>دسترسی محدود:</b> نقش «انباردار» در این نشست فقط به موجودی و ارسال سفارش دسترسی دارد — قیمت‌ها مخفی است.</div>
+      <span class="sp"></span><button class="mini-btn" onclick="toast('پیش‌نمایش نقش انباردار (ماکاپ)')">پیش‌نمایش نقش</button>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph2">📊 سفارش‌های این هفته <span class="sp"></span><a href="#">مشاهدهٔ گزارش کامل</a></div>
+        <div class="pb">
+          <div class="chart">
+            <div class="col"><div class="bar" style="height:42%"></div><div class="cb">شنبه</div></div>
+            <div class="col"><div class="bar" style="height:58%"></div><div class="cb">یکشنبه</div></div>
+            <div class="col"><div class="bar" style="height:35%"></div><div class="cb">دوشنبه</div></div>
+            <div class="col"><div class="bar" style="height:66%"></div><div class="cb">سه‌شنبه</div></div>
+            <div class="col"><div class="bar" style="height:74%"></div><div class="cb">چهارشنبه</div></div>
+            <div class="col"><div class="bar" style="height:90%"></div><div class="cb">پنجشنبه</div></div>
+            <div class="col"><div class="bar peak" style="height:100%"></div><div class="cb">جمعه</div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-500);margin-top:10px;border-top:1px dashed var(--ink-200);padding-top:9px">
+            <span>مجموع هفته: <b class="fa" style="color:var(--ink-900)">۳۸ سفارش</b></span>
+            <span>میانگین روزانه: <b class="fa" style="color:var(--ink-900)">۵٫۴</b></span>
+            <span>بهترین روز: <b style="color:var(--ink-900)">جمعه</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph2">🏷 آخرین سفارش‌ها <span class="sp"></span><a href="#">همه</a></div>
+        <table>
+          <tbody>
+            <tr><td><b>KIA-671670</b><div style="color:var(--ink-400);font-size:10px">اویـد کیا · ۲۵ مهر</div></td><td class="money fa">۲٬۵۲۵٬۰۰۰</td><td><span class="pill wait">در انتظار پرداخت</span></td></tr>
+            <tr><td><b>KIA-439102</b><div style="color:var(--ink-400);font-size:10px">سارا محمدی · ۲۵ مهر</div></td><td class="money fa">۴٬۱۸۰٬۰۰۰</td><td><span class="pill ok">پرداخت شد</span></td></tr>
+            <tr><td><b>KIA-221884</b><div style="color:var(--ink-400);font-size:10px">رضا احمدی · ۲۴ مهر</div></td><td class="money fa">۸۹۰٬۰۰۰</td><td><span class="pill ok">ارسال شد</span></td></tr>
+            <tr><td><b>KIA-110573</b><div style="color:var(--ink-400);font-size:10px">نگار رستمی · ۲۴ مهر</div></td><td class="money fa">۱٬۲۹۰٬۰۰۰</td><td><span class="pill low">آماده‌سازی</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph2">📦 محصولات <span class="sp"></span><a href="#">+ محصول جدید</a></div>
+      <table>
+        <thead><tr><th>محصول</th><th>دسته</th><th>قیمت</th><th>موجودی</th><th>تعامل</th><th>عملیات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="thumb">⌚</span> ساعت مینیمال استیل<div style="color:var(--ink-400);font-size:10px">/minimal-steel-watch</div></td><td>ساعت</td><td class="money fa">۲٬۴۹۰٬۰۰۰</td><td><span class="pill ok">۱۱ عدد</span></td><td style="font-size:10.5px;color:var(--ink-500)">♡ ۲٬۳۴۱ · 💬 ۸۷</td><td class="ops"><button onclick="toast('ویرایش (ماکاپ)')">✏️</button><button>⋯</button></td></tr>
+          <tr><td><span class="thumb">🎧</span> هدفون بی‌سیم نویزکنسلینگ<div style="color:var(--ink-400);font-size:10px">/noise-cancel-headphone</div></td><td>دیجیتال</td><td class="money fa">۳٬۲۵۰٬۰۰۰</td><td><span class="pill ok">۱۰۰ عدد</span></td><td style="font-size:10.5px;color:var(--ink-500)">♡ ۱٬۸۷۵ · 💬 ۵۲</td><td class="ops"><button>✏️</button><button>⋯</button></td></tr>
+          <tr><td><span class="thumb">👜</span> کیف چرم دست‌دوز<div style="color:var(--ink-400);font-size:10px">/handmade-leather-bag</div></td><td>اکسسوری</td><td class="money fa">۱٬۴۵۰٬۰۰۰</td><td><span class="pill low">۵ عدد</span></td><td style="font-size:10.5px;color:var(--ink-500)">♡ ۳٬۱۲۶ · 💬 ۱۴۳</td><td class="ops"><button>✏️</button><button>⋯</button></td></tr>
+          <tr><td><span class="thumb">🕶</span> عینک آفتابی پلاریزه<div style="color:var(--ink-400);font-size:10px">/polarized-sunglasses</div></td><td>عینک</td><td class="money fa">۹۸۰٬۰۰۰</td><td><span class="pill out">ناموجود</span></td><td style="font-size:10.5px;color:var(--ink-500)">♡ ۹۵۶ · 💬 ۳۲</td><td class="ops"><button>✏️</button><button>⋯</button></td></tr>
+          <tr><td><span class="thumb">🧥</span> هودی اورسایز کیا<div style="color:var(--ink-400);font-size:10px">/oversize-hoodie</div></td><td>پوشاک</td><td class="money fa">۸۹۰٬۰۰۰</td><td><span class="pill ok">۳۴ عدد</span></td><td style="font-size:10.5px;color:var(--ink-500)">♡ ۵٬۷۳۴ · 💬 ۲۱۶</td><td class="ops"><button>✏️</button><button>⋯</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel mall">
+      <div class="ph2">🔐 ماتریس نقش و دسترسی <span class="sp"></span><span style="font-size:10.5px;font-weight:600;color:var(--ink-400)">۹۰ مجوز در ۱۲ ماژول — قابل شخصی‌سازی</span></div>
+      <div class="pb" style="padding:0;overflow:auto">
+        <table class="matrix">
+          <thead><tr><th>مجوز</th><th>مالک</th><th>مدیر</th><th>انباردار</th><th>پشتیبان</th><th>مالی</th><th>بازاریاب</th></tr></thead>
+          <tbody>
+            <tr><td>مشاهدهٔ محصول</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><td>ویرایش قیمت</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>اصلاح موجودی</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>دیدن شمارهٔ کامل مشتری</td><td class="yes">✓</td><td class="yes">✓</td><td class="warn">محدود</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td></tr>
+            <tr><td>بازپرداخت</td><td class="yes">✓</td><td class="warn">تأیید دوم</td><td class="no">—</td><td class="warn">درخواست</td><td class="yes">✓</td><td class="no">—</td></tr>
+            <tr><td>ارسال کمپین</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+            <tr><td>تنظیمات و کلیدهای محرمانه</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+            <tr><td>ساخت نقش و دعوت کارمند</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pb" style="border-top:1px solid var(--ink-200);display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag">۸۵ مجوز فعال</span><span class="tag v">۴ نقش سفارشی</span><span class="tag g">همهٔ تغییرات در Audit Log</span><span class="tag">۲FA برای نقش‌های حساس</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════ POST MODAL ═══════════════ -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="جزئیات پست">
+    <div class="mmedia">
+      <button class="mclose" onclick="closeModal()" aria-label="بستن">✕</button>
+      <div class="art" id="mart">👜</div>
+    </div>
+    <div class="mbody">
+      <div class="mhead">
+        <div class="av" style="width:32px;height:32px;font-size:12px">ک</div>
+        <div style="line-height:1.4"><b style="font-size:12.5px">کیـا · ویترین</b><div style="font-size:10px;color:var(--ink-500)">فروشندهٔ تأییدشده</div></div>
+        <button class="fbtn" onclick="toast('دنبال کردید ✓')">دنبال کردن</button>
+      </div>
+      <div class="mscroll">
+        <h3 id="mtitle" style="margin:0 0 6px;font-size:15px"></h3>
+        <div style="font-size:11.5px;color:var(--ink-500);margin-bottom:10px" id="mtrust"></div>
+        <div class="desc" id="mdesc" style="margin-top:0">
+          <div class="txt" id="mdesctext"></div>
+          <div class="fade"></div>
+        </div>
+        <button class="morebtn" onclick="toggleDesc('mdesc',this)">بیشتر <span>⌄</span></button>
+        <button class="ghostlink" onclick="toast('شیت جزئیات کامل: مشخصات / سایزبندی / ارسال و مرجوعی / پرسش‌ها (ماکاپ)')">جزئیات کامل ↗</button>
+
+        <div class="variants" id="mvariants"></div>
+
+        <div class="mcomment">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <b style="font-size:12.5px">کامنت‌ها</b>
+            <span style="font-size:11px;color:var(--ink-400)" id="mcount"></span>
+            <span style="flex:1"></span>
+            <span style="font-size:10.5px;color:var(--success-500);font-weight:700">● لایو</span>
+          </div>
+          <div class="csort">
+            <button class="on" onclick="setSort(this,'relevant')">مرتبط‌ترین</button>
+            <button onclick="setSort(this,'new')">جدیدترین</button>
+            <button onclick="setSort(this,'q')">پرسش‌ها</button>
+          </div>
+          <div id="mcomments"></div>
+        </div>
+      </div>
+      <div class="mprice">
+        <div class="price">
+          <span class="old fa" id="mold"></span>
+          <span class="now fa" id="mprice"></span>
+        </div>
+        <span style="flex:1"></span>
+        <button class="btn btn-ghost" style="padding:10px 12px" onclick="toast('ذخیره شد ♥')">♥</button>
+        <button class="btn btn-primary" onclick="toast('به سبد اضافه شد ✓')">افزودن به سبد</button>
+      </div>
+      <div class="mform">
+        <div class="cav" style="width:28px;height:28px;border-radius:50%;background:var(--grad-brand);display:grid;place-items:center;color:#fff;font-size:10px;font-weight:800">ش</div>
+        <input id="cinput" placeholder="کامنت یا سؤال خود را بنویسید…" onkeydown="if(event.key==='Enter')addComment()" />
+        <button class="send" onclick="addComment()" aria-label="ارسال">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="note">
+  <b>این فایل چیست:</b> ماکاپ تعاملی کانسپت «ویترین» برای تأیید زبان بصری. داده‌ها نمونه‌اند و به سرور وصل نیستند.
+  <b>چیزهایی که کار می‌کنند:</b> باز/بسته کردن توضیحات («بیشتر»)، باز شدن مودال پست، نوشتن کامنت، لایک کامنت، تغییر مرتب‌سازی، سوئیچ فروشگاه/پنل.
+  <b>سند کامل:</b> پوشهٔ <code>docs/</code> — از فایل <code>README.md</code> شروع کن.
+</div>
+
+<script>
+/* ───────────── داده‌های نمونه ───────────── */
+const stories = [
+  {n:"داستان شما",e:"＋",live:false,seen:true,bg:"linear-gradient(135deg,#EAECF0,#D0D5DD)"},
+  {n:"دراپ امروز",e:"🔥",live:true,bg:"linear-gradient(135deg,#FFD8A8,#EF4056)"},
+  {n:"ساعت",e:"⌚",live:false,bg:"linear-gradient(135deg,#E9E4F0,#C4B5FD)"},
+  {n:"کیف و چرم",e:"👜",live:false,bg:"linear-gradient(135deg,#FDE68A,#D97706)"},
+  {n:"دیجیتال",e:"🎧",live:false,bg:"linear-gradient(135deg,#BFDBFE,#3B82F6)"},
+  {n:"پوشاک",e:"🧥",live:false,bg:"linear-gradient(135deg,#D1D5DB,#4B5563)"},
+  {n:"خانه",e:"🌙",live:false,bg:"linear-gradient(135deg,#FBCFE8,#BE185D)"},
+  {n:"حراج آخر هفته",e:"🎁",live:false,bg:"linear-gradient(135deg,#FECACA,#DC2626)"}
+];
+
+const posts = [
+  {
+    id:"p1", art:"👜", bg:"linear-gradient(160deg,#3B2A21,#8B5E3C 55%,#1C1310)",
+    title:"کیف چرم دست‌دوز — مدل تهران، چرم طبیعی گاوی",
+    price:"۱٬۴۵۰٬۰۰۰", old:"۱٬۸۹۰٬۰۰۰", disc:"۲۳٪",
+    rating:"۴٫۸", sold:126, stock:5, live:true,
+    tags:["چرم طبیعی","دست‌دوز","۲ سال گارانتی"],
+    desc:"کیف چرم دست‌دوز مدل تهران از چرم طبیعی گاوی با رنگ‌بندی گیاهی ساخته شده. بدنهٔ یک‌تکه، دوخت دستی با نخ موم‌اندود و آستر پارچه‌ای مقاوم. بند قابل تنظیم و جداشدنی، سه جیب داخلی و یک جیب زیپ‌دار پشتی. مناسب استفادهٔ روزمره و لپ‌تاپ تا ۱۴ اینچ. با گذشت زمان و استفاده، رنگ چرم طبیعی عمیق‌تر و سطح آن براق‌تر می‌شود؛ این ویژگی چرم دست‌دوز است، نه ایراد. هر کیف در کارگاه با شمارهٔ سریال یکتا و کارت اصالت ارسال می‌شود.",
+    variants:[["رنگ","قهوه‌ای سوخته","#5B3A29"],["اندازه","متوسط",""]],
+    comments:[
+      {n:"سارا محمدی",c:"#F59E0B",t:"آستر داخلش پارچه‌ای هست یا چرم؟ برای لپ‌تاپ ۱۴ اینچ جا می‌شه؟",ago:"۲ ساعت پیش",likes:12,verified:true,pin:true},
+      {n:"کیـا",c:"#E1306C",t:"بله آستر پارچه‌ای ضدآب دارد و لپ‌تاپ ۱۴ اینچ راحت جا می‌شود. برای ۱۵ اینچ پیشنهاد می‌کنم سایز بزرگ را ببینید.",ago:"۱ ساعت پیش",likes:8,official:true,replyTo:"سارا محمدی"},
+      {n:"رضا احمدی",c:"#2E90FA",t:"من سه ماهه استفاده می‌کنم، دوخت‌ها هنوز سفت و سالم‌اند. فقط رنگش تیره‌تر شده که خودم بیشتر دوست دارم 👌",ago:"دیروز",likes:31,verified:true},
+      {n:"نگار ر.",c:"#7C3AED",t:"عکس کیف در دست واقعی‌تر می‌شد، رنگ تصویر با واقعیت فرق داره؟",ago:"دیروز",likes:4,question:true}
+    ]
+  },
+  {
+    id:"p2", art:"👟", bg:"linear-gradient(160deg,#E5E7EB,#9CA3AF 60%,#4B5563)",
+    title:"کفش رانینگ نایت — زیرهٔ فوم واکنشی، مناسب دویدن شهری",
+    price:"۱٬۸۹۰٬۰۰۰", old:"۲٬۴۰۰٬۰۰۰", disc:"۲۱٪",
+    rating:"۴٫۶", sold:88, stock:22, live:false,
+    tags:["سبک","تنفس‌پذیر","مناسب آسفالت"],
+    desc:"کفش رانینگ نایت با رویهٔ مش تنفس‌پذیر و زیرهٔ فوم واکنشی طراحی شده تا در دویدن‌های شهری فشار وارد بر مچ و زانو کمتر شود. کفی طبی قابل تعویض، پاشنهٔ تقویت‌شده و وزن ۲۴۰ گرم در سایز ۴۲. تست شده روی مسافت ۱۰ کیلومتر آسفالت و تریدمیل. سایزبندی این مدل استاندارد است؛ اگر بین دو سایز هستید، سایز بزرگ‌تر را انتخاب کنید.",
+    variants:[["رنگ","خاکستری","#6B7280"],["سایز","۴۲",""]],
+    comments:[
+      {n:"امیر ک.",c:"#12B76A",t:"برای پیاده‌روی روزانه هم مناسبه یا فقط دویدن؟",ago:"۵ ساعت پیش",likes:9,question:true},
+      {n:"نگار ر.",c:"#7C3AED",t:"سایز ۴۳ موجود می‌شه؟",ago:"۳ ساعت پیش",likes:6,question:true},
+      {n:"کیـا",c:"#E1306C",t:"سایز ۴۳ اواخر هفته شارژ می‌شود؛ اگر بخواهید در دایرکت خبرتان می‌کنیم.",ago:"۲ ساعت پیش",likes:3,official:true}
+    ]
+  },
+  {
+    id:"p3", art:"🌙", bg:"linear-gradient(160deg,#4A1D1D,#7F1D1D 50%,#201010)",
+    title:"چراغ خواب ماه — نور گرم قابل تنظیم، شارژ USB-C",
+    price:"۹۴۰٬۰۰۰", old:"", disc:"",
+    rating:"۴٫۹", sold:342, stock:27, live:false,
+    tags:["هدیه","نور گرم","شارژ باتری"],
+    desc:"چراغ خواب ماه با بدنهٔ رزین مات و چراغ LED گرم سه‌حالته (۲۷۰۰ تا ۳۲۰۰ کلوین). با باتری داخلی ۱۲۰۰ میلی‌آمپری تا ۱۲ ساعت روشن می‌ماند و با USB-C در دو ساعت کامل شارژ می‌شود. پایهٔ چوبی جداشدنی، بدون گرم شدن بدنه و مناسب اتاق کودک. یکی از پرفروش‌ترین هدیه‌های فروشگاه در سه ماه گذشته.",
+    variants:[["قطر","۲۰ سانتی",""],["نور","گرم","#FBBF24"]],
+    comments:[
+      {n:"مریم ت.",c:"#F472B6",t:"به عنوان هدیه خریدم، بسته‌بندی خیلی تمیز بود. باتری واقعاً یک شب کامل جواب می‌ده.",ago:"۲ روز پیش",likes:44,verified:true},
+      {n:"حسین م.",c:"#2E90FA",t:"نورش برای مطالعه کافی هست؟",ago:"۲ روز پیش",likes:7,question:true}
+    ]
+  }
+];
+
+const cart = [
+  {e:"⌚",n:"ساعت مینیمال استیل",v:"بند مشکی",p:"۲٬۴۹۰٬۰۰۰"},
+  {e:"👜",n:"کیف چرم دست‌دوز",v:"قهوه‌ای · متوسط",p:"۱٬۴۰۰٬۰۰۰"}
+];
+const suggest = [
+  {e:"🎧",n:"هدفون نویزکنسلینگ",p:"۳٬۲۵۰٬۰۰۰"},
+  {e:"🕶",n:"عینک پلاریزه",p:"۹۸۰٬۰۰۰"},
+  {e:"🍶",n:"ادکلن امبر",p:"۲٬۱۵۰٬۰۰۰"}
+];
+
+/* ───────────── رندر ───────────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$("#stories").innerHTML = stories.map(s=>`
+  <div class="story" onclick="toast('باز شدن استوری «${s.n}» (ماکاپ)')">
+    <div class="ring ${s.seen?'seen':''} ${s.live?'live':''}">
+      <div class="inner"><div class="ph" style="background:${s.bg}">${s.e}</div></div>
+      ${s.live?'<span class="livebadge">LIVE</span>':''}
+    </div>
+    <span>${s.n}</span>
+  </div>`).join("");
+
+$("#posts").innerHTML = posts.map(p=>`
+  <article class="post">
+    <div class="phead">
+      <div class="av">ک</div>
+      <div class="meta">
+        <b>کیـا · ویترین
+          <svg class="verified" viewBox="0 0 24 24" fill="#2E90FA"><path d="M12 2l2.4 2.1 3.2-.2.8 3.1 2.7 1.7-1.3 2.9 1.3 2.9-2.7 1.7-.8 3.1-3.2-.2L12 22l-2.4-2.9-3.2.2-.8-3.1L2.9 14.5 4.2 11.6 2.9 8.7 5.6 7l.8-3.1 3.2.2z"/><path d="M10.6 15.4 7.8 12.6l1.2-1.2 1.6 1.6 4-4 1.2 1.2z" fill="#fff"/></svg>
+        </b>
+        <small>۲ ساعت پیش · تهران</small>
+      </div>
+      <button class="more" onclick="toast('منو: ذخیره، اشتراک، گزارش (ماکاپ)')">⋯</button>
+    </div>
+    <div class="media" style="background:${p.bg}" onclick="openModal('${p.id}')">
+      <div class="veil"></div>
+      <div class="art">${p.art}</div>
+      ${p.disc?`<span class="disc">${p.disc} تخفیف</span>`:''}
+      ${p.live?`<span class="livetag"><i></i> در حال خرید</span>`:''}
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="body">
+      <div class="ttl">
+        <h3 onclick="openModal('${p.id}')" style="cursor:pointer">${p.title}</h3>
+        <span class="rate">★ ${p.rating}</span>
+      </div>
+      <div class="trust">
+        <span><b class="fa">${p.sold}</b> نفر خریده‌اند</span>
+        <span>موجودی: <b class="fa">${p.stock}</b> عدد</span>
+        <span class="ok">✓ ارسال امروز</span>
+        <span>ضمانت ۷ روز بازگشت</span>
+      </div>
+      <div class="desc" id="d-${p.id}">
+        <div class="txt">${p.desc}</div>
+        <div class="fade"></div>
+      </div>
+      <button class="morebtn" onclick="toggleDesc('d-${p.id}',this)">بیشتر <span>⌄</span></button>
+      <button class="ghostlink" onclick="openModal('${p.id}')">جزئیات کامل ↗</button>
+      <div class="variants">
+        ${p.variants.map(v=>`<button class="vsel" onclick="toast('انتخاب ${v[0]} (ماکاپ)')">
+          ${v[2]?`<span class="sw" style="background:${v[2]}"></span>`:''} ${v[0]}: <b style="font-weight:700">${v[1]}</b> ▾</button>`).join("")}
+      </div>
+    </div>
+    <div class="buybar">
+      <div class="price">
+        ${p.old?`<span class="old fa">${p.old}</span>`:''}
+        <span class="now fa">${p.price}<small>تومان</small></span>
+      </div>
+      <span class="grow"></span>
+      <button class="iconbtn" title="علاقه‌مندی" onclick="this.classList.toggle('liked');toast('علاقه‌مندی به‌روزرسانی شد')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20s-7-4.4-7-9.2A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.8C19 15.6 12 20 12 20z"/></svg>
+      </button>
+      <button class="btn btn-primary" onclick="toast('به سبد اضافه شد · مشاهدهٔ سبد')">افزودن به سبد</button>
+    </div>
+    <div class="actions">
+      <button class="iconbtn" onclick="this.classList.toggle('liked')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20s-7-4.4-7-9.2A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.8C19 15.6 12 20 12 20z"/></svg>
+      </button>
+      <span class="cnt fa">۲٬۳۴۱</span>
+      <button class="iconbtn" onclick="openModal('${p.id}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 9 9 0 0 1-3.8-.8L3 21l1.9-5A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></svg>
+      </button>
+      <span class="cnt fa">${p.comments.length * 21 + 30}</span>
+      <span class="grow"></span>
+      <button class="iconbtn" title="اشتراک" onclick="toast('لینک پست کپی شد')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 16V3"/><path d="m8 7 4-4 4 4"/></svg>
+      </button>
+      <button class="iconbtn" title="ذخیره" onclick="toast('ذخیره شد')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h12v18l-6-3-6 3z"/></svg>
+      </button>
+    </div>
+    <div class="cpreview">
+      ${p.comments.slice(0,2).map(c=>`<div class="row"><b>${c.n}</b>${c.verified?'<span class="badge-v">خرید تأییدشده</span>':''} <span style="flex:1;color:var(--ink-600)">${esc(c.t).slice(0,72)}${c.t.length>72?'…':''}</span></div>`).join("")}
+      <div class="allcom" onclick="openModal('${p.id}')" style="cursor:pointer">مشاهدهٔ همهٔ ${p.comments.length*21+30} کامنت</div>
+    </div>
+    <div class="quick">
+      <button class="qbtn" onclick="openModal('${p.id}')">💬 پرسش دربارهٔ این کالا</button>
+      <button class="qbtn" onclick="toast('راهنمای سایز (ماکاپ)')">📏 راهنمای سایز</button>
+      <button class="qbtn" onclick="toast('ارسال و مرجوعی (ماکاپ)')">🚚 ارسال</button>
+    </div>
+  </article>`).join("");
+
+$("#cartlines").innerHTML = cart.map(c=>`
+  <div class="cartline">
+    <div class="th">${c.e}</div>
+    <div class="info"><b>${c.n}</b><span>${c.v}</span></div>
+    <div class="p fa">${c.p}</div>
+  </div>`).join("");
+
+$("#sideMini").innerHTML = suggest.map(s=>`
+  <div class="mini" onclick="toast('${s.n} (ماکاپ)')" style="cursor:pointer">
+    <div class="th">${s.e}</div>
+    <div class="info"><b>${s.n}</b><span class="fa">${s.p} تومان</span></div>
+    <span style="color:var(--ink-300)">›</span>
+  </div>`).join("");
+
+/* ───────────── تعاملات ───────────── */
+function toggleDesc(id, btn){
+  const el = document.getElementById(id);
+  const open = el.classList.toggle("open");
+  btn.innerHTML = open ? 'کمتر <span style="display:inline-block;transform:rotate(180deg)">⌄</span>' : 'بیشتر <span>⌄</span>';
+}
+
+let current = null, sortMode = "relevant";
+const myLikes = new Set();
+
+function openModal(id){
+  current = posts.find(p=>p.id===id);
+  $("#mart").textContent = current.art;
+  document.querySelector(".mmedia").style.background = current.bg;
+  $("#mtitle").textContent = current.title;
+  $("#mtrust").innerHTML = `<b class="fa">${current.sold}</b> نفر خریده‌اند · موجودی <b class="fa">${current.stock}</b> عدد · ★ ${current.rating} · <span style="color:var(--success-500);font-weight:700">✓ ارسال امروز</span>`;
+  $("#mdesctext").textContent = current.desc;
+  $("#mdesc").classList.remove("open");
+  $("#mprice").innerHTML = `${current.price}<small>تومان</small>`;
+  $("#mold").textContent = current.old || "";
+  $("#mvariants").innerHTML = current.variants.map(v=>`<button class="vsel" onclick="toast('انتخاب ${v[0]}')">
+    ${v[2]?`<span class="sw" style="background:${v[2]}"></span>`:''} ${v[0]}: <b>${v[1]}</b> ▾</button>`).join("");
+  renderComments();
+  $("#overlay").classList.add("show");
+  document.body.style.overflow = "hidden";
+  setTimeout(()=>$("#cinput").focus(), 200);
+}
+
+function closeModal(){
+  $("#overlay").classList.remove("show");
+  document.body.style.overflow = "";
+}
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+
+function renderComments(){
+  const list = [...current.comments];
+  if(sortMode === "q") list.sort((a,b)=>(b.question?1:0)-(a.question?1:0));
+  if(sortMode === "relevant") list.sort((a,b)=>(b.pin?1:0)-(a.pin?1:0) || b.likes-a.likes);
+  if(sortMode === "new") list.reverse();
+
+  $("#mcount").textContent = `${current.comments.length} کامنت اینجا · ${current.comments.length*21+30} در کل`;
+  $("#mcomments").innerHTML = list.map((c,i)=>{
+    const key = current.id + ":" + c.n + ":" + i;
+    const liked = myLikes.has(key);
+    return `
+    <div class="comment">
+      <div class="cav" style="background:${c.c}">${c.n.slice(0,1)}</div>
+      <div class="cmain">
+        <div class="cl">
+          <b>${c.n}</b>
+          ${c.verified?'<span class="vbadge">✓ خرید تأییدشده</span>':''}
+          ${c.official?'<span class="sbadge">فروشنده</span>':''}
+          ${c.pin?'<span class="pin">📌 سنجاق‌شده</span>':''}
+          ${c.replyTo?`<span style="color:var(--ink-400);font-size:11px"> در پاسخ به ${c.replyTo}</span>`:''}
+          <div style="margin-top:2px">${esc(c.t)}</div>
+        </div>
+        <div class="cmeta">
+          <span>${c.ago}</span>
+          <button onclick="replyTo('${c.n}')">پاسخ</button>
+          <button onclick="toast('گزارش ثبت شد؛ در صف بازبینی')">گزارش</button>
+          ${c.question?'<span style="color:var(--warning-500);font-weight:800">پرسش خرید</span>':''}
+        </div>
+      </div>
+      <div class="clike ${liked?'on':''}">
+        <button onclick="toggleLike('${key}')">
+          <svg viewBox="0 0 24 24" fill="${liked?'currentColor':'none'}" stroke="currentColor"><path d="M12 20s-7-4.4-7-9.2A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.8C19 15.6 12 20 12 20z"/></svg>
+        </button>
+        <span class="fa">${c.likes + (liked?1:0)}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleLike(key){
+  myLikes.has(key) ? myLikes.delete(key) : myLikes.add(key);
+  renderComments();
+}
+
+function replyTo(name){
+  const i = $("#cinput");
+  i.value = "@" + name + " ";
+  i.focus();
+}
+
+function addComment(){
+  const i = $("#cinput");
+  const v = i.value.trim();
+  if(!v){ i.focus(); return; }
+  current.comments.unshift({
+    n:"شما", c:"#7C3AED", t:v, ago:"همین حالا", likes:0,
+    question: /[؟?]/.test(v)
+  });
+  i.value = "";
+  sortMode = "new";
+  document.querySelectorAll(".csort button").forEach((b,idx)=>b.classList.toggle("on", idx===1));
+  renderComments();
+  toast("کامنت ثبت شد ✓");
+}
+
+function setSort(btn, mode){
+  sortMode = mode;
+  document.querySelectorAll(".csort button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  renderComments();
+}
+
+let tt;
+function toast(msg){
+  const el = $("#toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(tt);
+  tt = setTimeout(()=>el.classList.remove("show"), 2400);
+}
+
+function switchView(v){
+  const store = $("#store"), admin = $("#admin");
+  $("#tab-store").classList.toggle("on", v==="store");
+  $("#tab-admin").classList.toggle("on", v==="admin");
+  store.style.display = v==="store" ? "grid" : "none";
+  admin.classList.toggle("show", v==="admin");
+  window.scrollTo({top:0});
+}
+</script>
+</body>
+</html>

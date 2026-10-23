@@ -1,0 +1,11 @@
+{
+  "name": "kiya-independent-site",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "install:all": "npm --prefix frontend ci && npm --prefix backend ci",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "test:template": "node scripts/verify-template.mjs"
+  }
+}

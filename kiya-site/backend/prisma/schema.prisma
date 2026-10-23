@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  kind              String    @default("CUSTOMER")
+  displayName       String    @db.VarChar(80)
+  handle            String?   @unique @db.VarChar(60)
+  phone             String?   @unique @db.VarChar(20)
+  phoneVerifiedAt   DateTime? @db.Timestamptz(3)
+  isDemo            Boolean   @default(false)
+  passwordHash      String?
+  mfaSecret         String?
+  mfaEnabled        Boolean   @default(false)
+  mfaLastStep       BigInt?
+  recoveryCodes     RecoveryCode[]
+  isActive          Boolean   @default(true)
+  permissionVersion Int       @default(1)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  sessions          Session[]
+  roles             UserRole[]
+  comments          Comment[]
+  partner           PartnerAccount?
+  carts ServerCart[]
+ orders PurchaseOrder[]
+}
+model Role {
+  id          String @id @default(uuid()) @db.Uuid
+  key         String @unique @db.VarChar(40)
+  name        String @db.VarChar(80)
+  version     Int @default(1)
+  permissions String[]
+  users       UserRole[]
+}
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  @@id([userId, roleId])
+}
+model Session {
+  id                String @id @default(uuid()) @db.Uuid
+  tokenHash         String @unique
+  userId            String @db.Uuid
+  permissionVersion Int
+  mfaVerified       Boolean @default(false)
+  expiresAt         DateTime @db.Timestamptz(3)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+model Product {
+  id        String @id @db.VarChar(80)
+  name      String @db.VarChar(160)
+  status    String @default("DRAFT")
+  price     Decimal @db.Decimal(14,0)
+  version   Int @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  comments  Comment[]
+  subtitle String @default("") @db.VarChar(160)
+  category String @default("") @db.VarChar(80)
+  description String @default("") @db.VarChar(3000)
+  imagePath String @default("") @db.VarChar(160)
+  packSize Int?
+  tag String @default("") @db.VarChar(40)
+  collection String @default("") @db.VarChar(80)
+  previousPrice Decimal? @db.Decimal(14,0)
+  isDemo Boolean @default(false)
+  sortOrder Int @default(100)
+  variants ProductVariant[]
+  packs PackDefinition[]
+}
+model Comment {
+  id               String @id @default(uuid()) @db.Uuid
+  postId           String @db.VarChar(80)
+  userId           String @db.Uuid
+  parentId         String? @db.Uuid
+  body             String @db.VarChar(1500)
+  status           String @default("VISIBLE")
+  clientMutationId String @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  post             Product @relation(fields:[postId], references:[id], onDelete:Restrict)
+  author           User @relation(fields:[userId], references:[id], onDelete:Restrict)
+  parent           Comment? @relation("CommentReplies",fields:[parentId],references:[id],onDelete:Restrict)
+  replies          Comment[] @relation("CommentReplies")
+  @@unique([userId, clientMutationId])
+  @@index([postId, status, createdAt, id])
+}
+model PartnerAccount {
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @unique @db.Uuid
+  businessName String @db.VarChar(100)
+  city         String @db.VarChar(80)
+  note         String @db.VarChar(500)
+  status       String @default("PENDING")
+  reason       String? @db.VarChar(500)
+  version      Int @default(1)
+  reviewerId   String? @db.Uuid
+  expiresAt DateTime? @db.Timestamptz(3)
+  offers WholesaleOffer[]
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  user         User @relation(fields:[userId],references:[id],onDelete:Restrict)
+  @@index([status,createdAt])
+}
+model AuditLog {
+  id         String @id @default(uuid()) @db.Uuid
+  actorId    String? @db.Uuid
+  action     String @db.VarChar(100)
+  resourceId String? @db.VarChar(100)
+  data       Json
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  @@index([createdAt])
+}
+model RateBucket {
+  key       String @id
+  count     Int @default(1)
+  expiresAt DateTime @db.Timestamptz(3)
+}
+
+model RecoveryCode {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @db.Uuid
+  codeHash   String @unique
+  consumedAt DateTime? @db.Timestamptz(3)
+  user       User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  @@index([userId])
+}
+
+model MediaAsset {
+ id String @id @db.VarChar(64)
+ width Int
+ height Int
+ bytes Int
+ createdBy String @db.Uuid
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+model ProductVariant {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.VarChar(80)
+ sku String @unique @db.VarChar(60)
+ name String @db.VarChar(60)
+ hex String @db.VarChar(7)
+ isActive Boolean @default(true)
+ stock Int @default(0)
+ reserved Int @default(0)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ product Product @relation(fields:[productId],references:[id],onDelete:Restrict)
+ movements InventoryMovement[]
+ packComponents PackComponent[]
+ cartLines ServerCartLine[]
+ @@unique([id,productId])
+ @@unique([productId,name])
+ @@index([productId,isActive])
+ holds OrderHold[]
+ reservationMovements ReservationMovement[]
+}
+model InventoryMovement {
+ id String @id @default(uuid()) @db.Uuid
+ variantId String @db.Uuid
+ actorId String @db.Uuid
+ requestId String @unique @db.Uuid
+ delta Int
+ reason String @db.VarChar(500)
+ stockAfter Int
+ beforeVersion Int
+ versionAfter Int
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ @@index([variantId,createdAt])
+}
+
+model PackDefinition {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.VarChar(80)
+ label String @db.VarChar(80)
+ mode String @db.VarChar(24)
+ unitsPerPack Int
+ status String @default("DRAFT") @db.VarChar(12)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ product Product @relation(fields:[productId],references:[id],onDelete:Restrict)
+ components PackComponent[]
+ offers WholesaleOffer[]
+ cartLines ServerCartLine[]
+ @@unique([id,productId])
+ @@index([productId,status])
+}
+model PackComponent {
+ packId String @db.Uuid
+ productId String @db.VarChar(80)
+ variantId String @db.Uuid
+ units Int
+ pack PackDefinition @relation(fields:[packId,productId],references:[id,productId],onDelete:Restrict,onUpdate:NoAction)
+ variant ProductVariant @relation(fields:[variantId,productId],references:[id,productId],onDelete:Restrict,onUpdate:NoAction)
+ @@id([packId,variantId])
+ @@index([variantId])
+}
+
+model WholesaleOffer {
+ id String @id @default(uuid()) @db.Uuid
+ productId String @db.VarChar(80)
+ packId String @db.Uuid
+ partnerId String @db.Uuid
+ packVersion Int
+ mode String @db.VarChar(12)
+ unitPriceToman Decimal? @db.Decimal(14,0)
+ validFrom DateTime @db.Timestamptz(3)
+ validUntil DateTime? @db.Timestamptz(3)
+ status String @default("DRAFT") @db.VarChar(12)
+ version Int @default(1)
+ createdBy String @db.Uuid
+ reviewerId String? @db.Uuid
+ reason String @db.VarChar(500)
+ requestId String @unique @db.Uuid
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ pack PackDefinition @relation(fields:[packId,productId],references:[id,productId],onDelete:Restrict,onUpdate:NoAction)
+ partner PartnerAccount @relation(fields:[partnerId],references:[id],onDelete:Restrict)
+ @@index([productId,createdAt])
+ @@index([partnerId,status])
+}
+
+model ServerCart {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ mode String @db.VarChar(12)
+ version Int @default(1)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ updatedAt DateTime @updatedAt @db.Timestamptz(3)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ lines ServerCartLine[]
+ operations CartOperation[]
+ @@unique([userId,mode])
+ @@unique([id,mode])
+ orders PurchaseOrder[]
+}
+model ServerCartLine {
+ id String @id @default(uuid()) @db.Uuid
+ cartId String @db.Uuid
+ mode String @db.VarChar(12)
+ variantId String? @db.Uuid
+ packId String? @db.Uuid
+ quantity Int
+ cart ServerCart @relation(fields:[cartId,mode],references:[id,mode],onDelete:Restrict,onUpdate:NoAction)
+ variant ProductVariant? @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ pack PackDefinition? @relation(fields:[packId],references:[id],onDelete:Restrict)
+ @@unique([cartId,variantId])
+ @@unique([cartId,packId])
+}
+model CartOperation {
+ requestId String @id @db.Uuid
+ cartId String @db.Uuid
+ digest String @db.VarChar(64)
+ result Json
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
+ @@index([cartId])
+}
+
+model PurchaseOrder {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ cartId String @db.Uuid
+ cartVersion Int
+ mode String @db.VarChar(12)
+ requestId String @unique @db.Uuid
+ digest String @db.VarChar(64)
+ snapshot Json
+ subtotalToman Decimal @db.Decimal(14,0)
+ status String @default("RESERVED") @db.VarChar(12)
+ version Int @default(1)
+ reservedUntil DateTime @db.Timestamptz(3)
+ endedAt DateTime? @db.Timestamptz(3)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
+ holds OrderHold[]
+ movements ReservationMovement[]
+ @@unique([cartId,cartVersion])
+ @@index([userId,createdAt])
+ @@index([status,reservedUntil])
+}
+model OrderHold {
+ orderId String @db.Uuid
+ variantId String @db.Uuid
+ units Int
+ order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ @@id([orderId,variantId])
+ @@index([variantId])
+}
+model ReservationMovement {
+ id String @id @default(uuid()) @db.Uuid
+ orderId String @db.Uuid
+ variantId String @db.Uuid
+ kind String @db.VarChar(12)
+ delta Int
+ reservedAfter Int
+ beforeVersion Int
+ versionAfter Int
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ variant ProductVariant @relation(fields:[variantId],references:[id],onDelete:Restrict)
+ @@unique([orderId,variantId,kind])
+}

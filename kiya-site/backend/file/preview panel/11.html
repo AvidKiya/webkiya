@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span>محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span>انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span>سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span>دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span>مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span>دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span>مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span>SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span>ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span>تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span>ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full gap-6">
+<!-- Top Hero Header & Key Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface p-6 rounded-xl shadow-sm">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<h1 class="font-headline-lg text-headline-lg text-ink-900 tracking-tight flex items-center gap-2">
+<span>محصولات</span>
+<span class="text-[26px]">📦</span>
+</h1>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-low text-primary font-mono text-label-micro font-bold">
+          ۱۲ کالا
+        </span>
+</div>
+<p class="font-body-default text-body-default text-ink-500">
+        ۱۲ محصول در فروشگاه — هر تغییری بدی بلافاصله توی سایت اعمال می‌شه ⚡
+      </p>
+</div>
+<!-- Right Header CTAs -->
+<div class="flex items-center gap-3 self-start md:self-auto">
+<button class="h-11 px-4 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 font-headline-sm text-headline-sm flex items-center gap-2 transition-colors" onclick="resetDemoAlert()" type="button">
+<span class="material-symbols-outlined text-[19px] text-ink-500">restart_alt</span>
+<span>بازنشانی دمو</span>
+</button>
+<button class="h-11 px-5 rounded-lg bg-info hover:bg-buy-hover text-on-primary font-headline-sm text-headline-sm shadow-md hover:shadow-lg flex items-center gap-2 transition-all transform hover:-translate-y-0.5" type="button">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>محصول جدید</span>
+</button>
+</div>
+</div>
+<!-- Search, Filter & Quick Metric Strip -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+<!-- Search Bar & Category Dropdown (8 cols) -->
+<div class="lg:col-span-8 bg-surface p-3 sm:p-4 rounded-xl shadow-sm flex flex-col sm:flex-row gap-3 items-center">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400 text-[20px]">
+          search
+        </span>
+<input class="w-full h-11 pr-11 pl-4 rounded-lg bg-canvas-sunken text-ink-900 placeholder:text-ink-400 font-body-default text-body-default focus:outline-none focus:bg-surface focus:shadow-[0_0_0_2px_currentColor] text-primary" id="productSearchInput" oninput="filterProductsTable()" placeholder="جستجو در نام محصول، دسته یا شناسه..." type="text"/>
+</div>
+<div class="relative w-full sm:w-64 flex-shrink-0">
+<select class="w-full h-11 pr-4 pl-10 rounded-lg bg-canvas-sunken text-ink-800 font-headline-sm text-headline-sm focus:outline-none focus:bg-surface cursor-pointer appearance-none" id="categoryFilterSelect" onchange="filterProductsTable()">
+<option value="ALL">همه‌ی دسته‌ها (۱۲)</option>
+<option value="ساعت">ساعت</option>
+<option value="دیجیتال">دیجیتال</option>
+<option value="اکسسوری">اکسسوری</option>
+<option value="عینک">عینک</option>
+<option value="پوشاک">پوشاک</option>
+<option value="زیبایی">زیبایی</option>
+<option value="خانه">خانه</option>
+</select>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none text-[20px]">
+          expand_more
+        </span>
+</div>
+</div>
+<!-- Mini Telemetry Strip (4 cols) -->
+<div class="lg:col-span-4 bg-surface p-4 rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">bolt</span>
+</div>
+<div class="flex flex-col">
+<span class="text-label-micro font-label-micro text-ink-400">وضعیت کش و انبار</span>
+<span class="text-headline-sm font-headline-sm text-success flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+            همگام با SocialHub
+          </span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-label-caption font-label-caption text-ink-500 font-mono">
+<span class="font-bold text-ink-900" id="filteredCount">۱۲</span> از ۱۲
+        </span>
+</div>
+</div>
+</div>
+<!-- Main Comprehensive Products Table -->
+<div class="bg-surface rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse" id="productsTable">
+<thead>
+<tr class="bg-canvas-sunken text-ink-500 font-label-micro text-label-micro uppercase tracking-wider select-none">
+<th class="py-3.5 px-4 font-bold">ردیف</th>
+<th class="py-3.5 px-4 font-bold min-w-[240px]">محصول</th>
+<th class="py-3.5 px-4 font-bold">دسته بندی</th>
+<th class="py-3.5 px-4 font-bold min-w-[150px]">قیمت (تومان)</th>
+<th class="py-3.5 px-4 font-bold">موجودی انبار</th>
+<th class="py-3.5 px-4 font-bold min-w-[170px]">تعامل شبکه‌های اجتماعی</th>
+<th class="py-3.5 px-4 font-bold text-left min-w-[140px]">عملیات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-ink-100 font-body-default text-body-default text-ink-800">
+<!-- Item 1: ساعت مینیمال استیل -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="ساعت" data-name="ساعت مینیمال استیل">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۱</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="A modern minimalist unisex luxury wristwatch with stainless steel mesh strap, sleek silver dial, subtle soft studio lighting, high-end ecommerce photography on dark marble" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv15XeGgxGxErqt1VpFD5asICTLygiY1CIImPO_R_AXRA4nVBtxhdQ2CaxluOl_0fGFfBxKWVI4GzdUzQldZeZQXZM8enZpcjb-6KEFQJdePPvPtLhuKJYPdnW3TtZjZR7e5jgRDJ-DkxN_8CRnxgnKveXk9oIATn3OwV63vgjg44zw-oZ-98qiz4DRdoYbj7GtKsV6DgVPkBFTJlSQSOHxl8sfpw2qFuiGTxsicqlnXFMkF3YFfXb"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">ساعت مینیمال استیل</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/steel-minimal-watch</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">ساعت</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۲,۴۹۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۲,۸۵۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۱۱ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۲,۴۳۱</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۸۷</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 2: هدفون بلوتوث نویزکنسلینگ -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="دیجیتال" data-name="هدفون بلوتوث نویزکنسلینگ">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۲</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Matte black wireless over-ear noise-cancelling headphones resting on an oak headphone stand with subtle soft purple backlight studio product photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBYYqawH8ghhDVR9PpJzTiX06_TWFzu-DDL6MK3N5PYsWku4tpuVVzUStpHMEDD-4jGsTRrGXy23cxrihaHa2QZ9JUTziBsV3BFwKjDsuzJAMiBte4jPF8TQDxCsRUXmgxTg0zy9HntxMKrOZfTqItLDxK0tDTvCNWxHpkkFI-9hhqNiF577Q9FTNIvpawOktTqieMNTqmFbHMCaMwYW2oI7nOjzr1N5-DRJq-8lSGo0cxwfoSbOzF"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">هدفون بلوتوث نویزکنسلینگ</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/wireless-anc-headphones</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">دیجیتال</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۳,۲۵۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۳,۶۰۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۱۰۰ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۱,۸۷۵</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۶۴</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 3: کیف چرم دست‌دوز (کم‌موجود) -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="اکسسوری" data-name="کیف چرم دست‌دوز">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۳</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Handcrafted genuine vintage brown leather messenger shoulder bag with brass buckles and raw edges on warm textured cream concrete surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfIBKacsOUKIgTr69-5hvAYsgAVM_xTwJuTU-wHULjZoMM3LEpMiQ1CjVXV2Z1NO3XazaTmfz3ycgWWpUVGwE6iP-JWz14dt3omgouhEzz6LPQI4-uW5Wtsk79Dz5IFPVhvNE7ITYA886ymSrgw9NQ65c3kb4J7w8TS0FS5RvjSFBej6POenjlJlaW5cVVsf4BgEyXjDD2AsXuO6tS0uhMwNyrc-jaRoLbqqZCJTvxg03HfuTlaxP7"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">کیف چرم دست‌دوز</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/leather-handcrafted-bag</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">اکسسوری</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۱,۴۵۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۱,۶۹۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-warning font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+<span>۵ عدد (کم‌موجود)</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۳,۱۲۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۱۴۳</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 4: عینک آفتابی پلاریزه -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="عینک" data-name="عینک آفتابی پلاریزه">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۴</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Classic tortoiseshell polarized sunglasses angled elegantly next to a textured leather case on warm beige minimal background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXqDlsm-YXUugyCG6L7xY-3wAD-7XpnqpPzAjjgRoHI1JwKFVI8Zozc_eGNfLVDPArGkUayPP9O7QAkQ6hTRazZD9onW9zJE9CVcjEg588pH9ReLxNJPg9nlAPWCuXz8V2PIUFs9c3Zplkr_HLo7kzqBGPvhkWzdbuG-FF12HV57HAnVgrVVXYOgS2HqG51Cmloexo4ui_Qt2G2ied59CD3xMa-tPIvq_Zys-53An_csvPwccKeTBy"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">عینک آفتابی پلاریزه</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/polarized-retro-sunglasses</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">عینک</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۹۸۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۱,۱۵۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۲۰ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۹۵۶</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۳۲</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 5: هودی اورسایز کیا -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="پوشاک" data-name="هودی اورسایز کیا">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۵</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Heavyweight cotton oversized dusty rose and dark grey hoodie laid flat on minimalist concrete studio background with clean tailored streetwear seams" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4IzrjsRHKvIZBOvTHPf4V78HYi1Qk4rF2DdJH9uG-8Ccbc7xEFdg91d28bl8hnIOj1qoxHZ1_T82X7c1ASc8sdfvmQd_P69afOyljLVf2YOt1f56PPJZ7Uuk-2LMotu7F1g_hFltOrUEMTNC9B0ozYcwdx0Eq3y9MG61lOQLtD-cvaEnKsIuwG0TuhVlzdtZJgf5XFznERGOUxfh_tmSEqw0d-cInKLDusT7dcqwE9u9yXsTr0AB8"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">هودی اورسایز کیا</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/kiya-oversized-hoodie</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">پوشاک</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۸۹۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۱,۰۵۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۳۴ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۵,۲۳۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۲۱۰</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 6: ادکلن امبر ادوپرفیوم -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="زیبایی" data-name="ادکلن امبر ادوپرفیوم">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۶</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Niche amber luxury perfume glass flacon bottle with gold magnetic cap and warm golden backlighting resting on polished travertine stone" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGEaDfUCbP45m2KzhOQlDX7w-E48WdmA1yrX-8Kjs7rxJPlM87nuxHTaKBE7g9WCJ4XJuydGk-wCwDRv5KyBpJkEPSUl4abtQ_Y9G0R6_XwcKgCQl3h4OGyk8QH_4lXzplf9NIPvT_Sp5YwGUWeRLmRj3UhH2h7tzdVz1ovzO2h1yDPRZZ8DgUITgigTmHTO7KmCrqAzo8K1jS6bkC6KmzRSeFzH-DnNPEEPM8p9k2QPsK6dwTGgxo"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">ادکلن امبر ادوپرفیوم</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/amber-eau-de-parfum</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">زیبایی</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۲,۱۵۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۲,۴۰۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۹ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۱,۴۸۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۵۱</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 7: ساعت هوشمند مدل پرو -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="دیجیتال" data-name="ساعت هوشمند مدل پرو">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۷</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="High-end titanium smartwatch with vivid OLED screen active sports metrics, textured silicone strap against a high-tech dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbhT9BkBs0rygwRi6bwQts0DvLdOv6u3RxfT48Kq6N7ipXo_QvTQEFL324RwltKvnhvDUatDNEnRTGdI-ixMO8CYIXUzMDv3TdZG1kcxcUX2mr-8D5JakrEiCzy8mHC8UhWxUnOtY-15Lt0iWEBEyrwOddCrO9V8kLlxZ3-ubzrHi-I_HQ3fUjOL7MFyE-VEB4BfXjo0Hn6x2_Sby1_nYhGR9LeVEsLe0pSKZfknJ4o9UXPYTEKk2U"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">ساعت هوشمند مدل پرو</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/smartwatch-pro-titanium</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">دیجیتال</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۴,۵۹۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۴,۹۹۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۱۵ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۲,۷۶۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۹۸</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 8: گردنبند نقره ۹۲۵ -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="اکسسوری" data-name="گردنبند نقره ۹۲۵">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۸</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Delicate 925 sterling silver chain necklace with an organic celestial pendant resting over black velvet luxury jewelry display" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4SIyNQRAeXdPj7hyUMRGuOqM3bEt-rWRkoagGSKOAvy0XxsAvQRAEDZqQ9H3IPDcEpehlBX_jp5_-IerfzihP7oDjww38KDPkqfT8OWz4MZQaNkTim0FAEPz0pZ2DnxCGanSUlleJ8EI4seTaMGCylm3w11-WyMNahSZ_O62rWjHN0N8FHWZffFhKfE_OqKMPOIfMGP89P2JSSkCEWliYKCNK6LGwQrnGYCWuQOFYHRaGKt134qBp"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">گردنبند نقره ۹۲۵</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/silver-925-pendant-necklace</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">اکسسوری</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۷۶۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۸۸۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۱۸ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۱,۹۸۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۷۶</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 9: کفش رانینگ نایت -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="پوشاک" data-name="کفش رانینگ نایت">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۰۹</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Futuristic black and electric crimson running sneakers with aerodynamic breathable mesh soles shown floating on light grey concrete background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZc_WqdhPNqQjDX1W276urUri7cWuct5sJfe_0sHHAn_GX5cSyLYp_bnxO1N8uSa4MCR4uXXGGSUUGT3lKESZG4abROd2_qLIKZsnah0hBijglUsR19OkjHscEzjsGtAc1b27Z0ZQbFtceBoziZN7SPuqbiCjZA76DLTYQDJNMBsBstHtrCC27EFX0zmfM6xe6NVsDV8rOL9_IzN_SAhAzYPxhmjdjTc8jZi2DiojOEInYKxaFyIPR"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">کفش رانینگ نایت</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/night-running-sneakers</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">پوشاک</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۱,۸۹۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۲,۲۰۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۲۲ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۳,۴۱۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۱۲۹</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 10: چراغ خواب ماه -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="خانه" data-name="چراغ خواب ماه">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۱۰</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="3D printed illuminated full lunar surface moon lamp glowing warmly on a minimalist geometric wooden stand in cozy dim bedroom environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDn-HwKU892ZxIptPFAscVmhTR_7P0EgbyCBhjSEo8bbotGEIr7rLffcukBUzuJkVrVgWoZdgSnB84-tR9lV4DPOfg8cs0vUtCo4Trno3GdmmJGVT6waU9PORue4_V0uylOrnHISM-zCwr20C3MdxlMN-g84fsRTZCcVBBSMXyKnmZ7AegTVeJ0H1ICxx0XqW6qFdwsQ80-RWWOKbScFa1X1ek7SPCv7PV-zdyB5iS0XLLJIeLrCxk6"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">چراغ خواب ماه</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/lunar-ambient-night-lamp</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">خانه</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۶۴۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۷۹۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۲۷ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۴,۵۲۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۱۸۷</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 11: دستبند چرم بافت -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="اکسسوری" data-name="دستبند چرم بافت">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۱۱</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Braided genuine black leather double wrap bracelet with magnetic brushed steel clasp on clean white minimalist podium" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_0sUW5gC0VVSuwnqc7DX1_zLqVkSaSZye7yOr1KW_UioHIuQruUhhzCfHFxJvPB5YH9dHrCXyCrCvrrWI6sYp0vAbqeFeZ13R186vBKPXcFdQXP_wU8KdLRsPZ3B0Eiaqm_z7Ozo-zry3w3ySUhx12gBf8xDP1Wh9etD_MwdaGzUTS8sDUoAm1lAZvXDOT4O7Oqm7vc3FgtepL_uYqFMHRr9qW6ToLw2R3C37WV9lMX3g08KUeGOZ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">دستبند چرم بافت</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/braided-leather-bracelet</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">اکسسوری</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۳۲۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۳۸۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۴۱ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۸۹۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۲۳</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Item 12: اسپیکر قابل حمل ضدآب -->
+<tr class="product-row hover:bg-surface-container-low/60 transition-colors" data-category="دیجیتال" data-name="اسپیکر قابل حمل ضدآب">
+<td class="py-3 px-4 font-mono text-label-caption text-ink-400">۱۲</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-lg overflow-hidden bg-ink-100 flex-shrink-0 shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Rugged portable waterproof bluetooth cylinder speaker with subtle water droplets and ambient outdoor adventure trail background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXXOxbA-Hfvy0xLOBQGglZNkuYbFeS0YyFcuHimXczAr-AKWzFBp1vuK5aDxlHe5j9sOj8nwfi2gr0RVYQwdbe0Ue9HSWbThUB2ei_L0q4jmda5XJzuQXzoLfsmlUaTTZ2UZc4T1UAe6X22GCm2fMCsTLx0Ma8JQqhwTOljS4UyfkiCYv3qtiPjQRU4Y_b1iSonNOZrRa-IftHJbk6whPSJumgetmo7dGW7GNy_-jsvnV6AOpwdMAH"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-ink-900 truncate">اسپیکر قابل حمل ضدآب</span>
+<a class="font-mono text-label-micro text-info hover:text-buy-hover truncate flex items-center gap-1 mt-0.5" href="#">
+<span>p/waterproof-outdoor-speaker</span>
+<span class="material-symbols-outlined text-[13px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="px-2.5 py-1 rounded-md bg-canvas-sunken text-ink-700 text-label-micro font-medium">دیجیتال</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col">
+<span class="font-price-headline text-price-headline text-ink-900 font-bold">۱,۷۸۰,۰۰۰ <span class="text-label-micro text-ink-500 font-normal">ت</span></span>
+<span class="line-through text-label-micro text-ink-400 font-mono">۲,۰۵۰,۰۰۰</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-success font-headline-sm text-label-micro font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+<span>۱۱ عدد</span>
+</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-3 text-label-caption text-ink-600">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-mono font-bold">۱,۳۴۰</span>
+</div>
+<div class="flex items-center gap-1 text-ink-500">
+<span class="material-symbols-outlined text-[17px]">chat_bubble</span>
+<span class="font-mono">۴۵</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-4 text-left">
+<div class="flex items-center justify-end gap-1.5">
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-ink-700 flex items-center justify-center transition-colors" title="ویرایش محصول">
+<span class="material-symbols-outlined text-[17px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-surface-container text-secondary flex items-center justify-center transition-colors" title="انتشار در شبکه اجتماعی">
+<span class="material-symbols-outlined text-[17px]">share</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-low hover:bg-error-container text-danger flex items-center justify-center transition-colors" onclick="deleteRow(this)" title="حذف کالا">
+<span class="material-symbols-outlined text-[17px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Empty State for Search Filter -->
+<div class="hidden py-16 flex flex-col items-center justify-center gap-2 text-center" id="noResultsState">
+<span class="material-symbols-outlined text-[48px] text-ink-300">inventory_2</span>
+<span class="font-headline-sm text-headline-sm text-ink-700">هیچ محصولی با این مشخصات پیدا نشد</span>
+<p class="font-label-caption text-label-caption text-ink-400">عبارت دیگری را جستجو کنید یا فیلتر دسته‌بندی را تغییر دهید.</p>
+</div>
+<!-- Table Pagination / Status Bar -->
+<div class="p-4 bg-canvas-sunken flex flex-col sm:flex-row items-center justify-between gap-3 text-label-caption font-label-caption text-ink-500">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+<span>همه داده‌ها با پایگاه داده فروشگاه هماهنگ هستند.</span>
+</div>
+<div class="flex items-center gap-1 font-mono">
+<span class="px-2.5 py-1 rounded bg-surface text-ink-900 font-bold shadow-sm">صفحه ۱ از ۱</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Client-side Interactive Behaviors -->
+<script>
+  function filterProductsTable() {
+    const searchVal = document.getElementById('productSearchInput').value.trim().toLowerCase();
+    const categoryVal = document.getElementById('categoryFilterSelect').value;
+    const rows = document.querySelectorAll('.product-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const name = (row.getAttribute('data-name') || '').toLowerCase();
+      const cat = row.getAttribute('data-category') || '';
+
+      const matchSearch = !searchVal || name.includes(searchVal);
+      const matchCategory = categoryVal === 'ALL' || cat === categoryVal;
+
+      if (matchSearch && matchCategory) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    const countEl = document.getElementById('filteredCount');
+    if (countEl) countEl.textContent = visibleCount;
+
+    const noResultsEl = document.getElementById('noResultsState');
+    if (noResultsEl) {
+      noResultsEl.classList.toggle('hidden', visibleCount > 0);
+    }
+  }
+
+  function deleteRow(btn) {
+    if (confirm('آیا از حذف این کالا از کاتالوگ فروشگاه اطمینان دارید؟')) {
+      const row = btn.closest('tr');
+      if (row) {
+        row.remove();
+        filterProductsTable();
+      }
+    }
+  }
+
+  function resetDemoAlert() {
+    alert('وضعیت کاتالوگ محصولات با موفقیت به نسخه پیش‌فرض بازنشانی گردید.');
+    location.reload();
+  }
+</script></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+</body></html>

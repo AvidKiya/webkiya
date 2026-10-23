@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مرکز فرماندهی کیا | KIYA Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf2f7',
+              100: '#fce7f1',
+              500: '#db2777',
+              600: '#b7004f',
+              700: '#9d0042',
+            },
+            surface: '#FFFFFF',
+            canvas: '#F8F9FA',
+            'canvas-subtle': '#F1F3F5',
+            ink: {
+              900: '#0F172A',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569',
+              500: '#64748B',
+              400: '#94A3B8',
+              300: '#CBD5E1',
+              200: '#E2E8F0',
+              100: '#F1F5F9',
+            },
+            accent: {
+              purple: '#7C3AED',
+              pink: '#E11D48',
+              amber: '#D97706',
+              green: '#16A34A',
+              blue: '#2563EB',
+            }
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background-color: #F8F9FA;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="text-ink-800 antialiased selection:bg-brand-500 selection:text-white">
+<!-- ================= TOP HEADER (Height 64px, Sticky, z-30) ================= -->
+<header class="sticky top-0 z-30 h-16 w-full bg-white border-b border-ink-200 px-6 flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+<!-- Right: Brand -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-accent-pink to-accent-purple flex items-center justify-center text-white shadow-sm shadow-brand-500/20">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[16px] text-ink-900 leading-tight tracking-tight">مرکز فرماندهی کیا</span>
+<span class="text-[12px] font-mono text-ink-400 font-semibold">| KIYA Admin</span>
+</div>
+<span class="text-[11px] text-ink-500 font-medium">نسخه پیشرفته فروشگاهی و شبکه‌های اجتماعی</span>
+</div>
+</div>
+<!-- Center: Role Simulator / RBAC Switcher -->
+<div class="hidden xl:flex items-center gap-1.5 bg-ink-100 p-1 rounded-xl border border-ink-200/80">
+<span class="text-[11px] text-ink-500 font-semibold px-2">نقش فعال:</span>
+<button class="role-pill px-3 py-1 text-[12px] font-bold rounded-lg bg-white text-brand-600 shadow-sm border border-brand-100 flex items-center gap-1 transition-all" data-role="super_admin" type="button">
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+        مدیرکل (Super Admin - لول ۱۰۰)
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="finance" type="button">
+        مسئول مالی
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="warehouse" type="button">
+        انباردار
+      </button>
+<button class="role-pill px-2.5 py-1 text-[12px] font-medium rounded-lg text-ink-600 hover:text-ink-900 hover:bg-white/60 transition-all" data-role="support" type="button">
+        پشتیبان دایرکت
+      </button>
+</div>
+<!-- Left: Notification, Live Store Link & Profile -->
+<div class="flex items-center gap-3">
+<!-- Store Quick Link -->
+<a class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 text-[12px] font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-[17px]">open_in_new</span>
+        مشاهده فروشگاه ↗
+      </a>
+<!-- Notifications -->
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-ink-200 hover:bg-ink-100 flex items-center justify-center text-ink-600 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-accent-pink text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white">
+          ۲
+        </span>
+</div>
+<!-- Avatar with Badge -->
+<div class="flex items-center gap-2.5 pl-1 border-r border-ink-200 pr-3">
+<div class="relative">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-600 to-accent-purple text-white flex items-center justify-center font-bold text-[14px] shadow-sm">
+            اوید
+          </div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-accent-green ring-2 ring-white"></span>
+</div>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-[13px] font-bold text-ink-900 leading-tight">اوید کیا</span>
+<span class="text-[10px] text-brand-600 font-semibold">مدیر ارشد پلتفرم</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= 2-COLUMN MAIN DASHBOARD CONTAINER ================= -->
+<div class="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-[240px_1fr]">
+<!-- ================= RIGHT SIDEBAR (Sticky, Height calc(100vh-64px)) ================= -->
+<aside class="hidden md:flex flex-col justify-between bg-white border-l border-ink-200 sticky top-16 h-[calc(100vh-64px)] p-3 overflow-y-auto z-20">
+<div class="space-y-5">
+<!-- Active Dashboard Link -->
+<a class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-[13px] shadow-sm shadow-brand-600/30" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>داشبورد اصلی</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+</a>
+<!-- Group 1: فروش و انبار -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">فروش و انبارداری</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">inventory_2</span>
+<span>محصولات و پست‌ها</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-ink-100 text-ink-600">۱۲</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#inventory-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-amber">swap_horiz</span>
+<span>انبار و تغییر سریع</span>
+</div>
+<span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-100 text-accent-amber">۲ کم</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#recent-orders">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">local_shipping</span>
+<span>سفارش‌ها و مرسولات</span>
+</div>
+<span class="text-[11px] font-mono px-1.5 py-0.2 rounded bg-blue-50 text-accent-blue font-bold">۳۸</span>
+</a>
+</nav>
+</div>
+<!-- Group 2: تعامل و مشتریان -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">تعامل و ارتباطات</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-pink">forum</span>
+<span>دایرکت و چت</span>
+</div>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-pink-100 text-accent-pink font-bold">۳ جدید</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">group</span>
+<span>مشتریان و پرونده‌ها</span>
+</div>
+<span class="text-[11px] font-mono text-ink-500">۲۴۷</span>
+</a>
+</nav>
+</div>
+<!-- Group 3: مالی و گزارشات -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">مالی و محتوا</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">account_balance_wallet</span>
+<span>دفتر مالی و سود</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">auto_stories</span>
+<span>مجله کیامگ (بلاگ)</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Group 4: خودکارسازی و سیستم -->
+<div>
+<span class="text-[10px] font-bold text-ink-400 uppercase tracking-wider px-3 mb-1.5 block">سیستم و انتشار</span>
+<nav class="space-y-0.5">
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#socialhub-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-accent-purple">hub</span>
+<span>SocialHub همگام‌ساز</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent-green"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#rbac-section">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">admin_panel_settings</span>
+<span>ماتریس دسترسی RBAC</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-ink-600 hover:text-ink-900 hover:bg-ink-100 text-[13px] font-medium transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[19px] text-ink-400">tune</span>
+<span>تنظیمات و ربات</span>
+</div>
+</a>
+</nav>
+</div>
+</div>
+<!-- Footer Sync Status -->
+<div class="mt-4 p-3 rounded-xl bg-ink-100/80 border border-ink-200 text-[11px] text-ink-600 space-y-1">
+<div class="flex items-center justify-between font-bold text-ink-800">
+<span>ربات تلگرام @kiyaco24</span>
+<span class="text-accent-green flex items-center gap-1 font-mono text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping"></span>
+            SYNCED
+          </span>
+</div>
+<p class="text-[10px] text-ink-400">آخرین برقراری ارتباط: ۲ دقیقه قبل</p>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="p-4 sm:p-6 lg:p-7 max-w-[1280px] w-full mx-auto flex flex-col gap-6"><div class="flex flex-col w-full gap-6">
+<!-- Top Headline / Live Feed Status -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface p-5 rounded-xl shadow-sm">
+<div class="flex items-center gap-3.5">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">سفارش‌ها</h1>
+<span class="text-[18px]">📑</span>
+</div>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 text-success font-label-micro text-label-micro font-code-mono">
+<span class="w-2 h-2 rounded-full bg-success animate-ping"></span>
+            ۱ سفارش — زنده از دیتابیس سرور
+          </span>
+<span class="text-warning text-headline-sm">⚡</span>
+</div>
+</div>
+</div>
+<!-- Quick Actions & Search -->
+<div class="flex items-center gap-2.5">
+<div class="relative w-full sm:w-64">
+<input class="w-full h-11 pr-10 pl-4 rounded-xl bg-surface-container-low text-on-surface font-body-default text-body-default placeholder:text-ink-400 focus:outline-none focus:bg-surface transition-all" placeholder="جستجوی کد، مشتری، موبایل..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-ink-400 text-[20px]">search</span>
+</div>
+<button class="h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center gap-2 font-headline-sm text-headline-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+<span>فیلتر پیشرفته</span>
+</button>
+</div>
+</div>
+<!-- Status Tabs Navigation Bar -->
+<div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+<button class="order-tab active-tab px-4 py-2.5 rounded-xl bg-primary text-on-primary font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all" data-tab="all" type="button">
+<span>همه سفارش‌ها</span>
+<span class="px-2 py-0.5 rounded-full bg-on-primary/20 text-on-primary font-code-mono text-label-micro">۱</span>
+</button>
+<button class="order-tab px-4 py-2.5 rounded-xl bg-surface text-ink-600 hover:text-on-surface hover:bg-surface-container font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all" data-tab="awaiting_payment" type="button">
+<span class="w-2 h-2 rounded-full bg-warning"></span>
+<span>در انتظار پرداخت</span>
+<span class="px-2 py-0.5 rounded-full bg-warning/15 text-warning font-code-mono text-label-micro font-bold">۱</span>
+</button>
+<button class="order-tab px-4 py-2.5 rounded-xl bg-surface text-ink-600 hover:text-on-surface hover:bg-surface-container font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all" data-tab="processing" type="button">
+<span class="w-2 h-2 rounded-full bg-info"></span>
+<span>آماده‌سازی انبار</span>
+<span class="px-2 py-0.5 rounded-full bg-ink-100 text-ink-400 font-code-mono text-label-micro">۰</span>
+</button>
+<button class="order-tab px-4 py-2.5 rounded-xl bg-surface text-ink-600 hover:text-on-surface hover:bg-surface-container font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all" data-tab="dispatched" type="button">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>تحویل به پست</span>
+<span class="px-2 py-0.5 rounded-full bg-ink-100 text-ink-400 font-code-mono text-label-micro">۰</span>
+</button>
+<button class="order-tab px-4 py-2.5 rounded-xl bg-surface text-ink-600 hover:text-on-surface hover:bg-surface-container font-headline-sm text-headline-sm flex items-center gap-2 shadow-sm transition-all" data-tab="delivered" type="button">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span>تکمیل شده</span>
+<span class="px-2 py-0.5 rounded-full bg-ink-100 text-ink-400 font-code-mono text-label-micro">۰</span>
+</button>
+</div>
+<!-- Featured Order Card: KIA-671670 -->
+<div class="bg-surface rounded-2xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+<!-- Card Summary Row (Top Bar) -->
+<div class="p-5 sm:p-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 bg-surface">
+<!-- Order ID, Date & Customer Profile -->
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary-fixed/40 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">shopping_bag</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-on-surface font-code-mono tracking-tight">KIA-671670</span>
+<span class="text-[17px]">🛍️</span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-500 font-label-caption text-label-caption mt-1">
+<span class="flex items-center gap-1 font-code-mono">
+<span class="material-symbols-outlined text-[16px] text-ink-400">calendar_today</span>
+              ۲۵ مهر ۱۴۰۵ — ۱۳:۳۲
+            </span>
+<span class="w-1 h-1 rounded-full bg-ink-300"></span>
+<span class="font-body-emphasis text-body-emphasis text-on-surface">اوید کیا</span>
+<span class="w-1 h-1 rounded-full bg-ink-300"></span>
+<span class="font-code-mono text-ink-600 dir-ltr inline-block tracking-wider">09933511494</span>
+</div>
+</div>
+</div>
+<!-- Payment & State Badges + Total Price -->
+<div class="flex flex-wrap sm:flex-nowrap items-center justify-between lg:justify-end gap-5">
+<div class="flex flex-col items-start lg:items-end gap-1.5">
+<div class="flex items-center gap-2">
+<!-- Payment Gateway Pill -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container text-ink-700 font-label-micro text-label-micro font-bold">
+<span>💳</span>
+<span>درگاه آنلاین زرین‌پال</span>
+</span>
+<!-- Pending State Pill -->
+<span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-warning/15 text-warning font-headline-sm text-headline-sm font-bold">
+<span>در انتظار پرداخت</span>
+<span>⏳</span>
+</span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="text-ink-400 font-label-caption text-label-caption">مبلغ قابل پرداخت:</span>
+<span class="font-display text-headline-lg text-primary font-code-mono font-bold tracking-tight">۲٬۵۲۵٬۰۰۰</span>
+<span class="font-label-caption text-label-caption text-ink-600 font-medium">تومان</span>
+</div>
+</div>
+<!-- Details Expander Button -->
+<button class="h-11 px-4 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface flex items-center gap-2 font-headline-sm text-headline-sm transition-all group shrink-0" id="toggle-order-btn" type="button">
+<span>جزئیات سفارش و آدرس</span>
+<span class="material-symbols-outlined text-[20px] transition-transform duration-300 group-hover:translate-y-0.5" id="toggle-arrow">expand_more</span>
+</button>
+</div>
+</div>
+<!-- 5-Step Order Progress Visual Timeline Bar -->
+<div class="px-5 sm:px-6 pb-6 pt-2 bg-surface">
+<div class="flex flex-col gap-2">
+<div class="grid grid-cols-5 gap-2 sm:gap-3">
+<!-- Step 1: Placed (Active - Blue) -->
+<div class="flex flex-col gap-1.5">
+<div class="h-2 rounded-full bg-info shadow-sm shadow-info/30"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-micro text-label-micro font-bold text-info flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-info"></span>
+                ثبت اولیه سفارش
+              </span>
+<span class="font-code-mono text-[10px] text-info">۱۳:۳۲</span>
+</div>
+</div>
+<!-- Step 2: Payment Gateway (In Progress - Warning) -->
+<div class="flex flex-col gap-1.5">
+<div class="h-2 rounded-full bg-warning/40 relative overflow-hidden">
+<div class="absolute inset-0 bg-warning w-1/2 animate-pulse"></div>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-micro text-label-micro font-bold text-warning flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-warning animate-ping"></span>
+                پرداخت درگاه
+              </span>
+<span class="font-code-mono text-[10px] text-ink-400">معلق</span>
+</div>
+</div>
+<!-- Step 3: Warehouse & Pack (Pending) -->
+<div class="flex flex-col gap-1.5">
+<div class="h-2 rounded-full bg-canvas-sunken"></div>
+<span class="font-label-micro text-label-micro text-ink-400">انبار و بسته‌بندی</span>
+</div>
+<!-- Step 4: Postal Dispatch (Pending) -->
+<div class="flex flex-col gap-1.5">
+<div class="h-2 rounded-full bg-canvas-sunken"></div>
+<span class="font-label-micro text-label-micro text-ink-400">ارسال پستی</span>
+</div>
+<!-- Step 5: Final Delivery (Pending) -->
+<div class="flex flex-col gap-1.5">
+<div class="h-2 rounded-full bg-canvas-sunken"></div>
+<span class="font-label-micro text-label-micro text-ink-400">تحویل نهایی</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Expandable Detailed Tray (Accordion) -->
+<div class="transition-all duration-300 max-h-[1600px] opacity-100 bg-canvas-sunken p-5 sm:p-6" id="order-details-drawer">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Ordered Products Column (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary">local_mall</span>
+              اقلام خریداری‌شده (۲ قلم کالا)
+            </span>
+<span class="font-code-mono text-label-micro text-ink-500 font-bold">بسته شماره #P-8840</span>
+</div>
+<!-- Product Item 1 -->
+<div class="flex items-center gap-4 bg-surface p-4 rounded-xl shadow-sm">
+<div class="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="High-end handcrafted genuine brown leather messenger bag from Tehran studio, studio softbox lighting, luxury Persian leather texture, clean product photography on warm neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG9E79jTL2GEzUg4MFgf_0k2BknlK-AvXCVeVTZhaQjZ1CZj9dggucYlowyTmAty4YZq5oT3dsGEYSSwxEdaIpcqlssPd2rpyaSmpwSaNTWzJZlHW3WGZtGq-RhFR7XX6h1h2GW0hHH99GvV7WN4W54zB20kxOcrKxWWY8VwLKN1GiMqmw05LDwoKh2D_bwLNlkNdQnjiySzUutj9aCdSq3a8U6n_PVeDlwl7Ie-5uvFwuwWwbMvUf"/>
+<span class="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-on-surface/80 text-surface text-[10px] font-code-mono font-bold">×۱</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h2 class="font-body-emphasis text-body-emphasis text-on-surface truncate">کیف دوشی چرم طبیعی دست‌دوز تهران</h2>
+<span class="font-code-mono font-bold text-headline-sm text-on-surface">۱٬۸۵۰٬۰۰۰ <span class="font-label-micro text-ink-500 font-normal">ت</span></span>
+</div>
+<p class="font-label-caption text-label-caption text-ink-500 mt-0.5">رنگ: قهوه‌ای سوخته عسلی • کد محصول: LTH-902</p>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-success/10 text-success text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                  ضمانت اصالت چرم
+                </span>
+<span class="text-ink-400 text-label-micro font-code-mono">انبار مرکزی تهران</span>
+</div>
+</div>
+</div>
+<!-- Product Item 2 -->
+<div class="flex items-center gap-4 bg-surface p-4 rounded-xl shadow-sm">
+<div class="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Minimalist stainless steel wristwatch with sleek matte black dial and silver mesh band, modern lifestyle product shoot with subtle moody shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5zIH-9RqLPBebLXIVF03Si3XQe8DHPVAmRHcQVHbt7hESuLLnyB8zNW58vDCnijPlGyPokzscEFnFCyVh46XBCbZAoVZN4HVwrdDoTqNeDyecKZT_TOQkug7YPCzyyC69ktVm715Lu2U2_m3kHh2QYFemLf1fV8XL3zRUQcfTUnL7iYPm9TbN7qBN9MMuBl7ZUzPfvJdsQqNHM60jG0hryI-0j8OJFkHVFqLi7xDip62rOFgB315C"/>
+<span class="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-on-surface/80 text-surface text-[10px] font-code-mono font-bold">×۱</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h2 class="font-body-emphasis text-body-emphasis text-on-surface truncate">ساعت مچی مینیمال استیل مات</h2>
+<span class="font-code-mono font-bold text-headline-sm text-on-surface">۶۷۵٬۰۰۰ <span class="font-label-micro text-ink-500 font-normal">ت</span></span>
+</div>
+<p class="font-label-caption text-label-caption text-ink-500 mt-0.5">بند حصیری نقره‌ای • قطر ۴۰ میلی‌متر • کد: WTC-104</p>
+<div class="flex items-center gap-2 mt-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-info/10 text-info text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                  موجود در قفسه B4
+                </span>
+</div>
+</div>
+</div>
+<!-- Delivery Address & Recipient Card -->
+<div class="bg-surface p-4 rounded-xl shadow-sm flex flex-col gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-secondary">pin_drop</span>
+              نشانی دقیق تحویل‌گیرنده
+            </span>
+<p class="font-body-default text-body-default text-ink-700 leading-relaxed">
+              استان تهران، شهر تهران، خیابان ولیعصر، بالاتر از پارک ساعی، کوچه ساعی یکم، بن‌بست شفق، پلاک ۱۸، واحد ۴، زنگ ۴ شرقی
+            </p>
+<div class="flex flex-wrap items-center gap-4 pt-1 font-label-caption text-label-caption text-ink-500">
+<span class="flex items-center gap-1 font-code-mono">
+<span class="material-symbols-outlined text-[16px] text-ink-400">markunread_mailbox</span>
+                کد پستی: ۱۵۱۶۸۳۴۹۱۱
+              </span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-ink-400">person</span>
+                تحویل گیرنده: اوید کیا (09933511494)
+              </span>
+</div>
+</div>
+</div>
+<!-- Financial Breakdown & Operation Controls (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-4">
+<!-- Financial Receipt Panel -->
+<div class="bg-surface p-5 rounded-xl shadow-sm flex flex-col gap-3">
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2 pb-1">
+<span class="material-symbols-outlined text-[20px] text-ink-600">account_balance_wallet</span>
+              صورتحساب و تراکنش
+            </span>
+<div class="flex items-center justify-between text-ink-600 font-body-default text-body-default">
+<span>جمع قیمت اقلام (۲ عدد)</span>
+<span class="font-code-mono">۲٬۵۲۵٬۰۰۰ تومان</span>
+</div>
+<div class="flex items-center justify-between text-ink-600 font-body-default text-body-default">
+<span>هزینه بسته‌بندی و ارسال پیشتاز</span>
+<span class="text-success font-bold font-headline-sm text-headline-sm">رایگان (تخفیف کمپین)</span>
+</div>
+<div class="flex items-center justify-between text-ink-600 font-body-default text-body-default">
+<span>مالیات بر ارزش افزوده</span>
+<span class="font-code-mono text-ink-400">۰ تومان</span>
+</div>
+<div class="pt-3 mt-1 flex items-center justify-between bg-surface-container-low p-3 rounded-lg">
+<span class="font-headline-sm text-headline-sm text-on-surface">مبلغ کل فاکتور:</span>
+<span class="font-code-mono font-bold text-headline-md text-primary">۲٬۵۲۵٬۰۰۰ تومان</span>
+</div>
+<div class="p-2.5 rounded-lg bg-warning/10 text-warning flex items-start gap-2 text-label-micro">
+<span class="material-symbols-outlined text-[18px] shrink-0">info</span>
+<span>شناسه ارجاع درگاه: منتظر بازگشت کاربر از شاپرک. مهلت اعتبار توکن ۳۰ دقیقه می‌باشد.</span>
+</div>
+</div>
+<!-- Quick Action Buttons -->
+<div class="bg-surface p-5 rounded-xl shadow-sm flex flex-col gap-2.5">
+<span class="font-headline-sm text-headline-sm text-on-surface mb-1">عملیات سفارش</span>
+<button class="w-full h-11 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center gap-2 transition-colors" onclick="alert('فاکتور آماده چاپ گردید.')" type="button">
+<span class="material-symbols-outlined text-[20px]">print</span>
+<span>چاپ فاکتور رسمی و برچسب پستی</span>
+</button>
+<button class="w-full h-11 px-4 rounded-xl bg-success hover:bg-success/90 text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 transition-colors shadow-sm" onclick="manualConfirmModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span>تأیید دستی پرداخت (کارت به کارت / حضوری)</span>
+</button>
+<button class="w-full h-11 px-4 rounded-xl bg-surface-container-low hover:bg-surface-container text-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 transition-colors" onclick="alert('پیامک پیگیری و لینک پرداخت مجدد برای شماره 09933511494 ارسال شد.')" type="button">
+<span class="material-symbols-outlined text-[20px]">sms</span>
+<span>ارسال پیامک یادآوری پرداخت به مشتری</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty State Placeholder Note (for other tabs) -->
+<div class="hidden flex-col items-center justify-center py-16 bg-surface rounded-2xl shadow-sm text-center" id="empty-state-notice">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-ink-400 mb-3">
+<span class="material-symbols-outlined text-[32px]">inbox</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">سفارشی در این وضعیت وجود ندارد</h3>
+<p class="font-label-caption text-label-caption text-ink-500 mt-1 max-w-sm">
+      تمامی سفارش‌های ورودی به طور خودکار طبق جریان فروش هوشمند به‌روزرسانی می‌شوند.
+    </p>
+</div>
+</div>
+<script>
+  // Drawer Accordion Interaction
+  const toggleBtn = document.getElementById('toggle-order-btn');
+  const detailsDrawer = document.getElementById('order-details-drawer');
+  const toggleArrow = document.getElementById('toggle-arrow');
+  let isOpen = true;
+
+  if (toggleBtn && detailsDrawer && toggleArrow) {
+    toggleBtn.addEventListener('click', () => {
+      isOpen = !isOpen;
+      if (isOpen) {
+        detailsDrawer.classList.remove('max-h-0', 'p-0', 'opacity-0');
+        detailsDrawer.classList.add('max-h-[1600px]', 'p-5', 'sm:p-6', 'opacity-100');
+        toggleArrow.classList.remove('rotate-180');
+      } else {
+        detailsDrawer.classList.add('max-h-0', 'p-0', 'opacity-0');
+        detailsDrawer.classList.remove('max-h-[1600px]', 'p-5', 'sm:p-6', 'opacity-100');
+        toggleArrow.classList.add('rotate-180');
+      }
+    });
+  }
+
+  // Filter Tabs Interaction
+  const tabs = document.querySelectorAll('.order-tab');
+  const emptyState = document.getElementById('empty-state-notice');
+  const orderCard = document.querySelector('.bg-surface.rounded-2xl.shadow-sm');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => {
+        t.classList.remove('bg-primary', 'text-on-primary', 'active-tab');
+        t.classList.add('bg-surface', 'text-ink-600');
+      });
+      tab.classList.add('bg-primary', 'text-on-primary', 'active-tab');
+      tab.classList.remove('bg-surface', 'text-ink-600');
+
+      const tabType = tab.getAttribute('data-tab');
+      if (tabType === 'processing' || tabType === 'dispatched' || tabType === 'delivered') {
+        if (orderCard) orderCard.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (emptyState) emptyState.classList.add('flex');
+      } else {
+        if (orderCard) orderCard.classList.remove('hidden');
+        if (emptyState) emptyState.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('flex');
+      }
+    });
+  });
+
+  function manualConfirmModal() {
+    const ok = confirm('آیا از تأیید دستی دریافت ۲٬۵۲۵٬۰۰۰ تومان برای سفارش KIA-671670 اطمینان دارید؟ وضعیت سفارش به مرحله «آماده‌سازی انبار» منتقل خواهد شد.');
+    if (ok) {
+      alert('پرداخت دستی ثبت شد و حواله انبارداری صادر گردید.');
+    }
+  }
+</script></main>
+</div>
+<!-- Quick Script for Counter & Role Simulator Visual Interactions -->
+<script>
+    function changeStock(elementId, delta) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      let val = parseInt(el.textContent.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)), 10) || 0;
+      val = Math.max(0, val + delta);
+      el.textContent = val.toString().replace(/\d/g, d => persianDigits[d]);
+
+      // Temporary flash animation
+      el.classList.add('text-brand-600');
+      setTimeout(() => el.classList.remove('text-brand-600'), 300);
+    }
+
+    // Role switcher toggle
+    document.querySelectorAll('.role-pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('.role-pill').forEach(p => {
+          p.classList.remove('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+          p.classList.add('text-ink-600', 'font-medium');
+        });
+        this.classList.remove('text-ink-600', 'font-medium');
+        this.classList.add('bg-white', 'text-brand-600', 'shadow-sm', 'border', 'border-brand-100', 'font-bold');
+      });
+    });
+  </script>
+</body></html>
