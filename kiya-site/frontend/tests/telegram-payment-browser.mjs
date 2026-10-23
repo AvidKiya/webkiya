@@ -247,6 +247,77 @@ try {
   await payment
     .getByText("پرداخت توسط مسئول مجاز تأیید شد", { exact: true })
     .waitFor();
+  // Finance permission alone must never grant access to private shipping operations.
+  assert.equal(
+    (await admin.request.get(base + "/api/admin/orders")).status(),
+    403,
+  );
+  await adminContext.clearCookies();
+  await adminContext.addCookies([
+    {
+      name: f.reviewerCookie.slice(0, split),
+      value: f.reviewerCookie.slice(split + 1),
+      url: base,
+      sameSite: "Lax",
+    },
+  ]);
+  await admin.goto(base + "/admin/orders");
+  const shipment = admin
+    .getByTestId("fulfillment-order")
+    .filter({ has: admin.getByText(order.id, { exact: true }) });
+  await shipment
+    .getByLabel("دلیل و مستند عملیات", { exact: true })
+    .fill("آماده‌سازی مصنوعی برای آزمون کامل چرخه سفارش");
+  await shipment
+    .getByRole("button", { name: "شروع آماده‌سازی", exact: true })
+    .click();
+  await shipment
+    .getByRole("button", { name: "ثبت ارسال و رهگیری", exact: true })
+    .waitFor();
+  await shipment
+    .getByLabel("شرکت حمل", { exact: true })
+    .fill("پست مصنوعی آزمون");
+  await shipment
+    .getByLabel("کد رهگیری", { exact: true })
+    .fill("SYNTHETIC-TRACK-2026");
+  await shipment
+    .getByLabel("دلیل و مستند عملیات", { exact: true })
+    .fill("تحویل مصنوعی به شرکت حمل فقط برای آزمون");
+  await shipment
+    .getByRole("button", { name: "ثبت ارسال و رهگیری", exact: true })
+    .click();
+  await shipment
+    .getByRole("button", { name: "ثبت تحویل به گیرنده", exact: true })
+    .waitFor();
+  await page.reload();
+  const tracking = page.getByRole("region", {
+    name: "پیگیری ارسال",
+    exact: true,
+  });
+  await tracking.getByText(/SYNTHETIC-TRACK-2026/).waitFor();
+  await tracking
+    .getByText("تحویل به شرکت حمل ثبت شده است", { exact: true })
+    .waitFor();
+  await shipment
+    .getByLabel("دلیل و مستند عملیات", { exact: true })
+    .fill("تأیید مصنوعی دریافت مرسوله در آزمون نرم‌افزار");
+  await shipment.getByRole("checkbox").check();
+  await shipment
+    .getByRole("button", { name: "ثبت تحویل به گیرنده", exact: true })
+    .click();
+  await shipment.getByText(/تحویل ثبت‌شده/).waitFor();
+  assert.equal(await shipment.locator("form").count(), 0);
+  await admin.setViewportSize({ width: 390, height: 844 });
+  assert(
+    await admin.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    "shipping admin mobile overflow",
+  );
+  await page.reload();
+  await page
+    .getByText("تحویل به گیرنده توسط مسئول ارسال ثبت شده است", { exact: true })
+    .waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   assert(
     await page.evaluate(
@@ -268,7 +339,7 @@ try {
   await adminContext.close();
   await context.close();
   console.log(
-    "PASS: Telegram browser-bound link/confirmation/customer session, public banner removal, real storefront cart/reservation, shipping/server-only total, private receipt pending/reload, MFA staff manual reconciliation and PAID stock capture, logout privacy and mobile. Telegram updates and bank reconciliation are synthetic local tests; no real provider or money used.",
+    "PASS: Telegram browser-bound link/confirmation/customer session, public banner removal, real storefront cart/reservation, shipping/server-only total, private receipt pending/reload, MFA staff manual reconciliation and PAID stock capture, role-protected preparation/dispatch/tracking/delivery through admin UI and customer account, logout privacy and mobile. Telegram updates and bank reconciliation are synthetic local tests; no real provider or money used.",
   );
 } finally {
   await browser.close();

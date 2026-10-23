@@ -8,6 +8,8 @@ export const COOKIE = "kiya_session";
 export const PERMISSIONS = [
   "dashboard:read",
   "payment:review",
+  "order:read",
+  "order:manage",
   "comment:read",
   "comment:reply",
   "comment:moderate",

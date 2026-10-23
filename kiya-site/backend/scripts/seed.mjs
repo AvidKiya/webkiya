@@ -13,6 +13,8 @@ const client = new Client({
 await client.connect();
 const owner = [
   "payment:review",
+  "order:read",
+  "order:manage",
   "dashboard:read",
   "comment:read",
   "comment:reply",

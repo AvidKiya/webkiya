@@ -483,6 +483,11 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
           </div>
         </header>
         <main className="admin-content">
+          {user?.permissions.includes("order:read") && !preview && (
+            <Link className="secondary" href="/admin/orders">
+              پردازش و ارسال سفارش‌ها
+            </Link>
+          )}
           {user?.permissions.includes("payment:review") && !preview && (
             <Link className="secondary" href="/admin/payments">
               بررسی رسیدهای واریز و تطبیق بانک

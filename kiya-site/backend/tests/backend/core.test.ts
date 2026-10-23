@@ -82,6 +82,8 @@ import { POST as paymentReview } from "@/app/api/admin/payments/[id]/route";
 import { POST as telegramHealth } from "@/app/api/admin/settings/telegram/route";
 import { GET as financeList } from "@/app/api/admin/payments/route";
 import { validCard } from "@/server/settings";
+import { GET as fulfillmentList } from "@/app/api/admin/orders/route";
+import { POST as fulfill } from "@/app/api/admin/orders/[id]/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -465,7 +467,7 @@ async function expireFixture(id: string) {
 }
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "TelegramOtp","ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "OrderShipment","TelegramOtp","ManualPayment","TelegramLogin","TelegramUpdate","TelegramOutbox","StoreSettings","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -1497,6 +1499,303 @@ describe("real PostgreSQL backend", () => {
         )
       ).status,
     ).toBe(404);
+  });
+
+  async function paidFulfillmentFixture() {
+    const f = await paymentFixture();
+    const receipt = (await payload(await receiptFor(f))).data;
+    const result = await paymentReview(
+      request("/api/admin/payments/" + f.payment.id, "POST", f.owner.cookie, {
+        version: receipt.version,
+        decision: "CONFIRM",
+        reason: "تطبیق مصنوعی بانک برای آزمون ارسال سفارش",
+        bankReconciled: true,
+        bankReference: "SHIPMENT-SYNTHETIC-" + randomUUID(),
+      }),
+      context(f.payment.id),
+    );
+    expect(result.status).toBe(200);
+    return f;
+  }
+  const fulfillmentReason = "عملیات مستند مصنوعی فقط برای آزمون نرم‌افزار";
+  async function fulfillmentAction(
+    f: Awaited<ReturnType<typeof paymentFixture>>,
+    action: string,
+    version: number,
+    extra = {},
+  ) {
+    return fulfill(
+      request("/api/admin/orders/" + f.order.id, "POST", f.owner.cookie, {
+        action,
+        version,
+        reason: fulfillmentReason,
+        ...extra,
+      }),
+      context(f.order.id),
+    );
+  }
+  it("requires staff order permission, MFA and same-origin for fulfillment", async () => {
+    const f = await paymentFixture(),
+      support = await staff("SUPPORT"),
+      pending = await staff("OWNER", false);
+    for (const [c, code] of [
+      ["", 401],
+      [f.buyer.cookie, 403],
+      [support.cookie, 403],
+      [pending.cookie, 403],
+    ] as const) {
+      expect(
+        (await fulfillmentList(request("/api/admin/orders", "GET", c))).status,
+      ).toBe(code);
+      expect(
+        (
+          await fulfill(
+            request("/api/admin/orders/" + f.order.id, "POST", c, {
+              action: "prepare",
+              version: 0,
+              reason: fulfillmentReason,
+            }),
+            context(f.order.id),
+          )
+        ).status,
+      ).toBe(code);
+    }
+    expect(
+      (
+        await fulfill(
+          request(
+            "/api/admin/orders/" + f.order.id,
+            "POST",
+            f.owner.cookie,
+            { action: "prepare", version: 0, reason: fulfillmentReason },
+            { Origin: "https://evil.test" },
+          ),
+          context(f.order.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await fulfillmentList(
+          request("/api/admin/orders?page=0", "GET", f.owner.cookie),
+        )
+      ).status,
+    ).toBe(422);
+  });
+  it("forbids dispatch of unpaid orders in API and database", async () => {
+    const f = await paymentFixture();
+    expect((await fulfillmentAction(f, "prepare", 0)).status).toBe(409);
+    await expect(
+      db().orderShipment.create({ data: { orderId: f.order.id } }),
+    ).rejects.toThrow();
+    expect(
+      (
+        await payload(
+          await fulfillmentList(
+            request("/api/admin/orders", "GET", f.owner.cookie),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+  });
+  it("fulfills a confirmed order sequentially without changing captured stock or financial status", async () => {
+    const f = await paidFulfillmentFixture(),
+      stock = await db().productVariant.findUniqueOrThrow({
+        where: { id: f.v.id },
+      }),
+      movements = await db().inventoryMovement.count();
+    expect((await fulfillmentAction(f, "deliver", 0)).status).toBe(422);
+    expect(
+      (
+        await fulfillmentAction(f, "ship", 1, {
+          carrier: "پست آزمون",
+          trackingCode: "TRACK-001",
+        })
+      ).status,
+    ).toBe(409);
+    expect((await fulfillmentAction(f, "prepare", 0)).status).toBe(200);
+    expect((await fulfillmentAction(f, "deliver", 1)).status).toBe(409);
+    expect(
+      (
+        await fulfillmentAction(f, "ship", 1, {
+          carrier: "پست آزمون",
+          trackingCode: "https://unsafe.test",
+        })
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await fulfillmentAction(f, "ship", 1, {
+          carrier: "پست آزمون",
+          trackingCode: "TRACK-001",
+        })
+      ).status,
+    ).toBe(200);
+    expect((await fulfillmentAction(f, "deliver", 2)).status).toBe(200);
+    const shipment = await db().orderShipment.findUniqueOrThrow({
+      where: { orderId: f.order.id },
+    });
+    expect(shipment.status).toBe("DELIVERED");
+    expect(shipment.version).toBe(3);
+    expect(shipment.deliveredAt).not.toBeNull();
+    expect(
+      (
+        await db().purchaseOrder.findUniqueOrThrow({
+          where: { id: f.order.id },
+        })
+      ).status,
+    ).toBe("PAID");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(stock.stock);
+    expect(await db().inventoryMovement.count()).toBe(movements);
+    expect(
+      await db().auditLog.count({
+        where: {
+          resourceId: f.order.id,
+          action: { in: ["order:prepare", "order:ship", "order:deliver"] },
+        },
+      }),
+    ).toBe(3);
+  });
+  it("serializes duplicate preparation and dispatch and rejects stale versions", async () => {
+    const f = await paidFulfillmentFixture();
+    const prepared = await Promise.all(
+      [1, 2].map(() => fulfillmentAction(f, "prepare", 0)),
+    );
+    expect(prepared.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await db().orderShipment.count()).toBe(1);
+    const dispatched = await Promise.all(
+      [1, 2].map(() =>
+        fulfillmentAction(f, "ship", 1, {
+          carrier: "پست آزمون",
+          trackingCode: "TRACK-002",
+        }),
+      ),
+    );
+    expect(dispatched.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect((await fulfillmentAction(f, "deliver", 1)).status).toBe(409);
+  });
+  it("shows only the customer's own tracking and filters the private fulfillment queue", async () => {
+    const f = await paidFulfillmentFixture(),
+      other = await customer();
+    await fulfillmentAction(f, "prepare", 0);
+    await fulfillmentAction(f, "ship", 1, {
+      carrier: "پست آزمون",
+      trackingCode: "TRACK-PRIVATE",
+    });
+    const own = (
+      await payload(
+        await ordersRead(request("/api/orders", "GET", f.buyer.cookie)),
+      )
+    ).data.orders;
+    expect(own[0].shipment.trackingCode).toBe("TRACK-PRIVATE");
+    expect(
+      JSON.stringify(
+        (
+          await payload(
+            await ordersRead(request("/api/orders", "GET", other.cookie)),
+          )
+        ).data,
+      ),
+    ).not.toContain("TRACK-PRIVATE");
+    const listed = await fulfillmentList(
+      request("/api/admin/orders?status=SHIPPED", "GET", f.owner.cookie),
+    );
+    expect(listed.headers.get("cache-control")).toBe("private, no-store");
+    const data = (await payload(listed)).data;
+    expect(data.items).toHaveLength(1);
+    expect(data.canManage).toBe(true);
+    expect(data.items[0].shippingAddress.postalCode).toBe(f.body.postalCode);
+    expect(JSON.stringify(data)).not.toMatch(
+      /bankVerifiedReference|passwordHash|imageHash|telegramId/,
+    );
+    expect(
+      (
+        await payload(
+          await fulfillmentList(
+            request(
+              "/api/admin/orders?status=UNSTARTED",
+              "GET",
+              f.owner.cookie,
+            ),
+          ),
+        )
+      ).data.items,
+    ).toHaveLength(0);
+  });
+  it("supports a read-only custom shipping role without payment review or mutation permission", async () => {
+    const f = await paidFulfillmentFixture();
+    const role = await db().role.create({
+        data: {
+          key: "CUSTOM_SHIPPING_READER",
+          name: "مشاهده ارسال",
+          permissions: ["order:read"],
+        },
+      }),
+      reader = await staff(role.key);
+    expect(
+      (
+        await payload(
+          await fulfillmentList(
+            request("/api/admin/orders", "GET", reader.cookie),
+          ),
+        )
+      ).data.canManage,
+    ).toBe(false);
+    expect(
+      (
+        await fulfill(
+          request("/api/admin/orders/" + f.order.id, "POST", reader.cookie, {
+            action: "prepare",
+            version: 0,
+            reason: fulfillmentReason,
+          }),
+          context(f.order.id),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (await financeList(request("/api/admin/payments", "GET", reader.cookie)))
+        .status,
+    ).toBe(403);
+  });
+  it("guards shipment history against direct SQL state skipping, deletion and rewriting dispatch evidence", async () => {
+    const f = await paidFulfillmentFixture();
+    await fulfillmentAction(f, "prepare", 0);
+    await expect(
+      db().orderShipment.update({
+        where: { orderId: f.order.id },
+        data: { status: "DELIVERED", version: 2 },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().orderShipment.delete({ where: { orderId: f.order.id } }),
+    ).rejects.toThrow();
+    await fulfillmentAction(f, "ship", 1, {
+      carrier: "پست آزمون",
+      trackingCode: "TRACK-003",
+    });
+    await expect(
+      db().orderShipment.update({
+        where: { orderId: f.order.id },
+        data: {
+          status: "DELIVERED",
+          version: 3,
+          trackingCode: "REWRITTEN",
+          deliveredAt: new Date(),
+        },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().orderShipment.update({
+        where: { orderId: f.order.id },
+        data: { status: "DELIVERED", version: 3 },
+      }),
+    ).rejects.toThrow();
+    await fulfillmentAction(f, "deliver", 2);
+    expect((await fulfillmentAction(f, "deliver", 3)).status).toBe(409);
   });
   it("keeps receipts private and never treats an uploaded screenshot as paid; independently confirms exactly once with atomic stock and ledgers", async () => {
     const f = await paymentFixture(),

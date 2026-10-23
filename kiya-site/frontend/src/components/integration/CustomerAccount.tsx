@@ -23,6 +23,13 @@ type Order = {
   version: number;
   subtotalToman: string;
   reservedUntil: string | null;
+  shipment: {
+    status: string;
+    carrier: string;
+    trackingCode: string;
+    shippedAt: string | null;
+    deliveredAt: string | null;
+  } | null;
 };
 export function CustomerAccount() {
   const [session, setSession] = useState<Session | null>(null),
@@ -140,6 +147,43 @@ export function CustomerAccount() {
               رزرو به معنی پرداخت‌شدن نیست؛ وضعیت و روش پرداخت را در بخش زیر
               بررسی کنید.
             </p>
+            {order.status === "PAID" && (
+              <section
+                aria-label="پیگیری ارسال"
+                className="rounded-xl bg-canvas-sunken p-3 space-y-2"
+              >
+                <h2 className="font-bold">پیگیری ارسال سفارش</h2>
+                <p>
+                  {!order.shipment
+                    ? "پرداخت تأیید شده؛ منتظر شروع آماده‌سازی"
+                    : order.shipment.status === "PREPARING"
+                      ? "در حال آماده‌سازی و بسته‌بندی"
+                      : order.shipment.status === "SHIPPED"
+                        ? "تحویل به شرکت حمل ثبت شده است"
+                        : "تحویل به گیرنده توسط مسئول ارسال ثبت شده است"}
+                </p>
+                {order.shipment?.trackingCode && (
+                  <p>
+                    شرکت حمل: {order.shipment.carrier} · کد رهگیری:{" "}
+                    <bdi>{order.shipment.trackingCode}</bdi>
+                  </p>
+                )}
+                {order.shipment?.shippedAt && (
+                  <p>
+                    زمان ثبت ارسال:{" "}
+                    {new Date(order.shipment.shippedAt).toLocaleString("fa-IR")}
+                  </p>
+                )}
+                {order.shipment?.deliveredAt && (
+                  <p>
+                    زمان ثبت تحویل:{" "}
+                    {new Date(order.shipment.deliveredAt).toLocaleString(
+                      "fa-IR",
+                    )}
+                  </p>
+                )}
+              </section>
+            )}
             <ManualPaymentView orderId={order.id} onChanged={load} />
             {order.status === "RESERVED" && (
               <button

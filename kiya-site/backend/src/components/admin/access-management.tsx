@@ -30,6 +30,9 @@ type Data = {
 };
 const labels: Record<string, string> = {
   "dashboard:read": "نمای کلی",
+  "order:read": "مشاهده سفارش‌های پرداخت‌شده و اطلاعات ارسال",
+  "order:manage": "آماده‌سازی، ثبت ارسال و تحویل سفارش",
+  "payment:review": "بررسی مستقل رسید و تطبیق بانک",
   "comment:read": "خواندن دیدگاه",
   "comment:reply": "پاسخ رسمی",
   "comment:moderate": "نظارت دیدگاه",

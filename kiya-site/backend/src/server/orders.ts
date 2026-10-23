@@ -1,4 +1,5 @@
 import "server-only";
+import { shipmentDto } from "./fulfillment";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { db } from "./db";
@@ -30,7 +31,8 @@ function dto(order: PurchaseOrder) {
     snapshot: order.snapshot,
     payableToman: null,
     paymentReady: false,
-    fulfillmentReady: false,
+    fulfillmentReady: order.status === "PAID",
+    shipment: null,
   };
 }
 // Each release is a separate transaction; never retain SKU locks across orders.
@@ -181,10 +183,14 @@ export async function listOrders(request: Request) {
       orders: (
         await tx.purchaseOrder.findMany({
           where: { userId: current.user.id },
+          include: { shipment: true },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 50,
         })
-      ).map(dto),
+      ).map((order) => ({
+        ...dto(order),
+        shipment: shipmentDto(order.shipment),
+      })),
       limit: 50,
     };
   });

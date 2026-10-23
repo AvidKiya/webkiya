@@ -284,6 +284,7 @@ model PurchaseOrder {
  createdAt DateTime @default(now()) @db.Timestamptz(3)
  user User @relation(fields:[userId],references:[id],onDelete:Restrict)
  cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
+ shipment OrderShipment?
  holds OrderHold[]
  movements ReservationMovement[]
  @@unique([cartId,cartVersion])
@@ -390,4 +391,19 @@ model TelegramOtp {
  expiresAt DateTime @db.Timestamptz(3)
  consumedAt DateTime? @db.Timestamptz(3)
  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
+model OrderShipment {
+ id String @id @default(uuid()) @db.Uuid
+ orderId String @unique @db.Uuid
+ status String @default("PREPARING") @db.VarChar(12)
+ version Int @default(1)
+ carrier String @default("") @db.VarChar(80)
+ trackingCode String @default("") @db.VarChar(80)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ updatedAt DateTime @updatedAt @db.Timestamptz(3)
+ shippedAt DateTime? @db.Timestamptz(3)
+ deliveredAt DateTime? @db.Timestamptz(3)
+ order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ @@index([status,createdAt])
 }
