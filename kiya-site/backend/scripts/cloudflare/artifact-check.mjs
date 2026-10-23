@@ -6,6 +6,10 @@ const names = [
   "TEST_DATABASE_URL",
   "AUTH_SECRET",
   "MFA_ENCRYPTION_KEY",
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_WEBHOOK_SECRET",
+  "KIYA_BOOTSTRAP_OWNER_PHONES",
+  "KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID",
 ];
 const values = names.map((n) => process.env[n]).filter(Boolean);
 for (const file of [".env.local", ".dev.vars"])

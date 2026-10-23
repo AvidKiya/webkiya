@@ -1,10 +1,22 @@
 import { spawnSync } from "node:child_process";
-const names = ["DATABASE_URL", "AUTH_SECRET", "MFA_ENCRYPTION_KEY"];
+const names = [
+  "DATABASE_URL",
+  "AUTH_SECRET",
+  "MFA_ENCRYPTION_KEY",
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_WEBHOOK_SECRET",
+];
 if (names.some((n) => !process.env[n]))
   throw new Error("Worker secrets are missing");
-const body = JSON.stringify(
-  Object.fromEntries(names.map((n) => [n, process.env[n]])),
-);
+const body = JSON.stringify({
+  ...Object.fromEntries(names.map((n) => [n, process.env[n]])),
+  TELEGRAM_LOGIN_ENABLED: "true",
+  ...Object.fromEntries(
+    ["KIYA_BOOTSTRAP_OWNER_PHONES", "KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID"]
+      .filter((n) => process.env[n])
+      .map((n) => [n, process.env[n]]),
+  ),
+});
 // Pipe secrets via stdin, never command arguments, logs, files or workflow inputs.
 const result = spawnSync(
   "node",

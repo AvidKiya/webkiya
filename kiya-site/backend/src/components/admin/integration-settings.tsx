@@ -2,6 +2,7 @@
 import "./integration-settings.css";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import Link from "next/link";
 type Settings = {
   version: number;
   telegramEnabled: boolean;
@@ -58,7 +59,28 @@ export function IntegrationSettings({
     setPayments(rows.items);
   }
   useEffect(() => {
-    load().catch((e) => setError(e.message));
+    let active = true;
+    Promise.all([
+      financeOnly
+        ? Promise.resolve(null)
+        : api<Settings>("/api/admin/settings"),
+      api<{ items: Payment[] }>("/api/admin/payments"),
+    ])
+      .then(([settings, rows]) => {
+        if (active) {
+          setData(settings);
+          setPayments(rows.items);
+        }
+      })
+      .catch((e) => {
+        if (active)
+          setError(
+            e instanceof Error ? e.message : "دریافت تنظیمات ناموفق بود.",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, [financeOnly]);
   async function run(action: () => Promise<void>) {
     if (busy) return;
@@ -93,7 +115,7 @@ export function IntegrationSettings({
   }
   return (
     <main className="integration-settings" dir="rtl">
-      <a href="/admin">بازگشت به مدیریت امن / ورود با MFA</a>
+      <Link href="/admin">بازگشت به مدیریت امن / ورود با MFA</Link>
       <h1>
         {financeOnly
           ? "بررسی رسیدها و تطبیق بانک"

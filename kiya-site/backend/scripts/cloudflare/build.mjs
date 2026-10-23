@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { wasm } from "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs";
 // Pinned Prisma/OpenNext compatibility bridge. Only generated/ignored files are
@@ -17,6 +17,13 @@ function replaceOnce(path, from, to) {
 }
 let failed = false;
 try {
+  const frontend = spawnSync(
+    "npm",
+    ["--prefix", "../frontend", "run", "build"],
+    { env, stdio: "inherit" },
+  );
+  if (frontend.status !== 0)
+    throw new Error("Selected storefront build failed");
   run(["scripts/prisma-wasm.mjs", "generate"]);
   writeFileSync(
     ".data/cloudflare-query-compiler.wasm",
@@ -28,6 +35,7 @@ try {
     'return globalThis[Symbol.for("kiya.prisma.compiler")]',
   );
   run(["node_modules/@opennextjs/cloudflare/dist/cli/index.js", "build"]);
+  cpSync("../frontend/dist", ".open-next/assets", { recursive: true });
   // OpenNext otherwise embeds .env.local, including private values, into the
   // Worker. Only explicit Wrangler vars/secrets are permitted in this deployment.
   const envModule = ".open-next/cloudflare/next-env.mjs";

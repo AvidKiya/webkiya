@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "./db";
 import { hash } from "./crypto";
 import { ApiError, ok } from "./http";
-import { limit, clientKey, attachCookie, session } from "./auth";
+import { limit, clientKey, session } from "./auth";
 import { integrationConfig, telegramAvailable } from "./settings";
 const cookieName = "kiya_telegram_browser";
 function proof(r: Request) {

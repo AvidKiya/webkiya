@@ -29,6 +29,11 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
       MFA_ENCRYPTION_KEY: ${{ secrets.MFA_ENCRYPTION_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+      TELEGRAM_LOGIN_ENABLED: "true"
+      KIYA_BOOTSTRAP_OWNER_PHONES: ${{ secrets.KIYA_BOOTSTRAP_OWNER_PHONES }}
+      KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID: ${{ secrets.KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID }}
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
       WRANGLER_SEND_METRICS: "false"
@@ -38,14 +43,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: kiya-site/backend/package-lock.json
+          cache-dependency-path: |
+            kiya-site/backend/package-lock.json
+            kiya-site/frontend/package-lock.json
       - name: Check required secrets without exposing values
-        run: node -e 'for(const n of ["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","DATABASE_URL","AUTH_SECRET","MFA_ENCRYPTION_KEY"])if(!process.env[n])throw new Error("Missing secret "+n)'
+        run: node -e 'for(const n of ["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","DATABASE_URL","AUTH_SECRET","MFA_ENCRYPTION_KEY","TELEGRAM_BOT_TOKEN","TELEGRAM_WEBHOOK_SECRET"])if(!process.env[n])throw new Error("Missing secret "+n)'
       - run: npm ci
+      - run: npm --prefix ../frontend ci
       - run: node scripts/cloudflare/preflight.mjs
       - run: npm run lint && npm run typecheck && npm test && npm audit --omit=dev
       - name: Build worker without production secrets in build environment
-        run: env -u DATABASE_URL -u AUTH_SECRET -u MFA_ENCRYPTION_KEY -u CLOUDFLARE_API_TOKEN KIYA_BUILD_TARGET=cloudflare npm run cf:build
+        run: env -u DATABASE_URL -u AUTH_SECRET -u MFA_ENCRYPTION_KEY -u CLOUDFLARE_API_TOKEN -u TELEGRAM_BOT_TOKEN -u TELEGRAM_WEBHOOK_SECRET -u KIYA_BOOTSTRAP_OWNER_PHONES -u KIYA_BOOTSTRAP_OWNER_TELEGRAM_ID KIYA_BUILD_TARGET=cloudflare npm run cf:build
       - name: Validate worker upload locally
         run: npm run cf:dry-run
       - name: Install secrets on the preview worker
@@ -54,3 +62,5 @@ jobs:
         run: npm run cf:deploy
       - name: Smoke-test real deployed endpoints
         run: node scripts/cloudflare/smoke.mjs
+      - name: Register and verify real Telegram webhook (does not prove end-to-end login)
+        run: node scripts/cloudflare/telegram-webhook.mjs

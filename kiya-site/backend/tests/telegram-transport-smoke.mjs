@@ -1,5 +1,6 @@
 // Finite real worker-process test; only the official Telegram HTTP transport is mocked.
 import assert from "node:assert/strict";
+import { drainTelegram } from "../cloudflare/telegram.mjs";
 import {
   readFileSync,
   mkdirSync,
@@ -87,6 +88,40 @@ try {
     (await db.query('SELECT state FROM "TelegramOutbox" WHERE id=$1', [id]))
       .rows[0].state,
     "SENT",
+  );
+  worker.kill("SIGTERM");
+  await Promise.race([exited, delay(3000)]);
+  assert.notEqual(
+    worker.exitCode,
+    null,
+    "Node worker must release its singleton lock",
+  );
+  await db.query(`UPDATE "TelegramOutbox" SET state='PENDING' WHERE id=$1`, [
+    id,
+  ]);
+  const methods = [];
+  const finite = await drainTelegram(db, env, async (url, options) => {
+    const method = String(url).split("/").at(-1);
+    methods.push(method);
+    if (method === "sendMessage")
+      assert.equal(JSON.parse(options.body).text, "TRANSPORT-SMOKE-123456");
+    else assert.equal(method, "getMe");
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        result: method === "getMe" ? { username: "kiyaco24bot" } : true,
+      }),
+    );
+  });
+  assert.equal(finite.sent, 1);
+  assert.deepEqual(methods, ["getMe", "sendMessage"]);
+  assert.equal(
+    (await db.query('SELECT state FROM "TelegramOutbox" WHERE id=$1', [id]))
+      .rows[0].state,
+    "SENT",
+  );
+  console.log(
+    "PASS: Cloudflare finite transport with real isolated PostgreSQL claims, decrypts and marks OTP SENT; no polling, provider HTTP mocked.",
   );
   console.log(
     "PASS: actual worker process verifies bot, configures polling without dropping updates, polls, decrypts private OTP outbox and marks delivery SENT. Telegram API mocked; no real provider calls.",

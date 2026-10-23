@@ -32,7 +32,9 @@ if (
   );
 const headers = { Authorization: "Bearer " + process.env.CLOUDFLARE_API_TOKEN };
 for (const path of [
-  "/user/tokens/verify",
+  process.env.CLOUDFLARE_API_TOKEN.startsWith("cfat_")
+    ? "/accounts/" + process.env.CLOUDFLARE_ACCOUNT_ID + "/tokens/verify"
+    : "/user/tokens/verify",
   "/accounts/" +
     process.env.CLOUDFLARE_ACCOUNT_ID +
     "/r2/buckets/kiya-private-media",

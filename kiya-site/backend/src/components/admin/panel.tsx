@@ -402,6 +402,7 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                 دارای نقش مدیریت باز می‌شود؛ عملیات مدیریت تأیید دومرحله‌ای
                 دارد.
               </p>
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Storefront is a separate Vite application. */}
               <a className="primary" href="/#account">
                 ورود از حساب کاربری
               </a>
@@ -483,9 +484,9 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
         </header>
         <main className="admin-content">
           {user?.permissions.includes("payment:review") && !preview && (
-            <a className="secondary" href="/admin/payments">
+            <Link className="secondary" href="/admin/payments">
               بررسی رسیدهای واریز و تطبیق بانک
-            </a>
+            </Link>
           )}
           <div className="admin-page-heading">
             <div>
@@ -658,9 +659,9 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
           visibleTab === "staff" &&
           user?.permissions.includes("staff:manage") ? (
             <div>
-              <a href="/admin/settings">
+              <Link href="/admin/settings">
                 تنظیمات ربات و کارت‌به‌کارت / بررسی رسیدها
-              </a>
+              </Link>
               <AccessManagement selfId={user.id} />
             </div>
           ) : null}

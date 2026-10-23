@@ -26,7 +26,9 @@ writeFileSync(directory + "/wrangler.json", JSON.stringify(config));
 const secrets = {
   DATABASE_URL: url,
   AUTH_SECRET: randomBytes(32).toString("hex"),
-  MFA_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
+  // The guarded test DB may contain encrypted synthetic integration settings.
+  MFA_ENCRYPTION_KEY:
+    process.env.MFA_ENCRYPTION_KEY || randomBytes(32).toString("hex"),
   APP_MODE: "live",
   ALLOW_DEMO_LOGIN: "false",
 };
@@ -92,7 +94,17 @@ try {
     });
     if (r.status !== status)
       throw new Error("Local Worker status check failed: " + path);
-    if (path === "/api/auth/me") {
+    if (path === "/") {
+      const html = await r.text();
+      if (!html.includes('id="root"'))
+        throw new Error("Selected storefront missing from Worker root");
+      const script = html.match(/<script[^>]+src="([^"]+\.js)"/);
+      if (!script || !script[1].startsWith("/assets/"))
+        throw new Error("Selected storefront assets missing");
+      const asset = await fetch(origin + script[1]);
+      if (!asset.ok) throw new Error("Selected storefront script unavailable");
+      await asset.arrayBuffer();
+    } else if (path === "/api/auth/me") {
       const p = await r.json();
       if (p.data?.demoLoginAvailable !== false || p.data?.user !== null)
         throw new Error("Worker live-auth safety check failed");
@@ -118,7 +130,7 @@ try {
     }),
   );
   console.log(
-    "Local workerd: routing/404, PostgreSQL, live-auth flags, scrypt, concurrent request scopes and scheduled maintenance passed. No remote deployment was performed.",
+    "Local workerd: selected storefront/JS, routing/404, PostgreSQL, live-auth flags, scrypt, concurrent request scopes and scheduled maintenance passed. No remote deployment was performed.",
   );
 } finally {
   const exited = once(child, "exit");

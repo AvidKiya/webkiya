@@ -4,13 +4,18 @@ if (
   !/^https:\/\/kiya-rebuild-preview\.[a-z0-9-]+\.workers\.dev$/.test(base)
 )
   throw new Error("An exact workers.dev preview URL is required");
-for (const path of ["/progress", "/api/catalog", "/api/auth/me"]) {
+for (const path of ["/", "/progress", "/api/catalog", "/api/auth/me"]) {
   const response = await fetch(base + path, {
     redirect: "error",
     signal: AbortSignal.timeout(20000),
   });
   if (!response.ok)
     throw new Error("Deployed preview smoke check failed: " + path);
+  if (path === "/") {
+    const html = await response.text();
+    if (!html.includes('id="root"') || !html.includes("/assets/"))
+      throw new Error("Deployed selected storefront missing");
+  }
   if (path === "/api/catalog") {
     const p = await response.json();
     if (

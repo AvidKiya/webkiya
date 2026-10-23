@@ -10,7 +10,11 @@
   ],
   "workers_dev": true,
   "preview_urls": false,
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    "run_worker_first": ["/"],
+  },
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "kiya-rebuild-preview" },
   ],
