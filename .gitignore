@@ -23,3 +23,6 @@ src/generated/
 
 # Independent rebuild generated Prisma client
 kiya-site/backend/src/generated/
+
+# Independent frontend build output
+kiya-site/frontend/dist/
