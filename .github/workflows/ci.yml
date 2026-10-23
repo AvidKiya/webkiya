@@ -1,0 +1,55 @@
+name: KIYA application checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kiya
+          # Disposable CI container credential, never used outside this job.
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: kiya_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kiya -d kiya_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://kiya:ci-only-password@127.0.0.1:5432/kiya_dev
+      TEST_DATABASE_URL: postgresql://kiya:ci-only-password@127.0.0.1:5432/kiya_test
+      APP_MODE: demo
+      ALLOW_DEMO_LOGIN: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate ephemeral test encryption keys
+        run: node --input-type=module -e 'import {writeFileSync} from "node:fs"; import {randomBytes} from "node:crypto"; writeFileSync(".env.local", "AUTH_SECRET="+randomBytes(32).toString("hex")+"\nMFA_ENCRYPTION_KEY="+randomBytes(32).toString("hex")+"\n",{mode:0o600});'
+      - run: npm ci
+      - run: npm run prisma:validate
+      - run: npm run db:migrate && npm run db:seed
+      - run: npm run db:test:create && npm run db:migrate:test && npm run db:seed -- --test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:backend
+      - run: npm run build
+      - run: npm run test:e2e
+      - run: npm run cf:build && npm run cf:dry-run && npm run cf:check-local
+      - run: python3 file/scripts/validate_package.py
+      - run: python3 -m unittest discover -s file/scripts -p 'test_*.py'
+      - run: npm audit --omit=dev

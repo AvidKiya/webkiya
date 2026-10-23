@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kiya-store-preview",
+  "main": "cloudflare/worker.mjs",
+  "compatibility_date": "2026-10-22",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env",
+    "global_fetch_strictly_public",
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "kiya-store-preview" },
+  ],
+  "r2_buckets": [
+    { "binding": "KIYA_MEDIA", "bucket_name": "kiya-private-media" },
+  ],
+  "images": { "binding": "IMAGES" },
+  "vars": {
+    "KIYA_RUNTIME": "cloudflare",
+    "APP_MODE": "live",
+    "ALLOW_DEMO_LOGIN": "false",
+    "TRUST_PROXY": "false",
+  },
+  "triggers": { "crons": ["* * * * *"] },
+  "observability": { "enabled": false },
+}
