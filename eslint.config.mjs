@@ -9,5 +9,6 @@ export default defineConfig([
     ".data/**",
     "src/generated/**",
     "next-env.d.ts",
+    "کیایی که دوسش داشتم/**",
   ]),
 ]);

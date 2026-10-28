@@ -1,4 +1,4 @@
-import Store from "@/components/store";
+import Store from "@/components/kiya/store";
 import { publicCatalog } from "@/server/catalog";
 export const dynamic = "force-dynamic";
 export default async function Page() {

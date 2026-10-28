@@ -4,6 +4,7 @@ export const STORE_SECTIONS = [
   "saved",
   "cart",
   "inbox",
+  "mag",
   "account",
   "wholesale",
 ] as const;

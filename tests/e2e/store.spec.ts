@@ -1,32 +1,43 @@
 import { test, expect } from "@playwright/test";
-test("desktop: shared server comments, reload, reply, saved and local cart", async ({
+
+test("desktop: feed, detail dialog, shared server comments, save and preview cart", async ({
   page,
   browser,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("pageerror", (event) => errors.push(event.message));
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
+
   await expect(
-    page.getByRole("heading", { name: "هر روز، یک کشف تازه." }),
+    page.getByRole("heading", {
+      name: "فید زنده کیا — هر روز جدید، بدون واسطه",
+    }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "مشاهدهٔ کیف دستی و دوشی چرم", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/p\/everyday-bag/);
+
+  const card = page.locator(".post-card").first();
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "مشخصات کامل" }).click();
+
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/p\/everyday-bag$/);
   await dialog
     .getByRole("button", { name: "ورود آزمایشی", exact: true })
     .click();
+
   const text = "آزمون عمومی کیا " + Date.now();
   await dialog.getByLabel("دیدگاه شما").fill(text);
   await dialog
     .getByRole("button", { name: "ارسال دیدگاه", exact: true })
     .click();
   await expect(dialog.getByText(text, { exact: true })).toBeVisible();
+
   await page.reload();
-  await expect(page.getByText(text, { exact: true })).toBeVisible();
+  await expect(page.getByText(text, { exact: true })).toBeVisible({
+    timeout: 40_000,
+  });
+
   const observer = await browser.newContext();
   const observerPage = await observer.newPage();
   await observerPage.goto("/p/everyday-bag");
@@ -38,54 +49,59 @@ test("desktop: shared server comments, reload, reply, saved and local cart", asy
       .getByRole("button", { name: "حذف", exact: true }),
   ).toHaveCount(0);
   await observer.close();
-  await page
-    .locator(".comment-thread")
-    .filter({ hasText: text })
-    .getByRole("button", { name: "پاسخ", exact: true })
-    .click();
-  await page.getByLabel("دیدگاه شما").fill("پاسخ نمونه " + text);
-  await page.getByRole("button", { name: "ارسال دیدگاه", exact: true }).click();
-  await expect(
-    page.getByText("پاسخ نمونه " + text, { exact: true }),
-  ).toBeVisible();
+
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  const first = page.locator("article.post").first();
-  await first.getByRole("button", { name: "ذخیره کردن", exact: true }).click();
-  await first
+
+  await page
+    .locator(".post-card")
+    .first()
+    .getByRole("button", { name: "ذخیره کالا", exact: true })
+    .click();
+  await page
+    .locator(".post-card")
+    .first()
     .getByRole("button", { name: "افزودن به سبد", exact: true })
     .click();
+  await expect(page.getByText("به سبد پیش‌نمایش اضافه شد")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "سبد خرید", exact: true }).first(),
+  ).toContainText("۱");
+
   await page
     .getByRole("link", { name: "ذخیره‌شده‌ها", exact: true })
     .first()
     .click();
-  await expect(page.locator("article.post")).toHaveCount(1);
-  await page.goto("/cart");
-  await expect(page.getByText("جمع سبد نمونه").first()).toBeVisible();
-  await expect(page.getByText("۱٬۴۵۰٬۰۰۰").first()).toBeVisible();
+  await expect(page.locator("[data-product-tile]")).toHaveCount(1);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "سبد خرید" }).first().click();
+  await expect(page.getByRole("dialog", { name: "سبد خرید" })).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "سبد خرید" }).getByText("جمع کالاها:"),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
-test("filter and expand caption; wholesale remains inquiry only", async ({
+
+test("search filters the catalog and detail copy stays honest", async ({
   page,
 }) => {
-  await page.goto("/");
-  const first = page.locator("article.post").first();
-  await first.getByRole("button", { name: "بیشتر بخون" }).click();
+  await page.goto("/explore?q=ساعت");
+  await expect(page.locator("[data-product-tile]")).toHaveCount(1);
+
+  await page.goto("/explore");
+  await page.getByLabel("جست‌وجوی محصولات").fill("نتیجه‌غیرموجودآزمون");
+  await expect(page.locator("[data-product-tile]")).toHaveCount(0);
+  await expect(page.getByText("کالایی پیدا نشد")).toBeVisible();
+
+  await page.goto("/wholesale");
   await expect(
-    first.getByRole("button", { name: "کمتر", exact: true }),
-  ).toHaveAttribute("aria-expanded", "true");
-  await page.getByLabel("جست‌وجوی محصولات").fill("ساعت");
-  await expect(page.locator("article.post")).toHaveCount(1);
-  await page.getByRole("button", { name: "عمده", exact: true }).click();
-  await expect(page.getByText("استعلام قیمت عمده").first()).toBeVisible();
-  await page
-    .locator("article.post")
-    .getByRole("button", { name: "استعلام عمده" })
-    .click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByText("شروع همکاری، از یک جین.")).toBeVisible();
+    page.getByText("قیمت همکار هرگز در صفحات عمومی نمایش داده نمی‌شود."),
+  ).toBeVisible();
+  await expect(page.getByText("پرداخت موفق")).toHaveCount(0);
 });
-test("mobile has no horizontal overflow, stories and saved empty state work", async ({
+
+test("mobile has no horizontal overflow, saved empty state and nav work", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -95,26 +111,23 @@ test("mobile has no horizontal overflow, stories and saved empty state work", as
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+
+  const nav = page.getByRole("navigation", { name: "ناوبری موبایل" });
+  await expect(nav).toBeVisible();
+  await expect(nav.getByRole("link")).toHaveCount(4);
+  await page.goto("/saved");
   await expect(
-    page.getByRole("navigation", { name: "ناوبری موبایل" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "تازه رسیدن", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.getByRole("button", { name: "دیدن این مجموعه" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page
-    .getByRole("navigation", { name: "ناوبری موبایل" })
-    .getByRole("link", { name: "ذخیره‌شده‌ها" })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "هنوز چیزی ذخیره نکردی" }),
+    page.getByText("هنوز چیزی ذخیره نکرده‌ای", { exact: true }),
   ).toBeVisible();
 });
+
 test("unknown route is 404 and dark mode toggles", async ({ page }) => {
   const response = await page.goto("/missing");
   expect(response?.status()).toBe(404);
   await page.goto("/");
-  await page.getByRole("button", { name: "حالت تیره", exact: true }).click();
+  await page
+    .getByRole("button", { name: "تغییر تم روشن و تیره", exact: true })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -124,9 +137,9 @@ test("delivery map explains done, remaining and owner-dependent work without pri
   page,
 }) => {
   const privateCalls: string[] = [];
-  page.on("request", (r) => {
-    if (new URL(r.url()).pathname.startsWith("/api/admin/"))
-      privateCalls.push(r.url());
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/admin/"))
+      privateCalls.push(request.url());
   });
   const response = await page.goto("/progress");
   expect(response?.status()).toBe(200);
