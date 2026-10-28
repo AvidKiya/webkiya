@@ -29,12 +29,12 @@ export function KiyaStoriesBar({ products }: { products: Product[] }) {
             <div className="w-16 h-16 rounded-full border-2 border-dashed border-brand-400 bg-brand-50 flex items-center justify-center group-hover:scale-105 transition-transform">
               <PackageCheck className="w-6 h-6 text-brand-500" />
             </div>
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-buy text-buy-fg text-[9px] font-extrabold rounded-full whitespace-nowrap">
-              سفارش‌های من
+            <span className="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-buy text-buy-fg text-[10px] font-black flex items-center justify-center ring-2 ring-surface">
+              ↺
             </span>
           </div>
           <span className="text-[11px] font-semibold text-ink-700 truncate w-full text-center">
-            سفارش‌ها
+            سفارش‌های من
           </span>
         </Link>
 
