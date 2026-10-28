@@ -363,7 +363,7 @@ function ExploreBody({ initialCategory }: { initialCategory: string }) {
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-canvas-sunken p-1 rounded-xl border border-border text-xs font-bold">
+          <div className="flex items-center gap-1 bg-canvas-sunken p-1 rounded-xl border border-border text-xs font-bold shrink-0">
             <button
               type="button"
               onClick={() => setSort("featured")}
@@ -403,7 +403,7 @@ function ExploreBody({ initialCategory }: { initialCategory: string }) {
             </button>
           </div>
 
-          <div className="flex items-center gap-1 bg-canvas-sunken p-1 rounded-xl border border-border text-xs font-bold">
+          <div className="flex items-center gap-1 bg-canvas-sunken p-1 rounded-xl border border-border text-xs font-bold shrink-0">
             <button
               type="button"
               onClick={() => setLayout("shop")}
@@ -435,35 +435,37 @@ function ExploreBody({ initialCategory }: { initialCategory: string }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          {categories.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setCategory(item)}
-              className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
-                category === item
-                  ? "bg-buy text-buy-fg border-buy shadow-e1"
-                  : "bg-canvas-sunken border-border text-ink-700 hover:bg-brand-50",
-              )}
-            >
-              {item}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 min-w-0 flex-1">
+            {categories.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setCategory(item)}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0",
+                  category === item
+                    ? "bg-buy text-buy-fg border-buy shadow-e1"
+                    : "bg-canvas-sunken border-border text-ink-700 hover:bg-brand-50",
+                )}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={() => setOnlyAvailable((value) => !value)}
             aria-pressed={onlyAvailable}
             className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all mr-auto",
+              "px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-all shrink-0",
               onlyAvailable
                 ? "bg-brand-500 text-white border-brand-500"
                 : "bg-canvas-sunken border-border text-ink-700 hover:bg-brand-50",
             )}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            فقط موجود
+            <span className="hidden sm:inline">فقط موجود</span>
           </button>
         </div>
       </div>
