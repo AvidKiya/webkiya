@@ -14,9 +14,3 @@ test-results/
 *.tsbuildinfo
 .data/
 src/generated/
-
-# Cloudflare artifacts and local secrets
-.open-next/
-.wrangler/
-.dev.vars
-.dev.vars.*

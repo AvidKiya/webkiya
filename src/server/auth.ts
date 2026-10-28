@@ -19,6 +19,8 @@ export const PERMISSIONS = [
   "product:publish",
   "inventory:read",
   "inventory:manage",
+  "order:read",
+  "order:manage",
   "wholesale:pack:manage",
   "wholesale:pack:publish",
   "wholesale:price:read",

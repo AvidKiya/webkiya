@@ -508,6 +508,25 @@
   background: #eff7f3;
   border-color: #dfede5;
 }
+.admin-status.confirmed,
+.admin-status.completed {
+  color: #477b68;
+  background: #eff7f3;
+  border-color: #dfede5;
+}
+.admin-status.reserved,
+.admin-status.preparing {
+  color: #8a6220;
+  background: #fdf7e9;
+  border-color: #f1e6c9;
+}
+.admin-status.shipped {
+  color: #2f5f86;
+  background: #eef5fb;
+  border-color: #dbe8f3;
+}
+.admin-status.expired,
+.admin-status.cancelled,
 .admin-status.suspended,
 .admin-status.rejected,
 .admin-status.hidden {
@@ -1104,4 +1123,58 @@
   background: #ffffffee;
   backdrop-filter: blur(16px);
   border-color: #e7dfee;
+}
+
+.order-lines {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.order-lines span {
+  color: inherit;
+  opacity: 0.86;
+}
+.order-manager {
+  margin-top: 14px;
+  border-top: 1px dashed #e7dfee;
+  padding-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.order-manager .order-events {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  color: #7c6f8f;
+}
+.order-manager .order-events b {
+  color: #4d3f63;
+}
+.order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.order-actions label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+.order-actions select,
+.order-actions input {
+  min-height: 36px;
+  border-radius: 9px;
+  border: 1px solid #e7dfee;
+  padding: 0 10px;
+  font: inherit;
+  background: #fff;
+}
+.order-actions .reason {
+  flex: 1 1 220px;
+}
+.order-warning {
+  font-size: 11px;
+  color: #a2603e;
 }

@@ -14,6 +14,7 @@ import { ServerComments } from "./server-comments";
 import { WholesaleCatalog } from "./wholesale-catalog";
 import { CartAddButton } from "./server-basket";
 import { AccountPanel, PartnerPanel } from "./account-panel";
+import { SiteFooter } from "./site-footer";
 import { usePreviewStore, usePreviewTheme } from "@/lib/preview-store";
 import Link from "next/link";
 import {
@@ -1041,6 +1042,7 @@ export default function Store({
           </aside>
         </div>
       </div>
+      <SiteFooter />
       <TemplateBottomNav section={section} inert={!!modal} />
       {toast && (
         <div className="toast" role="status">

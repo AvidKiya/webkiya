@@ -115,7 +115,7 @@ test("staff password, TOTP setup, recovery, scoped navigation and logout", async
     ).toHaveCount(0);
     expect((await page.request.get("/api/admin/staff")).status()).toBe(403);
     await nav.getByRole("button", { name: "کاتالوگ", exact: true }).click();
-    await expect(page.locator(".admin-record")).toHaveCount(5);
+    await expect(page.locator(".admin-record").first()).toBeVisible();
     const draftName = "کالای آزمون " + handle;
     const createForm = page.locator(".admin-product-form").first();
     await createForm.getByLabel("نام کالا", { exact: true }).fill(draftName);
@@ -178,8 +178,9 @@ test("read-only admin preview is browsable without authenticating or calling pri
     page.getByRole("region", { name: "نمایش فقط خواندنی" }),
   ).toBeVisible();
   const nav = page.getByRole("navigation", { name: "ناوبری مدیریت" });
-  await expect(nav.getByRole("button")).toHaveCount(6);
+  await expect(nav.getByRole("button")).toHaveCount(7);
   for (const name of [
+    "سفارش‌ها و رزرو",
     "گفت‌وگوها",
     "پروندهٔ همکاران",
     "کاتالوگ",

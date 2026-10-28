@@ -27,6 +27,7 @@ model User {
   partner           PartnerAccount?
   carts ServerCart[]
  orders PurchaseOrder[]
+ orderEvents OrderEvent[]
 }
 model Role {
   id          String @id @default(uuid()) @db.Uuid
@@ -284,9 +285,22 @@ model PurchaseOrder {
  cart ServerCart @relation(fields:[cartId],references:[id],onDelete:Restrict)
  holds OrderHold[]
  movements ReservationMovement[]
+ events OrderEvent[]
  @@unique([cartId,cartVersion])
  @@index([userId,createdAt])
  @@index([status,reservedUntil])
+}
+model OrderEvent {
+ id String @id @default(uuid()) @db.Uuid
+ orderId String @db.Uuid
+ actorId String @db.Uuid
+ fromStatus String @db.VarChar(12)
+ toStatus String @db.VarChar(12)
+ reason String @db.VarChar(500)
+ createdAt DateTime @default(now()) @db.Timestamptz(3)
+ order PurchaseOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+ actor User @relation(fields:[actorId],references:[id],onDelete:Restrict)
+ @@index([orderId,createdAt])
 }
 model OrderHold {
  orderId String @db.Uuid

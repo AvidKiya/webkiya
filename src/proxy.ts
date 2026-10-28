@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { STORE_SECTIONS } from "@/lib/routes";
+import { STORE_SECTIONS, TOP_LEVEL_ROUTES } from "@/lib/routes";
 import { publicProduct } from "@/server/catalog";
 // Resolve absence before RSC streaming starts so unknown/unpublished posts have
 // an HTTP 404, rather than only a streamed not-found screen with status 200.
@@ -17,9 +17,7 @@ export async function proxy(request: NextRequest) {
       return missing();
   } else if (
     parts.length === 1 &&
-    parts[0] !== "admin" &&
-    parts[0] !== "progress" &&
-    parts[0] !== "basket" &&
+    !TOP_LEVEL_ROUTES.some((s) => s === parts[0]) &&
     !STORE_SECTIONS.some((s) => s === parts[0])
   )
     return missing();

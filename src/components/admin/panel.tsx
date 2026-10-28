@@ -8,6 +8,7 @@ import {
   MessageCircle,
   UsersRound,
   Package,
+  ClipboardList,
   ShieldCheck,
   ScrollText,
   ArrowUpLeft,
@@ -26,12 +27,19 @@ import { PartnerValidity } from "./wholesale-prices";
 import { ProductWorkbench } from "./product-workbench";
 import { DraftProductForm } from "./product-form";
 import { AccessManagement, PasswordChange } from "./access-management";
+import { OrderManager } from "./order-manager";
 const tabs = [
   {
     id: "dashboard",
     label: "نمای کلی",
     icon: LayoutDashboard,
     permission: "dashboard:read",
+  },
+  {
+    id: "orders",
+    label: "سفارش‌ها و رزرو",
+    icon: ClipboardList,
+    permission: "order:read",
   },
   {
     id: "comments",
@@ -69,6 +77,7 @@ type Dashboard = {
   comments: number;
   pending: number;
   products: number;
+  openOrders: number;
   mode: string;
   paymentReady: boolean;
 };
@@ -93,6 +102,19 @@ type Row = {
   author?: { displayName: string; isDemo: boolean };
   user?: { displayName: string; isDemo: boolean };
   roles?: { role: { name: string; key: string } }[];
+  mode?: string;
+  subtotalToman?: string;
+  reservedUntil?: string;
+  endedAt?: string | null;
+  expiry?: boolean;
+  customer?: { displayName: string; isDemo: boolean; phone: string | null };
+  lines?: {
+    name: string;
+    selection: string;
+    quantity: number;
+    totalUnits: number;
+    lineTotalToman: string;
+  }[];
 };
 export function AdminPanel({ preview = false }: { preview?: boolean }) {
   const router = useRouter();
@@ -137,9 +159,35 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
       comments: 0,
       pending: 0,
       products: products.length,
+      openOrders: 0,
       mode: "preview",
       paymentReady: false,
     },
+    orders: [
+      {
+        id: "sample-order",
+        mode: "RETAIL",
+        status: "RESERVED",
+        version: 1,
+        price: "1450000",
+        subtotalToman: "1450000",
+        reservedUntil: "2026-10-28T12:00:00.000Z",
+        customer: {
+          displayName: "مشتری نمونه",
+          isDemo: true,
+          phone: "•۰۹۱۲۳۴۵۶۷۸۹",
+        },
+        lines: [
+          {
+            name: "کیف دستی و دوشی چرم",
+            selection: "قهوه‌ای / تکی",
+            quantity: 1,
+            totalUnits: 1,
+            lineTotalToman: "1450000",
+          },
+        ],
+      },
+    ],
     products: products.map((p) => ({
       id: p.id,
       name: p.subtitle,
@@ -181,12 +229,15 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
   useEffect(() => {
     if (preview || !ready || !visibleTab) return;
     let active = true;
-    api<Dashboard | Row[]>("/api/admin/" + visibleTab)
+    api<Dashboard | Row[] | { orders: Row[] }>("/api/admin/" + visibleTab)
       .then((value) => {
-        if (active) {
-          setData(value);
-          setError("");
-        }
+        if (!active) return;
+        setData(
+          visibleTab === "orders" && !Array.isArray(value)
+            ? (value as { orders: Row[] }).orders
+            : (value as Dashboard | Row[]),
+        );
+        setError("");
       })
       .catch((e) => {
         if (active) setError(e.message);
@@ -608,6 +659,12 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                     icon: Package,
                     note: "کاتالوگ اولیهٔ آزمایشی",
                   },
+                  {
+                    label: "سفارش در جریان",
+                    value: data.openOrders ?? 0,
+                    icon: ClipboardList,
+                    note: "رزرو تا ارسال، بدون پرداخت",
+                  },
                 ].map(({ label, value, icon: Icon, note }) => (
                   <section className="admin-metric" key={label}>
                     <div>
@@ -716,19 +773,29 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                 <div className="admin-empty">
                   <ScrollText size={32} />
                   <h3>اینجا هنوز رکوردی نیست.</h3>
-                  <p>دادهٔ نمایشی برای پرکردن آمار تولید نمی‌کنیم.</p>
+                  <p>
+                    {visibleTab === "orders"
+                      ? "تا وقتی مشتری سفارش اولیه ثبت نکند، سفارشی ساخته نمی‌شود؛ دادهٔ نمایشی برای پرکردن فهرست تولید نمی‌کنیم."
+                      : "دادهٔ نمایشی برای پرکردن آمار تولید نمی‌کنیم."}
+                  </p>
                 </div>
               ) : (
                 data.map((row) => (
                   <article className="admin-record" key={row.id}>
                     <div className="admin-record-heading">
                       <h3>
-                        {row.businessName ||
-                          row.name ||
-                          row.displayName ||
-                          row.author?.displayName ||
-                          row.action ||
-                          row.id}
+                        {visibleTab === "orders"
+                          ? "سفارش " + row.id.slice(0, 8)
+                          : null}
+                        {visibleTab === "orders"
+                          ? null
+                          : row.businessName ||
+                            row.name ||
+                            row.displayName ||
+                            row.customer?.displayName ||
+                            row.author?.displayName ||
+                            row.action ||
+                            row.id}
                       </h3>
                       {row.status ? (
                         <span
@@ -745,6 +812,13 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                               DELETED: "حذف شده",
                               PUBLISHED: "منتشرشده",
                               DRAFT: "پیش‌نویس",
+                              RESERVED: "رزرو فعال",
+                              CONFIRMED: "تأییدشده",
+                              PREPARING: "در حال آماده‌سازی",
+                              SHIPPED: "ارسال‌شده",
+                              COMPLETED: "تکمیل‌شده",
+                              EXPIRED: "منقضی‌شده",
+                              CANCELLED: "لغوشده",
                             } as Record<string, string>
                           )[row.status] || row.status}
                         </span>
@@ -768,6 +842,58 @@ export function AdminPanel({ preview = false }: { preview?: boolean }) {
                           ? "قیمت پایهٔ پیش‌نویس"
                           : "قیمت خردهٔ نمونه"}
                       </p>
+                    ) : null}
+                    {visibleTab === "orders" && row.customer ? (
+                      <>
+                        <p>
+                          {row.customer.displayName}
+                          {row.customer.isDemo ? " · حساب آزمایشی" : ""}
+                          {row.customer.phone
+                            ? ` · موبایل ${row.customer.phone}`
+                            : " · بدون موبایل ثبت‌شده"}{" "}
+                          · {row.mode === "WHOLESALE" ? "عمده" : "تکی"} · مبلغ
+                          ثبت‌شده: {money(row.subtotalToman || "0")} تومان
+                        </p>
+                        {row.lines?.length ? (
+                          <div className="order-lines">
+                            {row.lines.map((line, i) => (
+                              <span key={i}>
+                                {line.name} · {line.selection} ·{" "}
+                                {faNumber(line.quantity)} واحد ·{" "}
+                                {money(line.lineTotalToman)} تومان
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {row.status === "RESERVED" && row.reservedUntil ? (
+                          <p className={row.expiry ? "order-warning" : "micro"}>
+                            پایان رزرو:{" "}
+                            {new Date(row.reservedUntil).toLocaleString(
+                              "fa-IR",
+                            )}
+                            {row.expiry
+                              ? " — مهلت تمام شده؛ تا آزادسازی، رزرو در وضعیت انتظار است."
+                              : ""}
+                          </p>
+                        ) : null}
+                        {row.endedAt ? (
+                          <p className="micro">
+                            پایان پرونده:{" "}
+                            {new Date(row.endedAt).toLocaleString("fa-IR")}
+                          </p>
+                        ) : null}
+                        {!preview && typeof row.version === "number" ? (
+                          <OrderManager
+                            id={row.id}
+                            status={row.status || ""}
+                            version={row.version}
+                            canManage={
+                              !!user?.permissions.includes("order:manage")
+                            }
+                            onSaved={() => setNonce((n) => n + 1)}
+                          />
+                        ) : null}
+                      </>
                     ) : null}
                     {row.roles ? (
                       <p>
