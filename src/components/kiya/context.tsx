@@ -42,6 +42,8 @@ type KiyaContextValue = {
   setCartOpen: (open: boolean) => void;
   postId: string | null;
   openPost: (id: string | null) => void;
+  story: string | null;
+  openStory: (category: string | null) => void;
   query: string;
   setQuery: (value: string) => void;
   toast: Toast;
@@ -67,6 +69,7 @@ export function KiyaProvider({
   const { theme, setTheme } = usePreviewTheme();
   const [cartOpen, setCartOpen] = useState(false);
   const [postId, setPostId] = useState<string | null>(initialPost ?? null);
+  const [story, setStory] = useState<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [toast, setToast] = useState<Toast>(null);
   const [offline, setOffline] = useState(false);
@@ -223,6 +226,8 @@ export function KiyaProvider({
       setCartOpen,
       postId,
       openPost,
+      story,
+      openStory: setStory,
       query,
       setQuery,
       toast,
@@ -241,6 +246,7 @@ export function KiyaProvider({
     query,
     toast,
     openPost,
+    story,
   ]);
 
   return <KiyaContext.Provider value={value}>{children}</KiyaContext.Provider>;

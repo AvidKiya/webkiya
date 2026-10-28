@@ -6,7 +6,13 @@ import type { Product } from "@/lib/catalog";
  * Collection rings, markup ported from the template's StoriesBar. Stories are
  * built from the live catalog categories so nothing here is invented content.
  */
-export function KiyaStoriesBar({ products }: { products: Product[] }) {
+export function KiyaStoriesBar({
+  products,
+  onOpenStory,
+}: {
+  products: Product[];
+  onOpenStory: (category: string) => void;
+}) {
   const groups = new Map<string, Product>();
   for (const product of products) {
     if (product.image && !groups.has(product.category)) {
@@ -39,10 +45,12 @@ export function KiyaStoriesBar({ products }: { products: Product[] }) {
         </Link>
 
         {stories.map(([category, product], index) => (
-          <Link
+          <button
             key={category}
-            href={`/explore?category=${encodeURIComponent(category)}`}
+            type="button"
+            onClick={() => onOpenStory(category)}
             className="flex flex-col items-center gap-1.5 shrink-0 w-[72px] group"
+            aria-label={`استوری ${category}`}
           >
             <div className="relative">
               <div
@@ -69,7 +77,7 @@ export function KiyaStoriesBar({ products }: { products: Product[] }) {
             <span className="text-[11px] font-medium text-ink-800 truncate w-full text-center">
               {category}
             </span>
-          </Link>
+          </button>
         ))}
       </div>
     </section>

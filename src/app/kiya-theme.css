@@ -1,81 +1,14 @@
+/* KIYA tokens ported from the owner's template («کیایی که دوسش داشتم»).
+   The @theme block lives in globals.css next to the Tailwind import so the
+   token utilities (bg-surface, text-ink-*, shadow-e1 …) are generated; the
+   dark palette, rings, glass and motion helpers stay here. */
+
 /* KIYA design tokens ported verbatim from the owner's template
    («کیایی که دوسش داشتم/src/index.css») so the shipped storefront and the
    reference design speak the same visual language. */
 
-@theme {
-  /* KIYA Official Brand Palette - Purple & Gold */
-  --color-brand-50: #F3EEFA;
-  --color-brand-100: #E7DCF5;
-  --color-brand-200: #D4C2EE;
-  --color-brand-300: #BCA0E3;
-  --color-brand-400: #9B72D4;
-  --color-brand-500: #482780;
-  --color-brand-600: #381C68;
-  --color-brand-700: #2D1654;
-  --color-brand-800: #241243;
-  --color-brand-900: #1D0E36;
-
-  --color-gold-300: #F3CE7E;
-  --color-gold-400: #E8B855;
-  --color-gold-500: #D19A43;
-  --color-gold-600: #B8842F;
-  --color-gold-text: #805600;
-
-  /* Surfaces & Ink */
-  --color-canvas: #FAF8FC;
-  --color-canvas-sunken: #F3EEFA;
-  --color-surface: #FFFFFF;
-  --color-surface-dim: #F5F1FA;
-
-  --color-ink-900: #211A2B;
-  --color-ink-800: #2D2440;
-  --color-ink-700: #3D3355;
-  --color-ink-600: #4F4568;
-  --color-ink-500: #655C70;
-  --color-ink-400: #8A8194;
-  --color-ink-300: #B5ADC2;
-  --color-ink-200: #D5CFE0;
-  --color-ink-100: #E7DFEE;
-  --color-ink-50: #F3EEFA;
-
-  --color-border: #E7DFEE;
-  --color-border-subtle: #EFEAF5;
-
-  /* Action & Semantic */
-  --color-buy: #482780;
-  --color-buy-hover: #381C68;
-  --color-buy-fg: #FFFFFF;
-  --color-buy-light: #F3EEFA;
-
-  --color-social: #7C3AED;
-  --color-social-hover: #6D28D9;
-
-  --color-success: #12B76A;
-  --color-success-light: #E5F2EC;
-  --color-warning: #D97706;
-  --color-warning-light: #FEF3E2;
-  --color-danger: #B4233D;
-  --color-danger-light: #F9E7EF;
-  --color-info: #2563EB;
-  --color-info-light: #E7EEF8;
-
-  /* Campaign Tints */
-  --color-tint-rose: #F9E7EF;
-  --color-tint-lavender: #EEE5FA;
-  --color-tint-blue: #E7EEF8;
-  --color-tint-green: #E5F2EC;
-
-  --font-sans: 'Vazirmatn', system-ui, Tahoma, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  --shadow-e1: 0 1px 2px rgba(33, 26, 43, 0.06);
-  --shadow-e2: 0 4px 12px rgba(33, 26, 43, 0.08);
-  --shadow-e3: 0 16px 40px rgba(33, 26, 43, 0.12);
-  --shadow-e4: 0 32px 64px rgba(33, 26, 43, 0.18);
-}
-
-
-:where(.dark, [data-theme="dark"]) {
+.dark,
+[data-theme="dark"] {
   color-scheme: dark;
   --color-canvas: #141018;
   --color-canvas-sunken: #1C1524;

@@ -12,6 +12,7 @@ import { KiyaNavRail } from "./nav-rail";
 import { KiyaBottomNav } from "./bottom-nav";
 import { KiyaRightRail } from "./right-rail";
 import { KiyaCartSheet } from "./cart-sheet";
+import { KiyaStoryViewer } from "./story-viewer";
 import { KiyaFeed, KiyaExplore } from "./feed";
 import {
   KiyaAccount,
@@ -233,6 +234,10 @@ function Shell({ section }: { section: string }) {
     storageWarning,
     toast,
     postId,
+    openPost,
+    story,
+    openStory,
+    addToCart,
   } = useKiya();
   const [loadingMore] = useState(false);
 
@@ -320,6 +325,24 @@ function Shell({ section }: { section: string }) {
       />
 
       <ProductDialog />
+
+      <KiyaStoryViewer
+        products={products}
+        category={story}
+        onClose={() => openStory(null)}
+        onOpenProduct={(id) => {
+          openStory(null);
+          openPost(id);
+        }}
+        onAdd={(product) =>
+          addToCart(
+            product,
+            product.colors.find((color) => color.available !== false)?.name ||
+              product.colors[0]?.name ||
+              "",
+          )
+        }
+      />
 
       {loadingMore && <span className="sr-only">در حال بارگذاری</span>}
 

@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, Trash2, X, Info } from "lucide-react";
+import { useState } from "react";
+import {
+  ShoppingBag,
+  Trash2,
+  X,
+  Info,
+  CreditCard,
+  Truck,
+  ArrowLeft,
+  Check,
+} from "lucide-react";
 import type { CartItem, Product } from "@/lib/catalog";
 import { formatNumber, formatPrice } from "./kit";
 
@@ -20,6 +30,8 @@ export function KiyaCartSheet({
   onQuantity: (item: CartItem, delta: number) => void;
   onRemove: (item: CartItem) => void;
 }) {
+  const [step, setStep] = useState<"cart" | "review">("cart");
+
   if (!open) return null;
 
   const lines = cart
@@ -65,6 +77,22 @@ export function KiyaCartSheet({
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        <div className="px-5 py-2 bg-canvas-sunken border-b border-border flex items-center gap-2 text-[11px] font-bold">
+          <span
+            className={
+              step === "cart" ? "text-brand-500" : "text-ink-400 line-through"
+            }
+          >
+            ۱ · سبد
+          </span>
+          <span className="text-ink-300">/</span>
+          <span
+            className={step === "review" ? "text-brand-500" : "text-ink-400"}
+          >
+            ۲ · بررسی و ارسال
+          </span>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-border">
@@ -135,6 +163,43 @@ export function KiyaCartSheet({
         </div>
 
         <div className="p-4 border-t border-border space-y-3 bg-canvas-sunken/40">
+          {step === "review" && lines.length > 0 && (
+            <div className="space-y-2 rounded-xl bg-surface border border-border p-3">
+              <p className="text-xs font-extrabold text-ink-900">
+                بررسی نهایی سفارش
+              </p>
+              <ul className="space-y-1">
+                {lines.map(({ item, product }) => (
+                  <li
+                    key={product.id + item.color}
+                    className="flex items-center justify-between gap-2 text-[11px] text-ink-600"
+                  >
+                    <span className="truncate">
+                      {product.name} · {item.color} × {formatNumber(item.qty)}
+                    </span>
+                    <span className="font-bold text-ink-800 shrink-0">
+                      {formatPrice(Number(product.price) * item.qty)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="grid gap-1.5 pt-1">
+                <p className="flex items-center gap-1.5 text-[11px] text-warning">
+                  <CreditCard className="w-3.5 h-3.5" />
+                  پرداخت آنلاین هنوز فعال نیست؛ سفارش بدون پرداخت ثبت می‌شود.
+                </p>
+                <p className="flex items-center gap-1.5 text-[11px] text-info">
+                  <Truck className="w-3.5 h-3.5" />
+                  هزینه و روش ارسال در مرحلهٔ بعد با پشتیبانی هماهنگ می‌شود.
+                </p>
+                <p className="flex items-center gap-1.5 text-[11px] text-success">
+                  <Check className="w-3.5 h-3.5" />
+                  رزرو موجودی فقط برای سفارش سروری و حداکثر دو دقیقه است.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-start gap-1.5 text-[11px] text-info bg-info-light px-2.5 py-2 rounded-lg">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
@@ -148,13 +213,33 @@ export function KiyaCartSheet({
               {formatPrice(subtotal)}
             </span>
           </div>
-          <Link
-            href="/basket"
-            onClick={onClose}
-            className="w-full h-11 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover font-bold text-sm shadow-e1 flex items-center justify-center"
-          >
-            رفتن به سبد سروری
-          </Link>
+          {lines.length > 0 && step === "cart" ? (
+            <button
+              type="button"
+              onClick={() => setStep("review")}
+              className="w-full h-11 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover font-bold text-sm shadow-e1 flex items-center justify-center gap-1.5"
+            >
+              <span>ادامه و بررسی سفارش</span>
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          ) : (
+            <Link
+              href="/basket"
+              onClick={onClose}
+              className="w-full h-11 rounded-xl bg-buy text-buy-fg hover:bg-buy-hover font-bold text-sm shadow-e1 flex items-center justify-center"
+            >
+              رفتن به سبد سروری
+            </Link>
+          )}
+          {step === "review" && (
+            <button
+              type="button"
+              onClick={() => setStep("cart")}
+              className="w-full text-[11px] font-bold text-ink-500 hover:text-brand-500"
+            >
+              بازگشت به سبد
+            </button>
+          )}
         </div>
       </div>
     </div>

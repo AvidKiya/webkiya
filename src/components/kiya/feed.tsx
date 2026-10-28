@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
+  Grid3X3,
   Sparkles,
   Layers,
   ArrowLeft,
@@ -97,6 +98,7 @@ export function KiyaFeed() {
     toggleSaved,
     addToCart,
     openPost,
+    openStory,
   } = useKiya();
   const [limit, setLimit] = useState(6);
   const visible = products.slice(0, limit);
@@ -119,7 +121,7 @@ export function KiyaFeed() {
   return (
     <div className="w-full max-w-[630px] mx-auto space-y-4 md:space-y-6">
       <div className="px-3 md:px-0">
-        <KiyaStoriesBar products={products} />
+        <KiyaStoriesBar products={products} onOpenStory={openStory} />
       </div>
 
       <div className="flex items-center justify-between px-4 md:px-1">
@@ -251,7 +253,32 @@ export function ProductTile({ product }: { product: Product }) {
             />
           </button>
         </div>
-        <p className="text-[10px] text-ink-500">{product.category}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] text-ink-500">{product.category}</p>
+          {product.collection && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-500 border border-brand-200 truncate max-w-[92px]">
+              {product.collection}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {product.colors.slice(0, 5).map((color) => (
+            <span
+              key={color.name}
+              title={color.name}
+              className={cn(
+                "w-3.5 h-3.5 rounded-full border border-black/10",
+                color.available === false && "opacity-35",
+              )}
+              style={{ background: color.hex }}
+            />
+          ))}
+          {product.colors.length > 5 && (
+            <span className="text-[9px] text-ink-400">
+              +{formatNumber(product.colors.length - 5)}
+            </span>
+          )}
+        </div>
         <div className="mt-auto flex items-center justify-between gap-2">
           <div>
             {product.previous && (
@@ -288,6 +315,7 @@ function ExploreBody({ initialCategory }: { initialCategory: string }) {
   const { products, query, setQuery } = useKiya();
   const [category, setCategory] = useState(initialCategory);
   const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [layout, setLayout] = useState<"shop" | "mosaic">("shop");
   const [sort, setSort] = useState<"featured" | "cheap" | "expensive">(
     "featured",
   );
@@ -374,6 +402,37 @@ function ExploreBody({ initialCategory }: { initialCategory: string }) {
               گران‌ترین
             </button>
           </div>
+
+          <div className="flex items-center gap-1 bg-canvas-sunken p-1 rounded-xl border border-border text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setLayout("shop")}
+              aria-pressed={layout === "shop"}
+              className={cn(
+                "px-2.5 py-1.5 rounded-lg flex items-center gap-1",
+                layout === "shop"
+                  ? "bg-surface text-brand-500 shadow-e1"
+                  : "text-ink-500",
+              )}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              فروشگاهی
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayout("mosaic")}
+              aria-pressed={layout === "mosaic"}
+              className={cn(
+                "px-2.5 py-1.5 rounded-lg flex items-center gap-1",
+                layout === "mosaic"
+                  ? "bg-surface text-brand-500 shadow-e1"
+                  : "text-ink-500",
+              )}
+            >
+              <Grid3X3 className="w-3.5 h-3.5" />
+              موزاییک
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -418,15 +477,74 @@ function ExploreBody({ initialCategory }: { initialCategory: string }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-4">
-          {visible.map((product) => (
-            <ProductTile key={product.id} product={product} />
-          ))}
+        <div
+          className={
+            layout === "mosaic"
+              ? "grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2"
+              : "grid grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-4"
+          }
+        >
+          {visible.map((product) =>
+            layout === "mosaic" ? (
+              <MosaicTile key={product.id} product={product} />
+            ) : (
+              <ProductTile key={product.id} product={product} />
+            ),
+          )}
         </div>
       )}
 
       <StoreFooter />
     </div>
+  );
+}
+
+function MosaicTile({ product }: { product: Product }) {
+  const { openPost, saved, toggleSaved } = useKiya();
+  const isSaved = saved.includes(product.id);
+  return (
+    <button
+      type="button"
+      onClick={() => openPost(product.id)}
+      className="relative aspect-square overflow-hidden rounded-lg md:rounded-xl bg-canvas-sunken group"
+      aria-label={product.name}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={product.image}
+        alt={product.name}
+        loading="lazy"
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <span className="absolute inset-0 bg-gradient-to-t from-[#141018]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <span className="absolute bottom-0 inset-x-0 p-2 text-right text-white text-[11px] font-extrabold leading-tight opacity-0 group-hover:opacity-100 transition-opacity line-clamp-2">
+        {product.name}
+      </span>
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label={`ذخیره ${product.name}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          toggleSaved(product.id);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.stopPropagation();
+            event.preventDefault();
+            toggleSaved(product.id);
+          }
+        }}
+        className="absolute top-1.5 left-1.5 w-6 h-6 rounded-md bg-surface/85 backdrop-blur flex items-center justify-center"
+      >
+        <Bookmark
+          className={cn(
+            "w-3.5 h-3.5",
+            isSaved ? "fill-brand-500 text-brand-500" : "text-ink-600",
+          )}
+        />
+      </span>
+    </button>
   );
 }
 

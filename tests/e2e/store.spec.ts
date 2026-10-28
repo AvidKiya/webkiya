@@ -162,3 +162,106 @@ test("delivery map explains done, remaining and owner-dependent work without pri
   }
   expect(privateCalls).toEqual([]);
 });
+
+test("story rings open the ported viewer and can be closed safely", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const dialog = page.getByRole("dialog");
+  await page
+    .getByRole("button", { name: /^استوری / })
+    .first()
+    .click();
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "فریم بعدی", exact: true }),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "مکث", exact: true }).click();
+  await expect(
+    dialog.getByRole("button", { name: "ادامه پخش", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
+test("explore switches between shop grid and mosaic without overflow", async ({
+  page,
+}) => {
+  await page.goto("/explore");
+  await expect(page.locator("[data-product-tile]").first()).toBeVisible();
+  await page.getByRole("button", { name: "موزاییک", exact: true }).click();
+  await expect(page.locator("[data-product-tile]")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /^کیف دستی و دوشی چرم$/ }).first(),
+  ).toBeVisible();
+  for (const width of [360, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      "mosaic overflow at " + width,
+    ).toBe(true);
+  }
+  await page.getByRole("button", { name: "فروشگاهی", exact: true }).click();
+  await expect(page.locator("[data-product-tile]").first()).toBeVisible();
+});
+
+test("preview cart reaches the review step and states payment is not enabled", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .locator(".post-card")
+    .first()
+    .getByRole("button", { name: "افزودن به سبد", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "سبد خرید", exact: true })
+    .first()
+    .click();
+  const sheet = page.getByRole("dialog", { name: "سبد خرید" });
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole("button", { name: /ادامه و بررسی سفارش/ }).click();
+  await expect(
+    sheet.getByText(
+      "پرداخت آنلاین هنوز فعال نیست؛ سفارش بدون پرداخت ثبت می‌شود.",
+    ),
+  ).toBeVisible();
+  await expect(
+    sheet.getByText(
+      "هزینه و روش ارسال در مرحلهٔ بعد با پشتیبانی هماهنگ می‌شود.",
+    ),
+  ).toBeVisible();
+  await expect(
+    sheet.getByRole("link", { name: "رفتن به سبد سروری", exact: true }),
+  ).toHaveAttribute("href", "/basket");
+});
+
+test("dark theme keeps template tokens readable on feed and catalog", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "تغییر تم روشن و تیره", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(
+    await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
+  ).toBe("rgb(20, 16, 24)");
+  expect(
+    await page
+      .locator(".post-card")
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor),
+  ).toBe("rgb(33, 26, 41)");
+  await page.goto("/explore");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("[data-product-tile]").first()).toBeVisible();
+  expect(
+    await page
+      .locator("[data-product-tile]")
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor),
+  ).toBe("rgb(33, 26, 41)");
+});
