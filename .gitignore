@@ -15,8 +15,5 @@ test-results/
 .data/
 src/generated/
 
-# Cloudflare artifacts and local secrets
-.open-next/
-.wrangler/
-.dev.vars
-.dev.vars.*
+# Local scratch tooling (screenshots, browser helpers)
+.scratch/

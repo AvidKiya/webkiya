@@ -61,6 +61,11 @@ import {
 } from "@/app/api/orders/route";
 import { POST as orderCancel } from "@/app/api/orders/[id]/cancel/route";
 import { releaseExpiredOrders } from "@/server/orders";
+import { GET as adminOrders } from "@/app/api/admin/orders/route";
+import {
+  GET as adminOrderDetail,
+  PATCH as adminOrderDecision,
+} from "@/app/api/admin/orders/[id]/route";
 const origin = "http://kiya.test";
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const acontext = (action: string) => ({ params: Promise.resolve({ action }) });
@@ -444,7 +449,7 @@ async function expireFixture(id: string) {
 }
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE "ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
+    'TRUNCATE "OrderEvent","ReservationMovement","OrderHold","PurchaseOrder","CartOperation","ServerCartLine","ServerCart","WholesaleOffer","InventoryMovement","PackComponent","PackDefinition"',
   );
   await db().productVariant.deleteMany({
     where: { productId: { startsWith: "draft-" } },
@@ -3180,5 +3185,173 @@ describe("real PostgreSQL backend", () => {
       (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
         .reserved,
     ).toBe(0);
+  });
+  it("keeps order processing behind order:read and order:manage and exposes masked customer data", async () => {
+    const f = await orderFixture(),
+      o = (await payload(await reserve(f.buyer.cookie, f.input))).data,
+      content = await staff("CONTENT");
+    expect(
+      (await adminOrders(request("/api/admin/orders", "GET", content.cookie)))
+        .status,
+    ).toBe(403);
+    expect(
+      (await adminOrders(request("/api/admin/orders", "GET", f.buyer.cookie)))
+        .status,
+    ).toBe(403);
+    const list = (
+      await payload(
+        await adminOrders(request("/api/admin/orders", "GET", f.owner.cookie)),
+      )
+    ).data;
+    expect(list.orders).toHaveLength(1);
+    expect(list.orders[0].id).toBe(o.id);
+    expect(list.orders[0].status).toBe("RESERVED");
+    expect(list.orders[0].customer.phone).toBeNull();
+    expect(list.counts.RESERVED).toBe(1);
+    const detail = (
+      await payload(
+        await adminOrderDetail(
+          request("/api/admin/orders/" + o.id, "GET", f.owner.cookie),
+          context(o.id),
+        ),
+      )
+    ).data;
+    expect(detail.holds[0].units).toBe(2);
+    expect(detail.allowedNext).toEqual([]);
+  });
+  it("confirms a reservation once, consumes stock, keeps the ledger consistent and rejects replays", async () => {
+    const f = await orderFixture(),
+      o = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    const confirmed = await adminOrderDecision(
+      request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+        action: "CONFIRM",
+        version: 1,
+        reason: "تأیید آزمون سفارش",
+      }),
+      context(o.id),
+    );
+    expect(confirmed.status).toBe(200);
+    expect((await payload(confirmed)).data.status).toBe("CONFIRMED");
+    const variant = await db().productVariant.findUniqueOrThrow({
+      where: { id: f.v.id },
+    });
+    expect(variant.stock).toBe(18);
+    expect(variant.reserved).toBe(0);
+    const movement = await db().inventoryMovement.findFirstOrThrow({
+      where: { variantId: f.v.id, reason: { startsWith: "ORDER_CONFIRM:" } },
+    });
+    expect(movement.delta).toBe(-2);
+    expect(movement.actorId).toBe(f.owner.user.id);
+    expect(await db().orderEvent.count({ where: { orderId: o.id } })).toBe(1);
+    expect(
+      await db().auditLog.count({
+        where: { action: "order:confirm", resourceId: o.id },
+      }),
+    ).toBe(1);
+    const replay = await adminOrderDecision(
+      request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+        action: "CONFIRM",
+        version: 2,
+        reason: "تکرار تأیید سفارش",
+      }),
+      context(o.id),
+    );
+    expect(replay.status).toBe(409);
+    expect((await payload(replay)).error.code).toBe("INVALID_STATE");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(18);
+  });
+  it("advances confirmed orders through fulfilment, closes them once and pins versions", async () => {
+    const f = await orderFixture(),
+      o = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    await adminOrderDecision(
+      request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+        action: "CONFIRM",
+        version: 1,
+        reason: "تأیید آزمون مسیر ارسال",
+      }),
+      context(o.id),
+    );
+    const advance = async (
+      next: string,
+      version: number,
+      reason = "به‌روزرسانی آزمایشی وضعیت",
+    ) =>
+      adminOrderDecision(
+        request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+          action: "ADVANCE",
+          version,
+          next,
+          reason,
+        }),
+        context(o.id),
+      );
+    expect((await advance("SHIPPED", 2)).status).toBe(200);
+    expect((await advance("COMPLETED", 3)).status).toBe(200);
+    const closed = await db().purchaseOrder.findUniqueOrThrow({
+      where: { id: o.id },
+    });
+    expect(closed.status).toBe("COMPLETED");
+    expect(closed.endedAt).not.toBeNull();
+    expect(closed.version).toBe(4);
+    expect((await advance("COMPLETED", 4)).status).toBe(409);
+    expect(await db().orderEvent.count({ where: { orderId: o.id } })).toBe(3);
+    await expect(
+      db().purchaseOrder.update({
+        where: { id: o.id },
+        data: { status: "PREPARING", version: 5 },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db().orderEvent.updateMany({
+        where: { orderId: o.id },
+        data: { reason: "دستکاری" },
+      }),
+    ).rejects.toThrow();
+  });
+  it("refuses to confirm expired reservations or stale versions and enforces the required reason", async () => {
+    const f = await orderFixture(),
+      o = (await payload(await reserve(f.buyer.cookie, f.input))).data;
+    expect(
+      (
+        await adminOrderDecision(
+          request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+            action: "CONFIRM",
+            version: 99,
+            reason: "نسخهٔ کهنه",
+          }),
+          context(o.id),
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await adminOrderDecision(
+          request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+            action: "CONFIRM",
+            version: 1,
+            reason: "ok",
+          }),
+          context(o.id),
+        )
+      ).status,
+    ).toBe(422);
+    await expireFixture(o.id);
+    const expired = await adminOrderDecision(
+      request("/api/admin/orders/" + o.id, "PATCH", f.owner.cookie, {
+        action: "CONFIRM",
+        version: 1,
+        reason: "تأیید سفارش منقضی",
+      }),
+      context(o.id),
+    );
+    expect(expired.status).toBe(409);
+    expect((await payload(expired)).error.code).toBe("RESERVATION_EXPIRED");
+    expect(
+      (await db().productVariant.findUniqueOrThrow({ where: { id: f.v.id } }))
+        .stock,
+    ).toBe(20);
   });
 });

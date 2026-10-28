@@ -25,6 +25,8 @@ const owner = [
   "product:publish",
   "inventory:read",
   "inventory:manage",
+  "order:read",
+  "order:manage",
   "wholesale:pack:manage",
   "wholesale:pack:publish",
   "wholesale:price:read",
@@ -44,6 +46,7 @@ const support = [
   "partner:review",
   "partner:approve",
   "partner:suspend",
+  "order:read",
 ];
 try {
   await client.query("BEGIN");

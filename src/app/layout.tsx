@@ -5,7 +5,7 @@ import "@fontsource/vazirmatn/600.css";
 import "@fontsource/vazirmatn/700.css";
 import "@fontsource/vazirmatn/800.css";
 import "./globals.css";
-import "./preferred-template.css";
+import "./kiya-theme.css";
 export const metadata: Metadata = {
   title: "کیا — جزئیات کوچک، استایل تو",
   description: "پیش‌نمایش فروشگاه اجتماعی کیا؛ کشف استایل و اکسسوری شخصی",

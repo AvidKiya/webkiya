@@ -1,11 +1,7 @@
-import { CustomerFrame } from "@/components/preferred-template/customer-frame";
-import { ServerBasket } from "@/components/server-basket";
-import "./basket.css";
+import KiyaStore from "@/components/kiya/store";
+import { publicCatalog } from "@/server/catalog";
+export const dynamic = "force-dynamic";
 export const metadata = { title: "سبد سروری — کیا" };
-export default function Page() {
-  return (
-    <CustomerFrame>
-      <ServerBasket />
-    </CustomerFrame>
-  );
+export default async function Page() {
+  return <KiyaStore section="basket" catalog={await publicCatalog()} />;
 }

@@ -19,17 +19,24 @@ export async function GET(
     if (!permission) throw new ApiError(404, "NOT_FOUND", "بخش پیدا نشد.");
     await requireStaff(request, permission);
     if (module === "dashboard") {
-      const [customers, comments, pending, products] = await Promise.all([
-        db().user.count({ where: { kind: "CUSTOMER", isActive: true } }),
-        db().comment.count({ where: { status: "VISIBLE" } }),
-        db().partnerAccount.count({ where: { status: "PENDING" } }),
-        db().product.count({ where: { status: "PUBLISHED" } }),
-      ]);
+      const [customers, comments, pending, products, openOrders] =
+        await Promise.all([
+          db().user.count({ where: { kind: "CUSTOMER", isActive: true } }),
+          db().comment.count({ where: { status: "VISIBLE" } }),
+          db().partnerAccount.count({ where: { status: "PENDING" } }),
+          db().product.count({ where: { status: "PUBLISHED" } }),
+          db().purchaseOrder.count({
+            where: {
+              status: { in: ["RESERVED", "CONFIRMED", "PREPARING", "SHIPPED"] },
+            },
+          }),
+        ]);
       return ok({
         customers,
         comments,
         pending,
         products,
+        openOrders,
         mode: process.env.APP_MODE === "demo" ? "demo" : "live",
         paymentReady: false,
       });

@@ -34,9 +34,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Generate ephemeral test encryption keys
         run: node --input-type=module -e 'import {writeFileSync} from "node:fs"; import {randomBytes} from "node:crypto"; writeFileSync(".env.local", "AUTH_SECRET="+randomBytes(32).toString("hex")+"\nMFA_ENCRYPTION_KEY="+randomBytes(32).toString("hex")+"\n",{mode:0o600});'
       - run: npm ci
@@ -49,7 +46,4 @@ jobs:
       - run: npm run test:backend
       - run: npm run build
       - run: npm run test:e2e
-      - run: npm run cf:build && npm run cf:dry-run && npm run cf:check-local
-      - run: python3 file/scripts/validate_package.py
-      - run: python3 -m unittest discover -s file/scripts -p 'test_*.py'
       - run: npm audit --omit=dev

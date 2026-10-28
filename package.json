@@ -1,6 +1,6 @@
 {
   "name": "kiya-store",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
@@ -22,12 +22,7 @@
     "test:backend": "vitest run --config vitest.backend.config.ts",
     "db:test:create": "node scripts/create-test-db.mjs",
     "db:maintenance": "node scripts/db-maintenance.mjs",
-    "worker:reservations": "node scripts/reservation-worker.mjs",
-    "cf:build": "node scripts/cloudflare/build.mjs",
-    "cf:dry-run": "wrangler deploy --dry-run --outdir .data/cloudflare-dry-run && node scripts/cloudflare/artifact-check.mjs",
-    "cf:deploy": "wrangler deploy",
-    "cf:preview": "wrangler dev --ip 0.0.0.0 --port 8787",
-    "cf:check-local": "node scripts/cloudflare/local-check.mjs"
+    "worker:reservations": "node scripts/reservation-worker.mjs"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.8",
@@ -43,8 +38,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261022.1",
-    "@opennextjs/cloudflare": "1.20.13",
     "@playwright/test": "^1.58.2",
     "@sparticuz/chromium": "153.0.0",
     "@tailwindcss/postcss": "^4.2.1",
@@ -61,8 +54,7 @@
     "prisma": "7.10.1",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
-    "vitest": "5.0.5",
-    "wrangler": "4.152.0"
+    "vitest": "5.0.5"
   },
   "type": "module",
   "overrides": {
